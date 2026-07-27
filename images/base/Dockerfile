@@ -26,14 +26,6 @@ ARG YQ_SHA256_AMD64
 ARG YQ_SHA256_ARM64
 ARG YQ_VERSION
 
-LABEL org.opencontainers.image.created="${BUILD_CREATED}" \
-      org.opencontainers.image.description="Shared MyFlow CI job environment" \
-      org.opencontainers.image.licenses="AGPL-3.0-only" \
-      org.opencontainers.image.revision="${BUILD_REVISION}" \
-      org.opencontainers.image.source="https://github.com/myflow-xyz/ci-images" \
-      org.opencontainers.image.title="MyFlow CI base" \
-      org.myflow.ci.manifest-sha="${MANIFEST_SHA}"
-
 ENV CI=true \
     DEBIAN_FRONTEND=noninteractive \
     HOME=/home/ci \
@@ -214,6 +206,14 @@ RUN set -eu; \
       /workspace; \
     chown -R ci:ci /home/ci; \
     git config --system --add safe.directory /workspace
+
+LABEL org.opencontainers.image.created="${BUILD_CREATED}" \
+      org.opencontainers.image.description="Shared MyFlow CI job environment" \
+      org.opencontainers.image.licenses="AGPL-3.0-only" \
+      org.opencontainers.image.revision="${BUILD_REVISION}" \
+      org.opencontainers.image.source="https://github.com/myflow-xyz/ci-images" \
+      org.opencontainers.image.title="MyFlow CI base" \
+      org.myflow.ci.manifest-sha="${MANIFEST_SHA}"
 
 USER ci
 WORKDIR /workspace

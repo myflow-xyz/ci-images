@@ -10,14 +10,6 @@ ARG NODE_TOOLS_BUNDLE_VERSION
 ARG PNPM_VERSION
 ARG REDOCLY_VERSION
 
-LABEL org.opencontainers.image.created="${BUILD_CREATED}" \
-      org.opencontainers.image.description="MyFlow generic Node CI job environment" \
-      org.opencontainers.image.licenses="AGPL-3.0-only" \
-      org.opencontainers.image.revision="${BUILD_REVISION}" \
-      org.opencontainers.image.source="https://github.com/myflow-xyz/ci-images" \
-      org.opencontainers.image.title="MyFlow Node CI" \
-      org.myflow.ci.manifest-sha="${MANIFEST_SHA}"
-
 USER root
 
 COPY images/node/npm/package.json images/node/npm/package-lock.json \
@@ -66,6 +58,14 @@ RUN --mount=type=cache,target=/root/.npm \
 
 ENV NPM_CONFIG_CACHE=/cache/npm \
     PNPM_HOME=/home/ci/.local/share/pnpm
+
+LABEL org.opencontainers.image.created="${BUILD_CREATED}" \
+      org.opencontainers.image.description="MyFlow generic Node CI job environment" \
+      org.opencontainers.image.licenses="AGPL-3.0-only" \
+      org.opencontainers.image.revision="${BUILD_REVISION}" \
+      org.opencontainers.image.source="https://github.com/myflow-xyz/ci-images" \
+      org.opencontainers.image.title="MyFlow Node CI" \
+      org.myflow.ci.manifest-sha="${MANIFEST_SHA}"
 
 USER ci
 WORKDIR /workspace

@@ -8,15 +8,6 @@ ARG BUILD_REVISION=unknown
 ARG MANIFEST_SHA=unknown
 ARG PLAYWRIGHT_VERSION
 
-LABEL org.opencontainers.image.created="${BUILD_CREATED}" \
-      org.opencontainers.image.description="MyFlow Playwright CI job environment" \
-      org.opencontainers.image.licenses="AGPL-3.0-only" \
-      org.opencontainers.image.revision="${BUILD_REVISION}" \
-      org.opencontainers.image.source="https://github.com/myflow-xyz/ci-images" \
-      org.opencontainers.image.title="MyFlow Playwright CI" \
-      org.myflow.ci.manifest-sha="${MANIFEST_SHA}" \
-      org.myflow.ci.playwright-version="${PLAYWRIGHT_VERSION}"
-
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
     PLAYWRIGHT_VERSION=${PLAYWRIGHT_VERSION}
 
@@ -56,6 +47,15 @@ RUN --mount=type=cache,target=/root/.npm \
     "/opt/ci-tools/playwright/${PLAYWRIGHT_VERSION}/node_modules/.bin/playwright" \
       install --with-deps chromium; \
     chmod -R a+rX "${PLAYWRIGHT_BROWSERS_PATH}"
+
+LABEL org.opencontainers.image.created="${BUILD_CREATED}" \
+      org.opencontainers.image.description="MyFlow Playwright CI job environment" \
+      org.opencontainers.image.licenses="AGPL-3.0-only" \
+      org.opencontainers.image.revision="${BUILD_REVISION}" \
+      org.opencontainers.image.source="https://github.com/myflow-xyz/ci-images" \
+      org.opencontainers.image.title="MyFlow Playwright CI" \
+      org.myflow.ci.manifest-sha="${MANIFEST_SHA}" \
+      org.myflow.ci.playwright-version="${PLAYWRIGHT_VERSION}"
 
 USER ci
 WORKDIR /workspace

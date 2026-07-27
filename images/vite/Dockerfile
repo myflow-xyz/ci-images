@@ -14,14 +14,6 @@ ARG VITE_TOOLS_BUNDLE_VERSION
 ARG VITE_VERSION
 ARG VITEST_VERSION
 
-LABEL org.opencontainers.image.created="${BUILD_CREATED}" \
-      org.opencontainers.image.description="MyFlow Vite CI job environment" \
-      org.opencontainers.image.licenses="AGPL-3.0-only" \
-      org.opencontainers.image.revision="${BUILD_REVISION}" \
-      org.opencontainers.image.source="https://github.com/myflow-xyz/ci-images" \
-      org.opencontainers.image.title="MyFlow Vite CI" \
-      org.myflow.ci.manifest-sha="${MANIFEST_SHA}"
-
 USER root
 
 COPY images/vite/npm/package.json images/vite/npm/package-lock.json \
@@ -66,6 +58,14 @@ RUN --mount=type=cache,target=/root/.npm \
         "../vite/${VITE_TOOLS_BUNDLE_VERSION}/node_modules/.bin/${command}" \
         "/opt/ci-tools/bin/${command}"; \
     done
+
+LABEL org.opencontainers.image.created="${BUILD_CREATED}" \
+      org.opencontainers.image.description="MyFlow Vite CI job environment" \
+      org.opencontainers.image.licenses="AGPL-3.0-only" \
+      org.opencontainers.image.revision="${BUILD_REVISION}" \
+      org.opencontainers.image.source="https://github.com/myflow-xyz/ci-images" \
+      org.opencontainers.image.title="MyFlow Vite CI" \
+      org.myflow.ci.manifest-sha="${MANIFEST_SHA}"
 
 USER ci
 WORKDIR /workspace
