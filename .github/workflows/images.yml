@@ -1,0 +1,304 @@
+name: CI images
+
+on:
+  pull_request:
+  push:
+    branches:
+      - develop
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-images-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  BUILDX_VERSION: v0.35.0
+  BUILDKIT_IMAGE: >-
+    docker.io/moby/buildkit@sha256:2f5adac4ecd194d9f8c10b7b5d7bceb5186853db1b26e5abd3a657af0b7e26ec
+  BINFMT_IMAGE: >-
+    docker.io/tonistiigi/binfmt@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
+  CI_IMAGES_SBOM_GENERATOR: >-
+    docker.io/docker/buildkit-syft-scanner@sha256:79e7b013cbec16bbb436f312819a49a4a57752b2270c1a9332ae1a10fcc82a68
+
+jobs:
+  contract:
+    name: Repository contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      publish_changed: ${{ steps.changes.outputs.publish_changed }}
+      smoke_changed: ${{ steps.changes.outputs.smoke_changed }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify static contracts
+        run: |
+          bash -n \
+            images/common/fetch-verified \
+            images/playwright/check-version \
+            tests/*.sh \
+            tests/smoke/*.sh \
+            .github/scripts/*.sh
+          shellcheck \
+            images/common/fetch-verified \
+            images/playwright/check-version \
+            tests/*.sh \
+            tests/smoke/*.sh \
+            .github/scripts/*.sh
+          tests/static.sh
+          git diff --check
+
+      - name: Verify documentation
+        run: |
+          npm ci \
+            --fund=false \
+            --ignore-scripts \
+            --no-audit \
+            --prefix images/base/npm
+          images/base/npm/node_modules/.bin/markdownlint-cli2 \
+            README.md \
+            "docs/**/*.md"
+
+      - name: Classify changes
+        id: changes
+        env:
+          BASE_SHA: >-
+            ${{ github.event_name == 'pull_request' &&
+                github.event.pull_request.base.sha ||
+                github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_SHA: >-
+            ${{ github.event_name == 'pull_request' &&
+                github.event.pull_request.head.sha ||
+                github.sha }}
+          REF_TYPE: ${{ github.ref_type }}
+        run: |
+          publish_changed=false
+          smoke_changed=false
+
+          if [[ $EVENT_NAME == workflow_dispatch || $REF_TYPE == tag ||
+                $BASE_SHA =~ ^0+$ ]]; then
+            publish_changed=true
+            smoke_changed=true
+          else
+            if [[ $EVENT_NAME == pull_request ]]; then
+              diff_range="${BASE_SHA}...${HEAD_SHA}"
+            else
+              diff_range="${BASE_SHA}..${HEAD_SHA}"
+            fi
+
+            if ! git diff --quiet "$diff_range" -- \
+              .dockerignore \
+              .github/scripts \
+              images \
+              manifests; then
+              publish_changed=true
+            fi
+
+            if [[ $publish_changed == true ]] ||
+              ! git diff --quiet "$diff_range" -- \
+                .github/scripts \
+                .github/workflows/images.yml \
+                tests; then
+              smoke_changed=true
+            fi
+          fi
+
+          printf 'publish_changed=%s\n' "$publish_changed" >>"$GITHUB_OUTPUT"
+          printf 'smoke_changed=%s\n' "$smoke_changed" >>"$GITHUB_OUTPUT"
+
+  smoke:
+    name: Smoke (${{ matrix.platform }})
+    if: needs.contract.outputs.smoke_changed == 'true'
+    needs: contract
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - name: Check out source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        with:
+          version: ${{ env.BUILDX_VERSION }}
+          driver-opts: image=${{ env.BUILDKIT_IMAGE }}
+
+      - name: Check Dockerfiles
+        run: tests/dockerfiles.sh
+
+      - name: Build native images
+        run: tests/build-local.sh all
+
+      - name: Run native image smoke tests
+        run: tests/smoke-local.sh all
+
+      - name: Run image-hosted policy checks
+        run: |
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/workspace:ro" \
+            ci-base:test \
+            shfmt -d \
+              images/common/fetch-verified \
+              images/playwright/check-version \
+              tests/*.sh \
+              tests/smoke/*.sh \
+              .github/scripts/*.sh
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/workspace:ro" \
+            ci-base:test \
+            markdownlint-cli2 README.md "docs/**/*.md"
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE:/workspace:ro" \
+            ci-base:test \
+            actionlint
+
+  publish:
+    name: Publish candidates
+    if: >-
+      always() &&
+      github.event_name != 'pull_request' &&
+      needs.contract.result == 'success' &&
+      needs.contract.outputs.publish_changed == 'true' &&
+      needs.smoke.result == 'success'
+    needs:
+      - contract
+      - smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      images: ${{ steps.publish.outputs.images }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+        with:
+          image: ${{ env.BINFMT_IMAGE }}
+          platforms: arm64
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        with:
+          version: ${{ env.BUILDX_VERSION }}
+          driver-opts: image=${{ env.BUILDKIT_IMAGE }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4.5.1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and publish candidate indexes
+        id: publish
+        env:
+          OUTPUT_FILE: ${{ runner.temp }}/published-images.json
+        run: |
+          .github/scripts/publish-images.sh "$OUTPUT_FILE"
+          images=$(jq --compact-output . "$OUTPUT_FILE")
+          printf 'images=%s\n' "$images" >>"$GITHUB_OUTPUT"
+
+  scan:
+    name: Scan ${{ matrix.image.name }} (${{ matrix.platform }})
+    if: needs.publish.result == 'success'
+    needs: publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJSON(needs.publish.outputs.images) }}
+        platform:
+          - linux/amd64
+          - linux/arm64
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4.5.1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Scan immutable image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+          TRIVY_PLATFORM: ${{ matrix.platform }}
+          TRIVY_USERNAME: ${{ github.actor }}
+        with:
+          image-ref: ${{ matrix.image.ref }}
+          version: v0.70.0
+          scanners: vuln
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: table
+          exit-code: "1"
+          timeout: 20m
+
+  promote:
+    name: Promote verified images
+    if: needs.scan.result == 'success'
+    needs:
+      - publish
+      - scan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        with:
+          version: ${{ env.BUILDX_VERSION }}
+          driver: docker
+
+      - name: Log in to GHCR
+        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4.5.1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Promote candidate digests
+        env:
+          PUBLISHED_IMAGES: ${{ needs.publish.outputs.images }}
+          PUBLISHED_IMAGES_FILE: ${{ runner.temp }}/published-images.json
+        run: |
+          printf '%s\n' "$PUBLISHED_IMAGES" >"$PUBLISHED_IMAGES_FILE"
+          .github/scripts/promote-images.sh "$PUBLISHED_IMAGES_FILE"
