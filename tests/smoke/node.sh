@@ -15,6 +15,7 @@ bundle_root="/opt/ci-tools/node/${expected_bundle}/node_modules"
 [[ $(node --print \
 	"require('${bundle_root}/@redocly/cli/package.json').version") == "$expected_redocly" ]]
 [[ $NPM_CONFIG_CACHE == /var/cache/npm ]]
+[[ -z ${PNPM_HOME+x} ]]
 
 for command in pnpm pnpx redocly; do
 	[[ $(command -v "$command") == "/opt/ci-tools/bin/${command}" ]]

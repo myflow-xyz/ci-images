@@ -18,16 +18,10 @@ immutable versioned directory. Stable command links are exposed through
 
 ## Runtime environment
 
-The effective environment is the [`ci-base` environment](base.md#runtime-environment)
-plus:
-
-```text
-PNPM_HOME=/home/ci/.local/share/pnpm
-```
-
-`PNPM_HOME` is the user-level pnpm home; image-managed commands remain in
-`/opt/ci-tools/bin`. The npm cache setting is inherited unchanged from
-`ci-base`.
+This image sets no additional runtime environment variables. It inherits the
+[`ci-base` environment](base.md#runtime-environment) unchanged. Image-managed
+pnpm commands remain in `/opt/ci-tools/bin`; the npm cache setting is inherited
+from `ci-base`.
 
 ## Dependency authority and caches
 
