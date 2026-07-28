@@ -65,7 +65,9 @@ inspect_optional_digest() {
 		printf '%s\n' "$digest"
 		return 0
 	fi
-	if grep -Eiq 'manifest unknown|name unknown|not found' "$error_file"; then
+	if grep -Eiq \
+		'manifest unknown|name unknown|404[[:space:]]+not found|ghcr\.io/myflow-xyz/ci-[a-z]+:v[0-9]+\.[0-9]+\.[0-9]+: not found' \
+		"$error_file"; then
 		return 1
 	fi
 

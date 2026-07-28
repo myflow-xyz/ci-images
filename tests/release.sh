@@ -127,6 +127,10 @@ if [[ ${1-} == buildx && ${2-} == imagetools &&
 			printf 'unauthorized\n' >&2
 			exit 1
 		fi
+		if [[ ${FAKE_VERSION_NETWORK_IMAGE:-} == "$name" ]]; then
+			printf 'lookup ghcr.io: host not found\n' >&2
+			exit 1
+		fi
 		if [[ ${FAKE_VERSION_CONFLICT_IMAGE:-} == "$name" ]]; then
 			printf 'sha256:%064d\n' 9
 			exit 0
@@ -256,6 +260,16 @@ fi
 grep -q 'unable to determine whether release tag exists' "$failure_output" ||
 	fail 'registry inspection diagnostic'
 assert_equal 0 "$(create_count)" 'registry inspection error promotions'
+
+reset_registry
+if FAKE_VERSION_NETWORK_IMAGE=base \
+	"$release_images" v0.1.0 "$output_file" \
+	>"$failure_output" 2>&1; then
+	fail 'network failure was treated as a missing tag'
+fi
+grep -q 'unable to determine whether release tag exists' "$failure_output" ||
+	fail 'network failure diagnostic'
+assert_equal 0 "$(create_count)" 'network failure promotions'
 
 reset_registry
 base_digest=$(docker buildx imagetools inspect \
