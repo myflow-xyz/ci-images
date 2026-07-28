@@ -81,6 +81,11 @@ management:
 Job images run as an unprivileged CI user. They contain no Docker socket,
 credentials, application source, generated output, or service state.
 
+Organization-managed commands are exposed through `/opt/ci-tools/bin`.
+Persistent reusable caches use image-specific directories below `/var/cache`;
+temporary build artifacts use `/var/tmp`. Language runtimes and service
+executables retain their standard upstream filesystem layouts.
+
 Writable dependency caches are external inputs. Consumers partition them by
 repository or equivalent trust domain, architecture, runtime version, and
 dependency lock hash. Jobs must retain a cache-bypass path because restored

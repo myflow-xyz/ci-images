@@ -17,6 +17,8 @@ expected_markdownlint=$EXPECTED_MARKDOWNLINT_VERSION
 [[ $HOME == /home/ci ]]
 [[ $(node --version) == "v${expected_node}" ]]
 [[ $(npm --version) == "$EXPECTED_NPM_VERSION" ]]
+[[ $NPM_CONFIG_CACHE == /var/cache/npm ]]
+[[ $TMPDIR == /var/tmp ]]
 
 for command in \
 	actionlint \
@@ -84,5 +86,11 @@ probe=/workspace/.ci-base-write-probe
 printf 'writable\n' >"$probe"
 rm -f "$probe"
 
-touch "$HOME/.write-probe" /cache/npm/.write-probe
-rm -f "$HOME/.write-probe" /cache/npm/.write-probe
+touch \
+	"$HOME/.write-probe" \
+	/var/cache/npm/.write-probe \
+	/var/tmp/.write-probe
+rm -f \
+	"$HOME/.write-probe" \
+	/var/cache/npm/.write-probe \
+	/var/tmp/.write-probe

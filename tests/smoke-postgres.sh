@@ -97,7 +97,7 @@ docker exec "$container_name" \
 	pg_dump \
 	--dbname "$database" \
 	--format custom \
-	--file /tmp/ci-smoke.dump \
+	--file /var/tmp/ci-smoke.dump \
 	--username "$database_user"
 docker exec "$container_name" \
 	createdb \
@@ -109,7 +109,7 @@ docker exec "$container_name" \
 	--dbname ci_smoke_restore \
 	--exit-on-error \
 	--username "$database_user" \
-	/tmp/ci-smoke.dump
+	/var/tmp/ci-smoke.dump
 
 restored_rows=$(
 	docker exec "$container_name" \

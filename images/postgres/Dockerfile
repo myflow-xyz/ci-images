@@ -43,21 +43,21 @@ RUN set -eu; \
     /usr/local/libexec/ci/fetch-verified \
       "https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz" \
       "${go_sha256}" \
-      /tmp/go.tar.gz; \
-    tar -xzf /tmp/go.tar.gz -C /usr/local; \
-    rm -f /tmp/go.tar.gz; \
+      /var/tmp/go.tar.gz; \
+    tar -xzf /var/tmp/go.tar.gz -C /usr/local; \
+    rm -f /var/tmp/go.tar.gz; \
     test "$(/usr/local/go/bin/go version | awk '{print $3}')" \
       = "go${GO_VERSION}"
 
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
+RUN --mount=type=cache,target=/var/cache/go/mod \
+    --mount=type=cache,target=/var/cache/go/build \
     set -eu; \
     install -d /out; \
     CGO_ENABLED=0 \
     GOBIN=/out \
-    GOCACHE=/root/.cache/go-build \
-    GOMODCACHE=/go/pkg/mod \
-    GOPATH=/go \
+    GOCACHE=/var/cache/go/build \
+    GOMODCACHE=/var/cache/go/mod \
+    GOPATH=/var/lib/go \
     GOTOOLCHAIN=local \
       /usr/local/go/bin/go install \
         -buildvcs=false \

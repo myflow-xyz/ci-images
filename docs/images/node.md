@@ -25,8 +25,8 @@ dependency before an image-global tool.
 The writable cache contract is:
 
 ```text
-npm cache=/cache/npm
-pnpm store=/cache/pnpm
+npm cache=/var/cache/npm
+pnpm store=/var/cache/pnpm
 ```
 
 The caches contain package content only. Do not persist `node_modules`, build

@@ -36,8 +36,8 @@ authoritative.
 The writable cache contract is:
 
 ```text
-GOMODCACHE=/cache/go/modules
-GOCACHE=/cache/go/build
+GOMODCACHE=/var/cache/go/mod
+GOCACHE=/var/cache/go/build
 ```
 
 Consumers partition both paths by repository, architecture, Go version, and

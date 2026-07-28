@@ -19,8 +19,8 @@ expected_govulncheck=$EXPECTED_GOVULNCHECK_VERSION
 
 [[ $(go version | awk '{print $3}') == "go${expected_go}" ]]
 [[ $GOTOOLCHAIN == local ]]
-[[ $GOMODCACHE == /cache/go/modules ]]
-[[ $GOCACHE == /cache/go/build ]]
+[[ $GOMODCACHE == /var/cache/go/mod ]]
+[[ $GOCACHE == /var/cache/go/build ]]
 command -v gcc >/dev/null
 
 for command in \
@@ -90,7 +90,7 @@ assert_dependency_version \
 	google.golang.org/grpc \
 	"$EXPECTED_GOOSE_GRPC_VERSION"
 
-smoke_directory=$(mktemp -d /workspace/go-race-smoke.XXXXXX)
+smoke_directory=$(mktemp -d /var/tmp/go-race-smoke.XXXXXX)
 trap 'rm -rf "$smoke_directory"' EXIT
 
 cat >"${smoke_directory}/go.mod" <<EOF

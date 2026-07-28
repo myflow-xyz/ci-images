@@ -43,21 +43,21 @@ RUN set -eu; \
     /usr/local/libexec/ci/fetch-verified \
       "https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz" \
       "${go_sha256}" \
-      /tmp/go.tar.gz; \
-    tar -xzf /tmp/go.tar.gz -C /usr/local; \
-    rm -f /tmp/go.tar.gz; \
+      /var/tmp/go.tar.gz; \
+    tar -xzf /var/tmp/go.tar.gz -C /usr/local; \
+    rm -f /var/tmp/go.tar.gz; \
     test "$(/usr/local/go/bin/go version | awk '{print $3}')" \
       = "go${GO_VERSION}"
 
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
+RUN --mount=type=cache,target=/var/cache/go/mod \
+    --mount=type=cache,target=/var/cache/go/build \
     set -eu; \
     build_tool() { \
       name=$1; \
       package=$2; \
       version=$3; \
       shift 3; \
-      build_directory="/tmp/build/${name}"; \
+      build_directory="/var/tmp/build/${name}"; \
       output_directory="/opt/ci-tools/${name}/${version#v}"; \
       install -d "${build_directory}" "${output_directory}"; \
       cd "${build_directory}"; \
@@ -73,9 +73,9 @@ RUN --mount=type=cache,target=/go/pkg/mod \
           "${package}"; \
     }; \
     export \
-      GOCACHE=/root/.cache/go-build \
-      GOMODCACHE=/go/pkg/mod \
-      GOPATH=/go \
+      GOCACHE=/var/cache/go/build \
+      GOMODCACHE=/var/cache/go/mod \
+      GOPATH=/var/lib/go \
       GOTOOLCHAIN=local; \
     build_tool \
       sqlc \
@@ -103,8 +103,8 @@ RUN --mount=type=cache,target=/go/pkg/mod \
       golang.org/x/vuln/cmd/govulncheck \
       "${GOVULNCHECK_VERSION}"
 
-ENV GOCACHE=/cache/go/build \
-    GOMODCACHE=/cache/go/modules \
+ENV GOCACHE=/var/cache/go/build \
+    GOMODCACHE=/var/cache/go/mod \
     GOPATH=/home/ci/go \
     GOTOOLCHAIN=local \
     PATH=/opt/ci-tools/bin:/usr/local/go/bin:/home/ci/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -126,9 +126,9 @@ RUN set -eu; \
       "../govulncheck/${GOVULNCHECK_VERSION#v}/govulncheck" \
       /opt/ci-tools/bin/govulncheck; \
     install -d -o ci -g ci \
-      /cache/go/build \
-      /cache/go/modules \
-      /home/ci/go/bin
+      /home/ci/go/bin \
+      /var/cache/go/build \
+      /var/cache/go/mod
 
 LABEL org.opencontainers.image.created="${BUILD_CREATED}" \
       org.opencontainers.image.description="MyFlow Go CI job environment" \

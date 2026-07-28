@@ -16,29 +16,29 @@ USER root
 COPY \
   images/playwright/npm/package.json \
   images/playwright/npm/package-lock.json \
-  /tmp/playwright-tools/
+  /var/tmp/playwright-tools/
 
 COPY images/playwright/check-version \
   /usr/local/libexec/ci/check-playwright-version
 
-RUN --mount=type=cache,target=/root/.npm \
+RUN --mount=type=cache,target=/var/cache/npm \
     set -eu; \
     test "$(node --print \
-      "require('/tmp/playwright-tools/package.json').dependencies['@playwright/test']")" \
+      "require('/var/tmp/playwright-tools/package.json').dependencies['@playwright/test']")" \
       = "${PLAYWRIGHT_VERSION}"; \
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
-      NPM_CONFIG_CACHE=/root/.npm npm ci \
+      NPM_CONFIG_CACHE=/var/cache/npm npm ci \
         --fund=false \
         --ignore-scripts \
         --no-audit \
         --omit=dev \
-        --prefix /tmp/playwright-tools; \
+        --prefix /var/tmp/playwright-tools; \
     test "$(node --print \
-      "require('/tmp/playwright-tools/node_modules/@playwright/test/package.json').version")" \
+      "require('/var/tmp/playwright-tools/node_modules/@playwright/test/package.json').version")" \
       = "${PLAYWRIGHT_VERSION}"; \
     install -d /opt/ci-tools/playwright; \
     mv \
-      /tmp/playwright-tools \
+      /var/tmp/playwright-tools \
       "/opt/ci-tools/playwright/${PLAYWRIGHT_VERSION}"; \
     chmod 0755 /usr/local/libexec/ci/check-playwright-version; \
     ln -s \

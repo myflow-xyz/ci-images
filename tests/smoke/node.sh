@@ -14,7 +14,7 @@ bundle_root="/opt/ci-tools/node/${expected_bundle}/node_modules"
 [[ $(pnpm --version) == "$expected_pnpm" ]]
 [[ $(node --print \
 	"require('${bundle_root}/@redocly/cli/package.json').version") == "$expected_redocly" ]]
-[[ $NPM_CONFIG_CACHE == /cache/npm ]]
+[[ $NPM_CONFIG_CACHE == /var/cache/npm ]]
 
 for command in pnpm pnpx redocly; do
 	[[ $(command -v "$command") == "/opt/ci-tools/bin/${command}" ]]
@@ -25,10 +25,10 @@ if command -v vite >/dev/null 2>&1; then
 	exit 1
 fi
 
-touch /cache/npm/.write-probe /cache/pnpm/.write-probe
-rm -f /cache/npm/.write-probe /cache/pnpm/.write-probe
+touch /var/cache/npm/.write-probe /var/cache/pnpm/.write-probe
+rm -f /var/cache/npm/.write-probe /var/cache/pnpm/.write-probe
 
-smoke_directory=$(mktemp -d /workspace/node-shadow-smoke.XXXXXX)
+smoke_directory=$(mktemp -d /var/tmp/node-shadow-smoke.XXXXXX)
 trap 'rm -rf "$smoke_directory"' EXIT
 mkdir -p "${smoke_directory}/node_modules/.bin"
 

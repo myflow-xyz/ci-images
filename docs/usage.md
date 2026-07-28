@@ -137,10 +137,10 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 The images define these writable container paths:
 
 ```text
-/cache/go/build
-/cache/go/modules
-/cache/npm
-/cache/pnpm
+/var/cache/go/build
+/var/cache/go/mod
+/var/cache/npm
+/var/cache/pnpm
 ```
 
 On GitHub-hosted runners, save and restore these paths with the repository's
@@ -157,6 +157,8 @@ A cache key includes:
 
 Never cache a repository workspace, `node_modules`, credentials, release
 artifacts, or PostgreSQL data. Every workflow must support an uncached rebuild.
+Temporary build artifacts belong below `/var/tmp` and are never restored as
+caches.
 
 ## Version compatibility
 

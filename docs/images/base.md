@@ -40,8 +40,8 @@ compiler is a build input and is not retained in this image.
 ## Runtime contract
 
 Ordinary commands run as the unprivileged `ci` user. The image provides writable
-home and temporary directories but does not assume that an arbitrary host bind
-mount is writable.
+home, cache directories below `/var/cache`, and `/var/tmp` for temporary build
+artifacts, but does not assume that an arbitrary host bind mount is writable.
 
 The image intentionally excludes:
 

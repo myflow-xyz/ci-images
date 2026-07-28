@@ -13,31 +13,31 @@ ARG REDOCLY_VERSION
 USER root
 
 COPY images/node/npm/package.json images/node/npm/package-lock.json \
-  /tmp/node-tools/
+  /var/tmp/node-tools/
 
-RUN --mount=type=cache,target=/root/.npm \
+RUN --mount=type=cache,target=/var/cache/npm \
     set -eu; \
     test "$(node --print \
-      "require('/tmp/node-tools/package.json').dependencies.pnpm")" \
+      "require('/var/tmp/node-tools/package.json').dependencies.pnpm")" \
       = "${PNPM_VERSION}"; \
     test "$(node --print \
-      "require('/tmp/node-tools/package.json').dependencies['@redocly/cli']")" \
+      "require('/var/tmp/node-tools/package.json').dependencies['@redocly/cli']")" \
       = "${REDOCLY_VERSION}"; \
-    NPM_CONFIG_CACHE=/root/.npm npm ci \
+    NPM_CONFIG_CACHE=/var/cache/npm npm ci \
       --fund=false \
       --ignore-scripts \
       --no-audit \
       --omit=dev \
-      --prefix /tmp/node-tools; \
+      --prefix /var/tmp/node-tools; \
     test "$(node --print \
-      "require('/tmp/node-tools/node_modules/pnpm/package.json').version")" \
+      "require('/var/tmp/node-tools/node_modules/pnpm/package.json').version")" \
       = "${PNPM_VERSION}"; \
     test "$(node --print \
-      "require('/tmp/node-tools/node_modules/@redocly/cli/package.json').version")" \
+      "require('/var/tmp/node-tools/node_modules/@redocly/cli/package.json').version")" \
       = "${REDOCLY_VERSION}"; \
     install -d /opt/ci-tools/node; \
     mv \
-      /tmp/node-tools \
+      /var/tmp/node-tools \
       "/opt/ci-tools/node/${NODE_TOOLS_BUNDLE_VERSION}"; \
     ln -s \
       "../node/${NODE_TOOLS_BUNDLE_VERSION}/node_modules/.bin/pnpm" \
@@ -49,14 +49,14 @@ RUN --mount=type=cache,target=/root/.npm \
       "../node/${NODE_TOOLS_BUNDLE_VERSION}/node_modules/.bin/redocly" \
       /opt/ci-tools/bin/redocly; \
     install -d -o ci -g ci \
-      /cache/npm \
-      /cache/pnpm \
-      /home/ci/.config/pnpm; \
-    printf 'store-dir=/cache/pnpm\n' \
+      /home/ci/.config/pnpm \
+      /var/cache/npm \
+      /var/cache/pnpm; \
+    printf 'store-dir=/var/cache/pnpm\n' \
       > /home/ci/.config/pnpm/rc; \
     chown ci:ci /home/ci/.config/pnpm/rc
 
-ENV NPM_CONFIG_CACHE=/cache/npm \
+ENV NPM_CONFIG_CACHE=/var/cache/npm \
     PNPM_HOME=/home/ci/.local/share/pnpm
 
 LABEL org.opencontainers.image.created="${BUILD_CREATED}" \
