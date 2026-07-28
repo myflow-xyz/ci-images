@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if [[ $# -ne 1 ]]; then
+	printf 'usage: %s <resolved-playwright-version>\n' "$0" >&2
+	exit 64
+fi
+
+actual_version=${1#v}
+expected_version=${PLAYWRIGHT_VERSION:?PLAYWRIGHT_VERSION is not set}
+
+if [[ $actual_version != "$expected_version" ]]; then
+	printf \
+		'Playwright version mismatch: repository=%s image=%s\n' \
+		"$actual_version" \
+		"$expected_version" \
+		>&2
+	exit 1
+fi

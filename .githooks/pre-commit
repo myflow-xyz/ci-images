@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+
+set -u
+
+git_hooks_home=${GIT_HOOKS_HOME:-${XDG_CONFIG_HOME:-$HOME/.config}/git-hooks}
+git_hooks_dispatcher=$git_hooks_home/lib/dispatcher/run-hook.sh
+
+if [ ! -x "$git_hooks_dispatcher" ]; then
+  printf 'pre-commit: warn: git-hooks runtime not installed; skipping checks\n' >&2
+  printf 'pre-commit: info: expected executable: %s; install the shared runtime before relying on git hooks\n' "$git_hooks_dispatcher" >&2
+  exit 0
+fi
+
+exec "$git_hooks_dispatcher" pre-commit "$@"

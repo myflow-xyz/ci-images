@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if [[ $# -ne 3 ]]; then
+	printf 'usage: %s <https-url> <sha256> <destination>\n' "$0" >&2
+	exit 64
+fi
+
+url=$1
+expected_sha256=${2,,}
+destination=$3
+
+if [[ $url != https://* ]]; then
+	printf 'refusing non-HTTPS download: %s\n' "$url" >&2
+	exit 65
+fi
+
+if [[ ! $expected_sha256 =~ ^[0-9a-f]{64}$ ]]; then
+	printf 'invalid SHA-256 value for %s\n' "$url" >&2
+	exit 65
+fi
+
+destination_directory=$(dirname "$destination")
+mkdir -p "$destination_directory"
+
+temporary_file=$(mktemp "${destination}.download.XXXXXX")
+trap 'rm -f "$temporary_file"' EXIT
+
+curl \
+	--fail \
+	--location \
+	--proto '=https' \
+	--retry 5 \
+	--retry-all-errors \
+	--show-error \
+	--silent \
+	--tlsv1.2 \
+	--output "$temporary_file" \
+	"$url"
+
+printf '%s  %s\n' "$expected_sha256" "$temporary_file" |
+	sha256sum --check --status --strict
+
+mv "$temporary_file" "$destination"
+trap - EXIT

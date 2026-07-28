@@ -1,0 +1,10 @@
+{
+  "name": "@myflow-xyz/ci-playwright-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Locked Playwright browser installer for MyFlow CI images",
+  "license": "AGPL-3.0-only",
+  "dependencies": {
+    "@playwright/test": "1.61.1"
+  }
+}

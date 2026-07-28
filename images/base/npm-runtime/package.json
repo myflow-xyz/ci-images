@@ -1,0 +1,11 @@
+{
+  "name": "@myflow-xyz/ci-base-npm-runtime",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Locked npm runtime for the MyFlow CI base image",
+  "license": "AGPL-3.0-only",
+  "dependencies": {
+    "brace-expansion": "5.0.8",
+    "npm": "12.0.1"
+  }
+}
