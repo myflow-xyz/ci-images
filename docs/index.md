@@ -86,6 +86,11 @@ Persistent reusable caches use image-specific directories below `/var/cache`;
 temporary build artifacts use `/var/tmp`. Language runtimes and service
 executables retain their standard upstream filesystem layouts.
 
+`ci-base` owns the environment shared by job images. Descendants inherit that
+environment and define only image-specific additions or overrides.
+`ci-postgres` is a separate lineage, so cross-lineage invariants such as the
+UTF-8 locale are defined explicitly there.
+
 Writable dependency caches are external inputs. Consumers partition them by
 repository or equivalent trust domain, architecture, runtime version, and
 dependency lock hash. Jobs must retain a cache-bypass path because restored

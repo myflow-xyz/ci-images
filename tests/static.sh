@@ -52,6 +52,11 @@ for relative_path in "${required_files[@]}"; do
 		fail "missing ${relative_path}"
 done
 
+for image_doc in "${repository_root}"/docs/images/*.md; do
+	grep --line-regexp '## Runtime environment' "$image_doc" >/dev/null ||
+		fail "missing runtime environment contract: ${image_doc#"$repository_root/"}"
+done
+
 jq --exit-status '
   .schema_version == 1 and
   .platforms == ["linux/amd64", "linux/arm64"] and

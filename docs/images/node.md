@@ -16,6 +16,19 @@ The Node tool dependency tree is installed from a committed npm lockfile into an
 immutable versioned directory. Stable command links are exposed through
 `/opt/ci-tools/bin`.
 
+## Runtime environment
+
+The effective environment is the [`ci-base` environment](base.md#runtime-environment)
+plus:
+
+```text
+PNPM_HOME=/home/ci/.local/share/pnpm
+```
+
+`PNPM_HOME` is the user-level pnpm home; image-managed commands remain in
+`/opt/ci-tools/bin`. The npm cache setting is inherited unchanged from
+`ci-base`.
+
 ## Dependency authority and caches
 
 Repository lockfiles remain authoritative. Application-owned binaries are run

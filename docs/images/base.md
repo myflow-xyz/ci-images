@@ -15,6 +15,22 @@ packages are resolved from a reviewed, Debian-signed snapshot. The slim parent
 omits CA certificates, so the snapshot bootstrap uses HTTP with apt's signature
 verification; CA certificates are installed before any HTTPS source download.
 
+## Runtime environment
+
+The image defines this repository-owned runtime environment:
+
+```text
+CI=true
+DEBIAN_FRONTEND=noninteractive
+HOME=/home/ci
+LANG=en_US.utf8
+LC_ALL=en_US.utf8
+NPM_CONFIG_CACHE=/var/cache/npm
+PATH=/opt/ci-tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+TMPDIR=/var/tmp
+TZ=UTC
+```
+
 ## Included tools
 
 The base image includes:

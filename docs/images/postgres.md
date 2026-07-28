@@ -28,6 +28,26 @@ over HTTPS. The image also replaces the upstream `gosu` executable with version
 in an immutable versioned directory and exposed through `/opt/ci-tools/bin`.
 Neither the Go compiler nor build sources are retained.
 
+## Runtime environment
+
+The effective runtime environment is:
+
+```text
+LANG=en_US.utf8
+LC_ALL=en_US.utf8
+PATH=/opt/ci-tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib/postgresql/18/bin
+PGDATA=/var/lib/postgresql/18/docker
+PG_MAJOR=18
+PGVECTOR_VERSION=0.8.2
+```
+
+This independent service lineage defines the same locale as `ci-base`, adds the
+`/opt/ci-tools/bin` prefix to the upstream `PATH`, preserves the upstream
+`PGDATA`, and exposes the service's PostgreSQL major and pgvector feature
+versions. Runtime values such as `POSTGRES_DB`, `POSTGRES_USER`, and
+`POSTGRES_PASSWORD` are consumer inputs to the preserved upstream entrypoint,
+not image defaults.
+
 ## Repository authority
 
 The image does not create application roles, schemas, extensions, credentials,
