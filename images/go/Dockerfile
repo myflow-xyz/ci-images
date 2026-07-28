@@ -103,11 +103,15 @@ RUN --mount=type=cache,target=/var/cache/go/mod \
       golang.org/x/vuln/cmd/govulncheck \
       "${GOVULNCHECK_VERSION}"
 
-ENV GOCACHE=/var/cache/go/build \
+ENV GOBIN=/opt/ci-tools/bin \
+    GOCACHE=/var/cache/go/build \
+    GOEXPERIMENT=jsonv2 \
     GOMODCACHE=/var/cache/go/mod \
-    GOPATH=/home/ci/go \
+    GOPATH=/var/lib/go \
+    GOROOT=/usr/local/go \
+    GOTMPDIR=/var/tmp/go \
     GOTOOLCHAIN=local \
-    PATH=/opt/ci-tools/bin:/usr/local/go/bin:/home/ci/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    PATH=/usr/local/go/bin:/opt/ci-tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 RUN set -eu; \
     ln -s \
@@ -126,9 +130,10 @@ RUN set -eu; \
       "../govulncheck/${GOVULNCHECK_VERSION#v}/govulncheck" \
       /opt/ci-tools/bin/govulncheck; \
     install -d -o ci -g ci \
-      /home/ci/go/bin \
       /var/cache/go/build \
-      /var/cache/go/mod
+      /var/cache/go/mod \
+      /var/lib/go \
+      /var/tmp/go
 
 LABEL org.opencontainers.image.created="${BUILD_CREATED}" \
       org.opencontainers.image.description="MyFlow Go CI job environment" \

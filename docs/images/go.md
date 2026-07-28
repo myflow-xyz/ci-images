@@ -8,7 +8,8 @@ generation, analysis, test, and release jobs.
 The initial image contract includes:
 
 - Go 1.26.5, installed from the official per-architecture archive after
-  SHA-256 verification, with `GOTOOLCHAIN=local`;
+  SHA-256 verification, with local toolchain selection and the JSON v2
+  experiment enabled;
 - a C compiler, libc development headers, and native build prerequisites for
   race-enabled tests;
 - Go's standard build, format, vet, test, and coverage commands;
@@ -27,21 +28,34 @@ vulnerability. The image smoke contract verifies those resolved module
 versions; an override is removed when the upstream tool release incorporates
 the fix.
 
+## Runtime environment
+
+The image adds this Go environment to the variables inherited from `ci-base`:
+
+```text
+GOBIN=/opt/ci-tools/bin
+GOCACHE=/var/cache/go/build
+GOEXPERIMENT=jsonv2
+GOMODCACHE=/var/cache/go/mod
+GOPATH=/var/lib/go
+GOROOT=/usr/local/go
+GOTMPDIR=/var/tmp/go
+GOTOOLCHAIN=local
+PATH=/usr/local/go/bin:/opt/ci-tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+```
+
+`GOBIN` identifies the image-global command location. It remains image-managed;
+ordinary jobs do not mutate the preinstalled tool set.
+
 ## Dependency authority and caches
 
 The image does not package reusable application libraries such as pgx, Cobra,
 or Goose libraries. Each repository's `go.mod` and `go.sum` remain
 authoritative.
 
-The writable cache contract is:
-
-```text
-GOMODCACHE=/var/cache/go/mod
-GOCACHE=/var/cache/go/build
-```
-
-Consumers partition both paths by repository, architecture, Go version, and
-`go.sum` hash. Jobs may bypass the caches without changing behavior.
+Consumers partition `GOMODCACHE` and `GOCACHE` by repository, architecture, Go
+version, and `go.sum` hash. Jobs may bypass the caches without changing
+behavior.
 
 ## Consumers
 
