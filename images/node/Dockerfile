@@ -56,8 +56,7 @@ RUN --mount=type=cache,target=/var/cache/npm \
       > /home/ci/.config/pnpm/rc; \
     chown ci:ci /home/ci/.config/pnpm/rc
 
-ENV NPM_CONFIG_CACHE=/var/cache/npm \
-    PNPM_HOME=/home/ci/.local/share/pnpm
+ENV PNPM_HOME=/home/ci/.local/share/pnpm
 
 LABEL org.opencontainers.image.created="${BUILD_CREATED}" \
       org.opencontainers.image.description="MyFlow generic Node CI job environment" \

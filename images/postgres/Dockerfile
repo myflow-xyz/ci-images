@@ -74,7 +74,9 @@ ARG MANIFEST_SHA=unknown
 ARG PGVECTOR_VERSION
 ARG POSTGRES_VERSION
 
-ENV PATH=/opt/ci-tools/bin:${PATH}
+ENV LANG=en_US.utf8 \
+    LC_ALL=en_US.utf8 \
+    PATH=/opt/ci-tools/bin:${PATH}
 
 RUN test -n "${DEBIAN_SNAPSHOT}" \
     && sed -ri \

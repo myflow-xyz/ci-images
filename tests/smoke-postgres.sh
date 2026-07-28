@@ -47,6 +47,9 @@ expected_pgvector=$(jq -r '.tools.postgres.pgvector' "$manifest")
 expected_gosu=$(jq -r '.tools.postgres.gosu.version' "$manifest")
 expected_go=$(jq -r '.tools.go.runtime' "$manifest")
 
+[[ $(docker exec "$container_name" printenv LANG) == en_US.utf8 ]]
+[[ $(docker exec "$container_name" printenv LC_ALL) == en_US.utf8 ]]
+[[ $(docker exec "$container_name" locale charmap) == UTF-8 ]]
 [[ $(docker exec "$container_name" gosu --version | awk '{print $1}') == "$expected_gosu" ]]
 [[ $(docker exec "$container_name" sh -c 'command -v gosu') == /opt/ci-tools/bin/gosu ]]
 [[ $(docker exec "$container_name" printenv PATH) == /opt/ci-tools/bin:* ]]

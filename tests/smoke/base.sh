@@ -15,10 +15,14 @@ expected_markdownlint=$EXPECTED_MARKDOWNLINT_VERSION
 
 [[ $(id -u) == "$expected_uid" ]]
 [[ $HOME == /home/ci ]]
+[[ $LANG == en_US.utf8 ]]
+[[ $LC_ALL == en_US.utf8 ]]
 [[ $(node --version) == "v${expected_node}" ]]
 [[ $(npm --version) == "$EXPECTED_NPM_VERSION" ]]
 [[ $NPM_CONFIG_CACHE == /var/cache/npm ]]
 [[ $TMPDIR == /var/tmp ]]
+[[ $(locale charmap) == UTF-8 ]]
+locale -a | grep --line-regexp en_US.utf8 >/dev/null
 
 for command in \
 	actionlint \

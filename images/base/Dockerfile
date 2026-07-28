@@ -133,8 +133,6 @@ ARG YQ_VERSION
 ENV CI=true \
     DEBIAN_FRONTEND=noninteractive \
     HOME=/home/ci \
-    LANG=C.UTF-8 \
-    LC_ALL=C.UTF-8 \
     NPM_CONFIG_CACHE=/var/cache/npm \
     PATH=/opt/ci-tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
     TMPDIR=/var/tmp \
@@ -168,6 +166,7 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
       grep \
       gzip \
       jq \
+      locales \
       make \
       openssl \
       procps \
@@ -180,8 +179,13 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
       wget \
       xz-utils \
       zip \
+    && sed -ri 's/^# (en_US.UTF-8 UTF-8)$/\1/' /etc/locale.gen \
+    && locale-gen \
     && rm -rf /var/lib/apt/lists/* \
     && chmod 0755 /usr/local/libexec/ci/fetch-verified
+
+ENV LANG=en_US.utf8 \
+    LC_ALL=en_US.utf8
 
 RUN test -n "${YARN_VERSION}" \
     && rm -rf "/opt/yarn-v${YARN_VERSION}" \
