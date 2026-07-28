@@ -4,6 +4,7 @@ set -euo pipefail
 
 repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 next_version="${repository_root}/.github/scripts/next-version.sh"
+promote_images="${repository_root}/.github/scripts/promote-images.sh"
 release_images="${repository_root}/.github/scripts/release-images.sh"
 
 fail() {
@@ -111,7 +112,7 @@ if [[ ${1-} == buildx && ${2-} == imagetools &&
 	tag=${reference##*:}
 	digest=$(digest_for_name "$name")
 
-	if [[ $tag == sha-* || $tag == latest ]]; then
+	if [[ $tag == candidate-* || $tag == sha-* || $tag == latest ]]; then
 		if [[ $tag == latest &&
 			${FAKE_LATEST_MISMATCH_IMAGE:-} == "$name" ]]; then
 			printf 'sha256:%064d\n' 9
@@ -141,11 +142,27 @@ fi
 
 if [[ ${1-} == buildx && ${2-} == imagetools &&
 	${3-} == create && ${4-} == --tag ]]; then
-	target=${5:?}
-	source=${6:?}
+	shift 3
+	declare -a targets
+	source=
+	while (($# > 0)); do
+		case "$1" in
+		--tag)
+			targets+=("${2:?}")
+			shift 2
+			;;
+		*)
+			source=$1
+			shift
+			;;
+		esac
+	done
+	[[ -n $source && ${#targets[@]} -gt 0 ]]
 	digest=${source##*@}
-	printf '%s\t%s\n' "$target" "$digest" >>"$state"
-	printf '%s\n' "$target" >>"$log"
+	for target in "${targets[@]}"; do
+		printf '%s\t%s\n' "$target" "$digest" >>"$state"
+		printf '%s\n' "$target" >>"$log"
+	done
 	exit 0
 fi
 
@@ -251,5 +268,57 @@ printf '%s\t%s\n' \
 "$release_images" v0.1.0 "$output_file"
 assert_equal 5 "$(create_count)" 'partial release retry promotions'
 assert_release_output
+
+published_images="${temporary_directory}/published-images.json"
+jq '
+	[
+		.[] |
+		{
+			name,
+			image,
+			digest,
+			ref: (.image + "@" + .digest)
+		}
+	]
+' "$output_file" >"$published_images"
+
+reset_registry
+GITHUB_EVENT_NAME=workflow_dispatch \
+	GITHUB_REF_NAME=main \
+	GITHUB_REF_TYPE=branch \
+	GITHUB_RUN_ATTEMPT=1 \
+	GITHUB_RUN_ID=123 \
+	"$promote_images" "$published_images"
+assert_equal 6 \
+	"$(grep -c ':run-123$' "$fake_log")" \
+	'manual publication aliases'
+if grep -Eq ':(edge|latest|v[0-9])' "$fake_log"; then
+	fail 'manual publication created a moving or stable alias'
+fi
+
+reset_registry
+GITHUB_EVENT_NAME=push \
+	GITHUB_REF_NAME=main \
+	GITHUB_REF_TYPE=branch \
+	GITHUB_RUN_ATTEMPT=1 \
+	GITHUB_RUN_ID=124 \
+	"$promote_images" "$published_images"
+assert_equal 6 \
+	"$(grep -c ':latest$' "$fake_log")" \
+	'main publication aliases'
+
+reset_registry
+if GITHUB_EVENT_NAME=push \
+	GITHUB_REF_NAME=v0.1.0 \
+	GITHUB_REF_TYPE=tag \
+	GITHUB_RUN_ATTEMPT=1 \
+	GITHUB_RUN_ID=125 \
+	"$promote_images" "$published_images" \
+	>"$failure_output" 2>&1; then
+	fail 'tag publication was accepted'
+fi
+grep -q 'no promotion policy' "$failure_output" ||
+	fail 'tag publication diagnostic'
+assert_equal 0 "$(create_count)" 'tag publication promotions'
 
 printf 'release verification passed\n'

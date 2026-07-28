@@ -1,0 +1,140 @@
+name: Release CI images
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Semantic version component to increment
+        required: true
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-images-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  BUILDX_VERSION: v0.35.0
+
+jobs:
+  release:
+    name: Release verified images
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Check out source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify current main revision
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [[ $GITHUB_REF_TYPE != branch || $GITHUB_REF_NAME != main ]]; then
+            printf 'releases must be dispatched from the main branch\n' >&2
+            exit 1
+          fi
+
+          main_revision=$(
+            gh api \
+              "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" \
+              --jq '.object.sha'
+          )
+          if [[ ! $main_revision =~ ^[0-9a-f]{40}$ ||
+                $main_revision != "$GITHUB_SHA" ]]; then
+            printf \
+              'selected revision is not current main: %s != %s\n' \
+              "$GITHUB_SHA" \
+              "$main_revision" \
+              >&2
+            exit 1
+          fi
+
+      - name: Calculate version
+        id: version
+        env:
+          BUMP: ${{ inputs.bump }}
+        run: |
+          version=$(.github/scripts/next-version.sh "$BUMP")
+          printf 'version=%s\n' "$version" >>"$GITHUB_OUTPUT"
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        with:
+          version: ${{ env.BUILDX_VERSION }}
+          driver: docker
+
+      - name: Log in to GHCR
+        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4.5.1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Promote verified digests
+        env:
+          OUTPUT_FILE: ${{ runner.temp }}/released-images.json
+          VERSION: ${{ steps.version.outputs.version }}
+        run: .github/scripts/release-images.sh "$VERSION" "$OUTPUT_FILE"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OUTPUT_FILE: ${{ runner.temp }}/released-images.json
+          RELEASE_NOTES: ${{ runner.temp }}/release-notes.md
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          {
+            printf \
+              'Verified CI image suite built from %s.\n\n' \
+              "$GITHUB_SHA"
+            printf '| Image | OCI index digest |\n'
+            printf '| --- | --- |\n'
+            jq -r \
+              '.[] | "| \(.release_ref) | \(.digest) |"' \
+              "$OUTPUT_FILE"
+            printf '\nConsumers should pin the recorded OCI index digest.\n'
+          } >"$RELEASE_NOTES"
+
+          release_url=$(
+            gh release create "$VERSION" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "$VERSION" \
+              --notes-file "$RELEASE_NOTES" \
+              --latest
+          )
+
+          tag_revision=$(
+            gh api \
+              "repos/${GITHUB_REPOSITORY}/git/ref/tags/${VERSION}" \
+              --jq '.object.sha'
+          )
+          if [[ $tag_revision != "$GITHUB_SHA" ]]; then
+            printf 'release tag has unexpected revision: %s\n' \
+              "$tag_revision" >&2
+            exit 1
+          fi
+
+          {
+            printf '## %s\n\n' "$VERSION"
+            printf 'Source revision: %s\n\n' "$GITHUB_SHA"
+            printf 'GitHub Release: %s\n\n' "$release_url"
+            printf '| Image | OCI index digest |\n'
+            printf '| --- | --- |\n'
+            jq -r \
+              '.[] | "| \(.release_ref) | \(.digest) |"' \
+              "$OUTPUT_FILE"
+          } >>"$GITHUB_STEP_SUMMARY"

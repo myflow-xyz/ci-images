@@ -23,6 +23,8 @@ command -v jq >/dev/null 2>&1 || fail 'jq is required'
 required_files=(
 	.github/scripts/next-version.sh
 	.github/scripts/release-images.sh
+	.github/workflows/images.yml
+	.github/workflows/release.yml
 	README.md
 	docs/index.md
 	docs/release.md

@@ -43,22 +43,12 @@ fi
 
 declare -a aliases
 
-if [[ $ref_type == branch && $ref_name == develop ]]; then
+if [[ $event_name == workflow_dispatch ]]; then
+	aliases=("run-${run_id}")
+elif [[ $ref_type == branch && $ref_name == develop ]]; then
 	aliases=(edge)
 elif [[ $ref_type == branch && $ref_name == main ]]; then
 	aliases=(latest)
-elif [[ $ref_type == tag ]]; then
-	if [[ ! $ref_name =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
-		printf 'release tag is not supported: %s\n' "$ref_name" >&2
-		exit 1
-	fi
-	if [[ $ref_name == *-* ]]; then
-		aliases=("$ref_name")
-	else
-		aliases=("$ref_name" latest)
-	fi
-elif [[ $event_name == workflow_dispatch ]]; then
-	aliases=("run-${run_id}")
 else
 	printf 'no promotion policy for %s ref %s\n' "$ref_type" "$ref_name" >&2
 	exit 1
