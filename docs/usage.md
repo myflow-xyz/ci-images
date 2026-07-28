@@ -25,6 +25,39 @@ security surface, and accidental tool coupling.
 Repository-specific dependencies, configuration, and migrations remain in the
 consumer repository rather than the shared images.
 
+## Pulling and pinning
+
+The current GHCR packages are private. For local access, authenticate with a
+personal access token (classic) that has `read:packages` and an account that can
+read the packages:
+
+```bash
+printf '%s\n' "$GHCR_TOKEN" |
+  docker login ghcr.io --username <github-user> --password-stdin
+```
+
+Use a stable version to discover the release digest:
+
+```bash
+docker buildx imagetools inspect ghcr.io/myflow-xyz/ci-go:v0.1.0
+```
+
+Compare the reported OCI index digest with the digest table in the matching
+GitHub Release. Then pull or configure the image by digest:
+
+```bash
+docker pull ghcr.io/myflow-xyz/ci-go@sha256:<digest>
+```
+
+The index digest selects AMD64 or ARM64 automatically. Use `vX.Y.Z` for stable
+release discovery, `latest` only to inspect the current verified `main` suite,
+and `edge` only for integration testing. Do not consume candidate or
+run-specific tags.
+
+For a private package in GitHub Actions, grant the consumer repository read
+access to each package, set `packages: read`, and authenticate with its
+`GITHUB_TOKEN`. Public packages can be pulled anonymously.
+
 ## Job-container example
 
 Always replace the digest placeholders with promoted OCI index digests.
@@ -62,11 +95,20 @@ it does not use `localhost` or publish a host port.
 jobs:
   integration:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     container:
       image: ghcr.io/myflow-xyz/ci-go@sha256:<digest>
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     services:
       postgres:
         image: ghcr.io/myflow-xyz/ci-postgres@sha256:<digest>
+        credentials:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
         env:
           POSTGRES_DB: app_test
           POSTGRES_USER: app
@@ -140,3 +182,11 @@ checkout, artifact staging, and cache writes on both AMD64 and ARM64.
 
 Do not solve an ownership mismatch by running ordinary jobs as root. Reconcile
 the runner and container numeric ownership contract instead.
+
+## References
+
+- [GitHub Container registry authentication and pulling][container-registry]
+- [GitHub Packages permissions][package-permissions]
+
+[container-registry]: https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry
+[package-permissions]: https://docs.github.com/en/packages/learn-github-packages/about-permissions-for-github-packages

@@ -110,8 +110,16 @@ Parent changes rebuild every descendant:
 4. `ci-playwright` consumes the resulting `ci-vite` digest.
 5. `ci-postgres` builds independently from its pgvector base.
 
-Publication produces immutable digests and descriptive tags. Tags are discovery
-aids; consumers use digests. A promoted digest must have:
+Publication produces immutable digests and descriptive tags. Verified
+`develop` pushes update `edge`; verified `main` pushes update `latest`. Manual
+image publications use a run-specific tag and never create a stable release.
+
+A separate manual release promotes the current verified `main` digests to one
+suite-wide `vX.Y.Z` version without rebuilding them. The operator selects a
+patch, minor, or major bump; the Git tag and GitHub Release are created only
+after all six registry tags are verified.
+
+Tags are discovery aids; consumers use digests. A promoted digest must have:
 
 - image-specific smoke results;
 - an SBOM and build provenance;
@@ -120,7 +128,8 @@ aids; consumers use digests. A promoted digest must have:
 - a retained previous digest for rollback.
 
 Read [the usage guide](usage.md) for job-container and service-container
-contracts.
+contracts. Read [the release guide](release.md) for version selection,
+promotion invariants, verification, and recovery.
 
 ## Scope boundaries
 
