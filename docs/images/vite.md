@@ -16,7 +16,11 @@ The initial compatibility bundle matches the PMem UI dependency graph:
 - Oxfmt 0.56.0.
 
 The bundle and its transitive dependencies are installed from a committed npm
-lockfile into an immutable versioned directory.
+lockfile into an immutable versioned directory. The platform-specific
+`tsgolint` executable is rebuilt from the exact upstream and TypeScript-Go
+commits recorded in the manifest with Go 1.26.5, then replaces the matching
+prebuilt executable from the npm package. The Go compiler and source trees are
+not retained in the runtime image.
 
 ## Repository-local execution
 

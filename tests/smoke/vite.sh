@@ -4,6 +4,7 @@ set -euo pipefail
 
 : "${EXPECTED_VITE_BUNDLE_VERSION:?EXPECTED_VITE_BUNDLE_VERSION is not set}"
 expected_bundle=$EXPECTED_VITE_BUNDLE_VERSION
+expected_go=${EXPECTED_TOOLCHAIN_GO_VERSION:?EXPECTED_TOOLCHAIN_GO_VERSION is not set}
 bundle_root="/opt/ci-tools/vite/${expected_bundle}/node_modules"
 
 assert_package_version() {
@@ -40,6 +41,20 @@ assert_package_version \
 for command in oxfmt oxlint tsc tsgolint tsserver vite vitest; do
 	command -v "$command" >/dev/null
 done
+
+tsgolint_binary=$(find \
+	"${bundle_root}/@oxlint-tsgolint" \
+	-mindepth 2 \
+	-maxdepth 2 \
+	-name tsgolint \
+	-type f)
+[[ -n $tsgolint_binary ]]
+grep \
+	--binary-files=text \
+	--fixed-strings \
+	"go${expected_go}" \
+	"$tsgolint_binary" \
+	>/dev/null
 
 smoke_directory=$(mktemp -d /workspace/vite-shadow-smoke.XXXXXX)
 trap 'rm -rf "$smoke_directory"' EXIT

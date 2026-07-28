@@ -187,31 +187,27 @@ publish_image base \
 	--build-arg \
 	"ACTIONLINT_VERSION=$(json '.tools.base.actionlint.version')" \
 	--build-arg \
-	"ACTIONLINT_SHA256_AMD64=$(json '.tools.base.actionlint.assets.amd64.sha256')" \
-	--build-arg \
-	"ACTIONLINT_SHA256_ARM64=$(json '.tools.base.actionlint.assets.arm64.sha256')" \
-	--build-arg \
 	"GITLEAKS_VERSION=$(json '.tools.base.gitleaks.version')" \
 	--build-arg \
-	"GITLEAKS_SHA256_AMD64=$(json '.tools.base.gitleaks.assets.amd64.sha256')" \
+	"GITLEAKS_X_CRYPTO_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["golang.org/x/crypto"]')" \
 	--build-arg \
-	"GITLEAKS_SHA256_ARM64=$(json '.tools.base.gitleaks.assets.arm64.sha256')" \
+	"GO_VERSION=$(json '.tools.go.runtime')" \
+	--build-arg \
+	"GO_SHA256_AMD64=$(json '.tools.go.assets.amd64.sha256')" \
+	--build-arg \
+	"GO_SHA256_ARM64=$(json '.tools.go.assets.arm64.sha256')" \
 	--build-arg \
 	"MARKDOWNLINT_CLI2_VERSION=$(json '.tools.base.markdownlint_cli2.version')" \
+	--build-arg \
+	"NPM_VERSION=$(json '.tools.base.npm.version')" \
+	--build-arg \
+	"NPM_BRACE_EXPANSION_VERSION=$(json '.tools.base.npm.dependency_replacements["brace-expansion"]')" \
 	--build-arg \
 	"SHELLSPEC_VERSION=$(json '.tools.base.shellspec.version')" \
 	--build-arg \
 	"SHELLSPEC_SHA256=$(json '.tools.base.shellspec.asset.sha256')" \
 	--build-arg "SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
-	--build-arg \
-	"SHFMT_SHA256_AMD64=$(json '.tools.base.shfmt.assets.amd64.sha256')" \
-	--build-arg \
-	"SHFMT_SHA256_ARM64=$(json '.tools.base.shfmt.assets.arm64.sha256')" \
-	--build-arg "YQ_VERSION=$(json '.tools.base.yq.version')" \
-	--build-arg \
-	"YQ_SHA256_AMD64=$(json '.tools.base.yq.assets.amd64.sha256')" \
-	--build-arg \
-	"YQ_SHA256_ARM64=$(json '.tools.base.yq.assets.arm64.sha256')"
+	--build-arg "YQ_VERSION=$(json '.tools.base.yq.version')"
 
 publish_image go \
 	--build-arg "BASE_IMAGE=${base_reference}" \
@@ -221,7 +217,17 @@ publish_image go \
 	--build-arg \
 	"GO_SHA256_ARM64=$(json '.tools.go.assets.arm64.sha256')" \
 	--build-arg "SQLC_VERSION=$(json '.tools.go.sqlc.version')" \
+	--build-arg \
+	"SQLC_X_NET_VERSION=$(json '.tools.go.sqlc.dependency_overrides["golang.org/x/net"]')" \
+	--build-arg \
+	"SQLC_GRPC_VERSION=$(json '.tools.go.sqlc.dependency_overrides["google.golang.org/grpc"]')" \
 	--build-arg "GOOSE_VERSION=$(json '.tools.go.goose.version')" \
+	--build-arg \
+	"GOOSE_X_CRYPTO_VERSION=$(json '.tools.go.goose.dependency_overrides["golang.org/x/crypto"]')" \
+	--build-arg \
+	"GOOSE_X_NET_VERSION=$(json '.tools.go.goose.dependency_overrides["golang.org/x/net"]')" \
+	--build-arg \
+	"GOOSE_GRPC_VERSION=$(json '.tools.go.goose.dependency_overrides["google.golang.org/grpc"]')" \
 	--build-arg \
 	"GOLANGCI_LINT_VERSION=$(json '.tools.go.golangci_lint.version')" \
 	--build-arg \
@@ -238,6 +244,11 @@ publish_image node \
 
 publish_image vite \
 	--build-arg "BASE_IMAGE=${node_reference}" \
+	--build-arg "GO_VERSION=$(json '.tools.go.runtime')" \
+	--build-arg \
+	"GO_SHA256_AMD64=$(json '.tools.go.assets.amd64.sha256')" \
+	--build-arg \
+	"GO_SHA256_ARM64=$(json '.tools.go.assets.arm64.sha256')" \
 	--build-arg \
 	"VITE_TOOLS_BUNDLE_VERSION=$(json '.tools.vite.bundle_version')" \
 	--build-arg \
@@ -247,6 +258,12 @@ publish_image vite \
 	--build-arg "OXLINT_VERSION=$(json '.tools.vite.oxlint')" \
 	--build-arg \
 	"OXLINT_TSGOLINT_VERSION=$(json '.tools.vite.oxlint_tsgolint')" \
+	--build-arg \
+	"OXLINT_TSGOLINT_SOURCE=$(json '.tools.vite.oxlint_tsgolint_source.repository')" \
+	--build-arg \
+	"OXLINT_TSGOLINT_COMMIT=$(json '.tools.vite.oxlint_tsgolint_source.commit')" \
+	--build-arg \
+	"TYPESCRIPT_GO_COMMIT=$(json '.tools.vite.oxlint_tsgolint_source.typescript_go_commit')" \
 	--build-arg "OXFMT_VERSION=$(json '.tools.vite.oxfmt')"
 
 publish_image playwright \
@@ -256,6 +273,16 @@ publish_image playwright \
 
 publish_image postgres \
 	--build-arg "PGVECTOR_IMAGE=${pgvector_image}" \
+	--build-arg "DEBIAN_SNAPSHOT=$(json '.debian_snapshot')" \
+	--build-arg "GO_VERSION=$(json '.tools.go.runtime')" \
+	--build-arg \
+	"GO_SHA256_AMD64=$(json '.tools.go.assets.amd64.sha256')" \
+	--build-arg \
+	"GO_SHA256_ARM64=$(json '.tools.go.assets.arm64.sha256')" \
+	--build-arg \
+	"GOSU_VERSION=$(json '.tools.postgres.gosu.version')" \
+	--build-arg \
+	"GOSU_COMMIT=$(json '.tools.postgres.gosu.commit')" \
 	--build-arg \
 	"PGVECTOR_VERSION=$(json '.tools.postgres.pgvector')" \
 	--build-arg \

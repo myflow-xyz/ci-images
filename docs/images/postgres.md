@@ -18,6 +18,15 @@ The image provides:
 It preserves the upstream PostgreSQL entrypoint, user, data-directory, and
 initialization behavior.
 
+The derived layer refreshes Debian packages from the same reviewed,
+Debian-signed snapshot as the job images while leaving the upstream PostgreSQL
+repository disabled during that refresh. The service base omits CA
+certificates, so the snapshot bootstrap uses HTTP with apt's signature
+verification; the isolated builder installs CA certificates before fetching Go
+over HTTPS. The image also replaces the upstream `gosu` executable with version
+1.19 built from its exact source commit using Go 1.26.5. Neither the Go compiler
+nor build sources are retained.
+
 ## Repository authority
 
 The image does not create application roles, schemas, extensions, credentials,

@@ -7,11 +7,13 @@ the shared layer inherited by language-specific images.
 ## Base and runtime
 
 The image starts from a digest-pinned
-`node:24.18.0-bookworm` OCI index. Node is present at this level because the
-shared Markdown policy uses `markdownlint-cli2`.
+`node:24.18.0-bookworm-slim` OCI index. Node is present at this level because
+the shared Markdown policy uses `markdownlint-cli2`.
 
 The environment is non-interactive, UTF-8, glibc-based Debian Bookworm. Debian
-packages are resolved from a reviewed snapshot.
+packages are resolved from a reviewed, Debian-signed snapshot. The slim parent
+omits CA certificates, so the snapshot bootstrap uses HTTP with apt's signature
+verification; CA certificates are installed before any HTTPS source download.
 
 ## Included tools
 
@@ -24,12 +26,16 @@ The base image includes:
 - structured-data and diagnosis tools: `jq`, `yq`, ripgrep, and GitHub CLI;
 - shared policy tools: gitleaks, actionlint, shfmt, ShellCheck, ShellSpec, and
   `markdownlint-cli2`;
-- Node.js 24.18.0 with npm and npx;
+- Node.js 24.18.0 with npm and npx from a locked npm 12.0.1 package;
 - `tini` for descendants that require subprocess reaping.
 
-`markdownlint-cli2` and its dependency tree are installed from a committed npm
-lockfile. Directly downloaded tools are installed into immutable versioned
-directories and exposed through stable links in `/opt/ci-tools/bin`.
+The npm runtime, its reviewed vulnerable-dependency replacement,
+`markdownlint-cli2`, and their dependency trees are installed from committed
+npm lockfiles. actionlint, gitleaks, shfmt, and yq are built from exact module
+releases with Go 1.26.5; the reviewed gitleaks dependency override is recorded
+in the version manifest. Tools are installed into immutable versioned
+directories and exposed through stable links in `/opt/ci-tools/bin`. The Go
+compiler is a build input and is not retained in this image.
 
 ## Runtime contract
 

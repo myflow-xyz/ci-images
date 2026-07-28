@@ -7,7 +7,7 @@ CI tasks that do not require the Vite frontend toolchain.
 
 The initial image contract includes:
 
-- Node.js 24.18.0, npm, and npx inherited from `ci-base`;
+- Node.js 24.18.0 with npm and npx 12.0.1 inherited from `ci-base`;
 - pnpm 11.15.1;
 - Redocly CLI 2.38.0 for OpenAPI validation;
 - explicit npm and pnpm cache paths.

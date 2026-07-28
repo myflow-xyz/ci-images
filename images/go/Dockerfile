@@ -8,12 +8,17 @@ ARG BUILD_REVISION=unknown
 ARG GOLANGCI_LINT_VERSION
 ARG GOIMPORTS_VERSION
 ARG GOOSE_VERSION
+ARG GOOSE_X_CRYPTO_VERSION
+ARG GOOSE_GRPC_VERSION
+ARG GOOSE_X_NET_VERSION
 ARG GOVULNCHECK_VERSION
 ARG GO_SHA256_AMD64
 ARG GO_SHA256_ARM64
 ARG GO_VERSION
 ARG MANIFEST_SHA=unknown
 ARG SQLC_VERSION
+ARG SQLC_GRPC_VERSION
+ARG SQLC_X_NET_VERSION
 ARG TARGETARCH
 
 USER root
@@ -47,39 +52,53 @@ RUN set -eu; \
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     set -eu; \
-    install_tool() { \
+    build_tool() { \
       name=$1; \
       package=$2; \
       version=$3; \
+      shift 3; \
+      build_directory="/tmp/build/${name}"; \
       output_directory="/opt/ci-tools/${name}/${version#v}"; \
-      install -d "${output_directory}"; \
-      CGO_ENABLED=0 \
-      GOBIN="${output_directory}" \
+      install -d "${build_directory}" "${output_directory}"; \
+      cd "${build_directory}"; \
+      /usr/local/go/bin/go mod init "ci.invalid/${name}"; \
+      /usr/local/go/bin/go get "${package}@${version}"; \
+      for dependency in "$@"; do \
+        /usr/local/go/bin/go get "${dependency}"; \
+      done; \
+      CGO_ENABLED=0 /usr/local/go/bin/go build \
+          -buildvcs=false \
+          -trimpath \
+          -o "${output_directory}/${name}" \
+          "${package}"; \
+    }; \
+    export \
       GOCACHE=/root/.cache/go-build \
       GOMODCACHE=/go/pkg/mod \
       GOPATH=/go \
-        /usr/local/go/bin/go install \
-          -buildvcs=false \
-          -trimpath \
-          "${package}@${version}"; \
-    }; \
-    install_tool \
+      GOTOOLCHAIN=local; \
+    build_tool \
       sqlc \
       github.com/sqlc-dev/sqlc/cmd/sqlc \
-      "${SQLC_VERSION}"; \
-    install_tool \
+      "${SQLC_VERSION}" \
+      "golang.org/x/net@${SQLC_X_NET_VERSION}" \
+      "google.golang.org/grpc@${SQLC_GRPC_VERSION}"; \
+    build_tool \
       goose \
       github.com/pressly/goose/v3/cmd/goose \
-      "${GOOSE_VERSION}"; \
-    install_tool \
+      "${GOOSE_VERSION}" \
+      "golang.org/x/crypto@${GOOSE_X_CRYPTO_VERSION}" \
+      "golang.org/x/net@${GOOSE_X_NET_VERSION}" \
+      "google.golang.org/grpc@${GOOSE_GRPC_VERSION}"; \
+    build_tool \
       golangci-lint \
       github.com/golangci/golangci-lint/v2/cmd/golangci-lint \
       "${GOLANGCI_LINT_VERSION}"; \
-    install_tool \
+    build_tool \
       goimports \
       golang.org/x/tools/cmd/goimports \
       "${GOIMPORTS_VERSION}"; \
-    install_tool \
+    build_tool \
       govulncheck \
       golang.org/x/vuln/cmd/govulncheck \
       "${GOVULNCHECK_VERSION}"

@@ -31,6 +31,8 @@ required_files=(
 	docs/images/playwright.md
 	docs/images/postgres.md
 	images/base/Dockerfile
+	images/base/npm-runtime/package.json
+	images/base/npm-runtime/package-lock.json
 	images/go/Dockerfile
 	images/node/Dockerfile
 	images/vite/Dockerfile
@@ -51,6 +53,8 @@ jq --exit-status '
   (.ci_user.uid | type == "number") and
   (.ci_user.gid | type == "number") and
   (.debian_snapshot | test("^[0-9]{8}T[0-9]{6}Z$")) and
+  (.upstream_images.node.reference |
+    endswith("node:24.18.0-bookworm-slim")) and
   ([.upstream_images[].digest |
     test("^sha256:[0-9a-f]{64}$")] | all) and
   ([.images[].name] | sort) == ([
@@ -67,6 +71,16 @@ jq --exit-status '
   .images.vite.parent == "images.node" and
   .images.playwright.parent == "images.vite" and
   .images.postgres.parent == "upstream_images.pgvector" and
+  (.tools.vite.oxlint_tsgolint_source.commit |
+    test("^[0-9a-f]{40}$")) and
+  (.tools.vite.oxlint_tsgolint_source.typescript_go_commit |
+    test("^[0-9a-f]{40}$")) and
+  (.tools.postgres.gosu.commit | test("^[0-9a-f]{40}$")) and
+  ([.tools.base.gitleaks.dependency_overrides[],
+    .tools.go.sqlc.dependency_overrides[],
+    .tools.go.goose.dependency_overrides[]] |
+    map(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$")) |
+    all) and
   ([.. | objects |
     select(has("url") or has("sha256")) |
     (.url | startswith("https://")) and
@@ -112,6 +126,14 @@ assert_package_version \
 	images/base/npm/package-lock.json \
 	markdownlint-cli2 \
 	"$(jq -r '.tools.base.markdownlint_cli2.version' "$manifest")"
+assert_package_version \
+	images/base/npm-runtime/package-lock.json \
+	npm \
+	"$(jq -r '.tools.base.npm.version' "$manifest")"
+assert_package_version \
+	images/base/npm-runtime/package-lock.json \
+	brace-expansion \
+	"$(jq -r '.tools.base.npm.dependency_replacements["brace-expansion"]' "$manifest")"
 assert_package_version \
 	images/node/npm/package-lock.json \
 	pnpm \

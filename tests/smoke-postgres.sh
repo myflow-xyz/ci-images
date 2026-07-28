@@ -44,6 +44,17 @@ done
 
 expected_postgres=$(jq -r '.tools.postgres.postgres' "$manifest")
 expected_pgvector=$(jq -r '.tools.postgres.pgvector' "$manifest")
+expected_gosu=$(jq -r '.tools.postgres.gosu.version' "$manifest")
+expected_go=$(jq -r '.tools.go.runtime' "$manifest")
+
+[[ $(docker exec "$container_name" gosu --version | awk '{print $1}') == "$expected_gosu" ]]
+docker exec "$container_name" \
+	grep \
+	--binary-files=text \
+	--fixed-strings \
+	"go${expected_go}" \
+	/usr/local/bin/gosu \
+	>/dev/null
 
 actual_postgres=$(
 	docker exec "$container_name" postgres --version |

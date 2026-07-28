@@ -5,12 +5,17 @@ set -euo pipefail
 expected_go=${EXPECTED_GO_VERSION:?EXPECTED_GO_VERSION is not set}
 expected_sqlc=${EXPECTED_SQLC_VERSION:?EXPECTED_SQLC_VERSION is not set}
 expected_goose=${EXPECTED_GOOSE_VERSION:?EXPECTED_GOOSE_VERSION is not set}
+: "${EXPECTED_GOOSE_GRPC_VERSION:?EXPECTED_GOOSE_GRPC_VERSION is not set}"
+: "${EXPECTED_GOOSE_X_CRYPTO_VERSION:?EXPECTED_GOOSE_X_CRYPTO_VERSION is not set}"
+: "${EXPECTED_GOOSE_X_NET_VERSION:?EXPECTED_GOOSE_X_NET_VERSION is not set}"
 : "${EXPECTED_GOLANGCI_LINT_VERSION:?EXPECTED_GOLANGCI_LINT_VERSION is not set}"
 : "${EXPECTED_GOIMPORTS_VERSION:?EXPECTED_GOIMPORTS_VERSION is not set}"
 : "${EXPECTED_GOVULNCHECK_VERSION:?EXPECTED_GOVULNCHECK_VERSION is not set}"
 expected_golangci=$EXPECTED_GOLANGCI_LINT_VERSION
 expected_goimports=$EXPECTED_GOIMPORTS_VERSION
 expected_govulncheck=$EXPECTED_GOVULNCHECK_VERSION
+: "${EXPECTED_SQLC_X_NET_VERSION:?EXPECTED_SQLC_X_NET_VERSION is not set}"
+: "${EXPECTED_SQLC_GRPC_VERSION:?EXPECTED_SQLC_GRPC_VERSION is not set}"
 
 [[ $(go version | awk '{print $3}') == "go${expected_go}" ]]
 [[ $GOTOOLCHAIN == local ]]
@@ -46,6 +51,35 @@ assert_module_version \
 	govulncheck \
 	golang.org/x/vuln \
 	"$expected_govulncheck"
+
+assert_dependency_version() {
+	local command=$1
+	local module=$2
+	local version=$3
+	go version -m "$(command -v "$command")" |
+		grep -F $'\tdep\t'"${module}"$'\t'"${version}" >/dev/null
+}
+
+assert_dependency_version \
+	sqlc \
+	golang.org/x/net \
+	"$EXPECTED_SQLC_X_NET_VERSION"
+assert_dependency_version \
+	sqlc \
+	google.golang.org/grpc \
+	"$EXPECTED_SQLC_GRPC_VERSION"
+assert_dependency_version \
+	goose \
+	golang.org/x/crypto \
+	"$EXPECTED_GOOSE_X_CRYPTO_VERSION"
+assert_dependency_version \
+	goose \
+	golang.org/x/net \
+	"$EXPECTED_GOOSE_X_NET_VERSION"
+assert_dependency_version \
+	goose \
+	google.golang.org/grpc \
+	"$EXPECTED_GOOSE_GRPC_VERSION"
 
 smoke_directory=$(mktemp -d /workspace/go-race-smoke.XXXXXX)
 trap 'rm -rf "$smoke_directory"' EXIT

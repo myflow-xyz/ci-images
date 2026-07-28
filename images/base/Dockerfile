@@ -1,29 +1,133 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 
 ARG BASE_IMAGE
+FROM ${BASE_IMAGE} AS base-go-tools
+
+ARG ACTIONLINT_VERSION
+ARG DEBIAN_SNAPSHOT
+ARG GITLEAKS_VERSION
+ARG GITLEAKS_X_CRYPTO_VERSION
+ARG GO_SHA256_AMD64
+ARG GO_SHA256_ARM64
+ARG GO_VERSION
+ARG SHFMT_VERSION
+ARG TARGETARCH
+ARG YQ_VERSION
+
+USER root
+
+COPY images/common/fetch-verified /usr/local/libexec/ci/fetch-verified
+
+RUN test -n "${DEBIAN_SNAPSHOT}" \
+    && sed -ri \
+      "s|URIs: http://deb.debian.org/debian$|URIs: http://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}/|" \
+      /etc/apt/sources.list.d/debian.sources \
+    && sed -ri \
+      "s|URIs: http://deb.debian.org/debian-security$|URIs: http://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT}/|" \
+      /etc/apt/sources.list.d/debian.sources \
+    && printf '%s\n' \
+      'Acquire::Check-Valid-Until "false";' \
+      'Acquire::Retries "5";' \
+      > /etc/apt/apt.conf.d/99-ci-snapshot \
+    && apt-get update \
+    && apt-get install --yes --no-install-recommends \
+      ca-certificates \
+      curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && chmod 0755 /usr/local/libexec/ci/fetch-verified
+
+RUN set -eu; \
+    case "${TARGETARCH}" in \
+      amd64) go_sha256="${GO_SHA256_AMD64}" ;; \
+      arm64) go_sha256="${GO_SHA256_ARM64}" ;; \
+      *) \
+        printf 'unsupported target architecture: %s\n' "${TARGETARCH}" >&2; \
+        exit 1 \
+        ;; \
+    esac; \
+    /usr/local/libexec/ci/fetch-verified \
+      "https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz" \
+      "${go_sha256}" \
+      /tmp/go.tar.gz; \
+    tar -xzf /tmp/go.tar.gz -C /usr/local; \
+    rm -f /tmp/go.tar.gz; \
+    test "$(/usr/local/go/bin/go version | awk '{print $3}')" \
+      = "go${GO_VERSION}"
+
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    set -eu; \
+    build_tool() { \
+      name=$1; \
+      package=$2; \
+      version=$3; \
+      shift 3; \
+      build_directory="/tmp/build/${name}"; \
+      output_directory="/out/${name}/${version#v}"; \
+      install -d "${build_directory}" "${output_directory}"; \
+      cd "${build_directory}"; \
+      /usr/local/go/bin/go mod init "ci.invalid/${name}"; \
+      /usr/local/go/bin/go get "${package}@${version}"; \
+      for dependency in "$@"; do \
+        /usr/local/go/bin/go get "${dependency}"; \
+      done; \
+      if [ "${name}" = gitleaks ]; then \
+        CGO_ENABLED=0 /usr/local/go/bin/go build \
+          -buildvcs=false \
+          -ldflags \
+          "-s -w -X=github.com/zricethezav/gitleaks/v8/version.Version=${GITLEAKS_VERSION}" \
+          -trimpath \
+          -o "${output_directory}/${name}" \
+          "${package}"; \
+      else \
+        CGO_ENABLED=0 /usr/local/go/bin/go build \
+          -buildvcs=false \
+          -trimpath \
+          -o "${output_directory}/${name}" \
+          "${package}"; \
+      fi; \
+    }; \
+    export \
+      GOCACHE=/root/.cache/go-build \
+      GOMODCACHE=/go/pkg/mod \
+      GOPATH=/go \
+      GOTOOLCHAIN=local; \
+    build_tool \
+      actionlint \
+      github.com/rhysd/actionlint/cmd/actionlint \
+      "v${ACTIONLINT_VERSION}"; \
+    build_tool \
+      gitleaks \
+      github.com/zricethezav/gitleaks/v8 \
+      "v${GITLEAKS_VERSION}" \
+      "golang.org/x/crypto@${GITLEAKS_X_CRYPTO_VERSION}"; \
+    build_tool \
+      shfmt \
+      mvdan.cc/sh/v3/cmd/shfmt \
+      "v${SHFMT_VERSION}"; \
+    build_tool \
+      yq \
+      github.com/mikefarah/yq/v4 \
+      "v${YQ_VERSION}"
+
 FROM ${BASE_IMAGE}
 
-ARG ACTIONLINT_SHA256_AMD64
-ARG ACTIONLINT_SHA256_ARM64
+USER root
+
 ARG ACTIONLINT_VERSION
 ARG BUILD_CREATED=unknown
 ARG BUILD_REVISION=unknown
 ARG CI_GID=1001
 ARG CI_UID=1001
 ARG DEBIAN_SNAPSHOT
-ARG GITLEAKS_SHA256_AMD64
-ARG GITLEAKS_SHA256_ARM64
 ARG GITLEAKS_VERSION
 ARG MANIFEST_SHA=unknown
 ARG MARKDOWNLINT_CLI2_VERSION
+ARG NPM_BRACE_EXPANSION_VERSION
+ARG NPM_VERSION
 ARG SHELLSPEC_SHA256
 ARG SHELLSPEC_VERSION
-ARG SHFMT_SHA256_AMD64
-ARG SHFMT_SHA256_ARM64
 ARG SHFMT_VERSION
-ARG TARGETARCH
-ARG YQ_SHA256_AMD64
-ARG YQ_SHA256_ARM64
 ARG YQ_VERSION
 
 ENV CI=true \
@@ -40,16 +144,17 @@ COPY images/common/fetch-verified /usr/local/libexec/ci/fetch-verified
 
 RUN test -n "${DEBIAN_SNAPSHOT}" \
     && sed -ri \
-      "s|URIs: http://deb.debian.org/debian$|URIs: https://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}/|" \
+      "s|URIs: http://deb.debian.org/debian$|URIs: http://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}/|" \
       /etc/apt/sources.list.d/debian.sources \
     && sed -ri \
-      "s|URIs: http://deb.debian.org/debian-security$|URIs: https://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT}/|" \
+      "s|URIs: http://deb.debian.org/debian-security$|URIs: http://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT}/|" \
       /etc/apt/sources.list.d/debian.sources \
     && printf '%s\n' \
       'Acquire::Check-Valid-Until "false";' \
       'Acquire::Retries "5";' \
       > /etc/apt/apt.conf.d/99-ci-snapshot \
     && apt-get update \
+    && apt-get upgrade --yes --no-install-recommends \
     && apt-get install --yes --no-install-recommends \
       bash \
       ca-certificates \
@@ -78,66 +183,10 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
     && rm -rf /var/lib/apt/lists/* \
     && chmod 0755 /usr/local/libexec/ci/fetch-verified
 
+COPY --from=base-go-tools /out/ /opt/ci-tools/
+
 RUN set -eu; \
-    case "${TARGETARCH}" in \
-      amd64) \
-        actionlint_arch=amd64; \
-        actionlint_sha="${ACTIONLINT_SHA256_AMD64}"; \
-        gitleaks_arch=x64; \
-        gitleaks_sha="${GITLEAKS_SHA256_AMD64}"; \
-        shfmt_arch=amd64; \
-        shfmt_sha="${SHFMT_SHA256_AMD64}"; \
-        yq_arch=amd64; \
-        yq_sha="${YQ_SHA256_AMD64}" \
-        ;; \
-      arm64) \
-        actionlint_arch=arm64; \
-        actionlint_sha="${ACTIONLINT_SHA256_ARM64}"; \
-        gitleaks_arch=arm64; \
-        gitleaks_sha="${GITLEAKS_SHA256_ARM64}"; \
-        shfmt_arch=arm64; \
-        shfmt_sha="${SHFMT_SHA256_ARM64}"; \
-        yq_arch=arm64; \
-        yq_sha="${YQ_SHA256_ARM64}" \
-        ;; \
-      *) \
-        printf 'unsupported target architecture: %s\n' "${TARGETARCH}" >&2; \
-        exit 1 \
-        ;; \
-    esac; \
-    install -d \
-      /opt/ci-tools/bin \
-      "/opt/ci-tools/actionlint/${ACTIONLINT_VERSION}" \
-      "/opt/ci-tools/gitleaks/${GITLEAKS_VERSION}" \
-      "/opt/ci-tools/shfmt/${SHFMT_VERSION}" \
-      "/opt/ci-tools/yq/${YQ_VERSION}"; \
-    /usr/local/libexec/ci/fetch-verified \
-      "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${yq_arch}" \
-      "${yq_sha}" \
-      "/opt/ci-tools/yq/${YQ_VERSION}/yq"; \
-    /usr/local/libexec/ci/fetch-verified \
-      "https://github.com/mvdan/sh/releases/download/v${SHFMT_VERSION}/shfmt_v${SHFMT_VERSION}_linux_${shfmt_arch}" \
-      "${shfmt_sha}" \
-      "/opt/ci-tools/shfmt/${SHFMT_VERSION}/shfmt"; \
-    /usr/local/libexec/ci/fetch-verified \
-      "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_${actionlint_arch}.tar.gz" \
-      "${actionlint_sha}" \
-      /tmp/actionlint.tar.gz; \
-    tar -xzf /tmp/actionlint.tar.gz \
-      -C "/opt/ci-tools/actionlint/${ACTIONLINT_VERSION}" \
-      actionlint; \
-    /usr/local/libexec/ci/fetch-verified \
-      "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${gitleaks_arch}.tar.gz" \
-      "${gitleaks_sha}" \
-      /tmp/gitleaks.tar.gz; \
-    tar -xzf /tmp/gitleaks.tar.gz \
-      -C "/opt/ci-tools/gitleaks/${GITLEAKS_VERSION}" \
-      gitleaks; \
-    chmod 0755 \
-      "/opt/ci-tools/actionlint/${ACTIONLINT_VERSION}/actionlint" \
-      "/opt/ci-tools/gitleaks/${GITLEAKS_VERSION}/gitleaks" \
-      "/opt/ci-tools/shfmt/${SHFMT_VERSION}/shfmt" \
-      "/opt/ci-tools/yq/${YQ_VERSION}/yq"; \
+    install -d /opt/ci-tools/bin; \
     ln -s \
       "../actionlint/${ACTIONLINT_VERSION}/actionlint" \
       /opt/ci-tools/bin/actionlint; \
@@ -149,8 +198,7 @@ RUN set -eu; \
       /opt/ci-tools/bin/shfmt; \
     ln -s \
       "../yq/${YQ_VERSION}/yq" \
-      /opt/ci-tools/bin/yq; \
-    rm -f /tmp/actionlint.tar.gz /tmp/gitleaks.tar.gz
+      /opt/ci-tools/bin/yq
 
 RUN set -eu; \
     install -d "/opt/ci-tools/shellspec/${SHELLSPEC_VERSION}"; \
@@ -165,6 +213,42 @@ RUN set -eu; \
       "../shellspec/${SHELLSPEC_VERSION}/shellspec" \
       /opt/ci-tools/bin/shellspec; \
     rm -f /tmp/shellspec.tar.gz
+
+COPY images/base/npm-runtime/package.json \
+  images/base/npm-runtime/package-lock.json \
+  /tmp/npm-runtime/
+
+RUN --mount=type=cache,target=/root/.npm \
+    set -eu; \
+    test "$(node --print \
+      "require('/tmp/npm-runtime/package.json').dependencies.npm")" \
+      = "${NPM_VERSION}"; \
+    NPM_CONFIG_CACHE=/root/.npm npm ci \
+      --fund=false \
+      --ignore-scripts \
+      --no-audit \
+      --omit=dev \
+      --prefix /tmp/npm-runtime; \
+    test "$(node --print \
+      "require('/tmp/npm-runtime/node_modules/npm/package.json').version")" \
+      = "${NPM_VERSION}"; \
+    test "$(node --print \
+      "require('/tmp/npm-runtime/node_modules/brace-expansion/package.json').version")" \
+      = "${NPM_BRACE_EXPANSION_VERSION}"; \
+    rm -rf \
+      /tmp/npm-runtime/node_modules/npm/node_modules/brace-expansion; \
+    mv \
+      /tmp/npm-runtime/node_modules/brace-expansion \
+      /tmp/npm-runtime/node_modules/npm/node_modules/brace-expansion; \
+    rm -rf /usr/local/lib/node_modules/npm; \
+    mv /tmp/npm-runtime/node_modules/npm /usr/local/lib/node_modules/npm; \
+    ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm; \
+    ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx; \
+    rm -rf /tmp/npm-runtime; \
+    test "$(npm --version)" = "${NPM_VERSION}"; \
+    test "$(node --print \
+      "require('/usr/local/lib/node_modules/npm/node_modules/brace-expansion/package.json').version")" \
+      = "${NPM_BRACE_EXPANSION_VERSION}"
 
 COPY images/base/npm/package.json images/base/npm/package-lock.json \
   /tmp/markdownlint-tools/

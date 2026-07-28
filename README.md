@@ -7,7 +7,7 @@ without making them authoritative for application dependencies.
 ## Image hierarchy
 
 ```text
-node:24.18.0-bookworm@<digest>
+node:24.18.0-bookworm-slim@<digest>
 └── ci-base
     ├── ci-go
     └── ci-node
@@ -44,7 +44,7 @@ job image.
 │   ├── index.md      # architecture and design boundaries
 │   └── usage.md      # consumer workflow guidance
 ├── images/           # Dockerfiles and immutable installation inputs
-├── manifests/        # reviewed versions, digests, and direct-download checksums
+├── manifests/        # reviewed versions, digests, source pins, and checksums
 ├── tests/            # static contracts and image smoke tests
 └── .github/
     └── workflows/    # verification and GHCR publication
@@ -57,8 +57,9 @@ Start with [the design overview](docs/index.md), then use
 
 - Application lockfiles and Go modules remain authoritative.
 - Published images and upstream base images are consumed by immutable digest.
-- Direct downloads are checksum-verified; npm and Go dependency graphs are
-  locked with their native lock data.
+- Direct downloads are checksum-verified. npm dependency graphs use committed
+  lockfiles, and Go executables are built from exact module versions or source
+  commits with reviewed security overrides.
 - Images contain no application source, credentials, generated output, or
   mutable service data.
 - Job images run as a non-root user and do not imply Docker daemon access.
