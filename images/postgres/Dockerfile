@@ -76,7 +76,9 @@ ARG POSTGRES_VERSION
 
 ENV LANG=en_US.utf8 \
     LC_ALL=en_US.utf8 \
-    PATH=/opt/ci-tools/bin:${PATH}
+    PATH=/opt/ci-tools/bin:${PATH} \
+    PG_MAJOR=${POSTGRES_VERSION} \
+    PGVECTOR_VERSION=${PGVECTOR_VERSION}
 
 RUN test -n "${DEBIAN_SNAPSHOT}" \
     && sed -ri \
