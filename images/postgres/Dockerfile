@@ -74,6 +74,8 @@ ARG MANIFEST_SHA=unknown
 ARG PGVECTOR_VERSION
 ARG POSTGRES_VERSION
 
+ENV PATH=/opt/ci-tools/bin:${PATH}
+
 RUN test -n "${DEBIAN_SNAPSHOT}" \
     && sed -ri \
       "s|URIs: http://deb.debian.org/debian$|URIs: http://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}/|" \
@@ -91,9 +93,16 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
     && rm -rf /var/lib/apt/lists/* \
     && sed -ri 's|^# deb |deb |' /etc/apt/sources.list.d/pgdg.list
 
-COPY --from=gosu-builder /out/gosu /usr/local/bin/gosu
+COPY --from=gosu-builder \
+  /out/gosu \
+  /opt/ci-tools/gosu/${GOSU_VERSION}/gosu
 
-RUN test "$(gosu --version | awk '{print $1}')" = "${GOSU_VERSION}"
+RUN set -eu; \
+    install -d /opt/ci-tools/bin; \
+    ln -s \
+      "../gosu/${GOSU_VERSION}/gosu" \
+      /opt/ci-tools/bin/gosu; \
+    test "$(gosu --version | awk '{print $1}')" = "${GOSU_VERSION}"
 
 LABEL org.opencontainers.image.created="${BUILD_CREATED}" \
       org.opencontainers.image.description="MyFlow PostgreSQL CI service with pgvector" \

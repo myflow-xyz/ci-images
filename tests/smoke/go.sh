@@ -23,6 +23,15 @@ expected_govulncheck=$EXPECTED_GOVULNCHECK_VERSION
 [[ $GOCACHE == /cache/go/build ]]
 command -v gcc >/dev/null
 
+for command in \
+	goimports \
+	golangci-lint \
+	goose \
+	govulncheck \
+	sqlc; do
+	[[ $(command -v "$command") == "/opt/ci-tools/bin/${command}" ]]
+done
+
 assert_module_version() {
 	local command=$1
 	local module=$2

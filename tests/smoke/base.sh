@@ -55,6 +55,26 @@ for command in actionlint gitleaks shfmt yq; do
 		>/dev/null
 done
 
+for command in \
+	actionlint \
+	gitleaks \
+	markdownlint-cli2 \
+	npm \
+	npx \
+	shellspec \
+	shfmt \
+	yq; do
+	[[ $(command -v "$command") == "/opt/ci-tools/bin/${command}" ]]
+done
+
+for command in yarn yarnpkg; do
+	if command -v "$command" >/dev/null 2>&1; then
+		printf 'unsupported command is present: %s\n' "$command" >&2
+		exit 1
+	fi
+done
+[[ ! -e "/opt/yarn-v${YARN_VERSION}" ]]
+
 if command -v docker >/dev/null 2>&1; then
 	printf 'Docker CLI must not be present in a job image\n' >&2
 	exit 1

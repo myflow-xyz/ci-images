@@ -11,6 +11,7 @@ The initial image contract includes:
 - Chromium installed for that exact Playwright release;
 - compatible Debian Bookworm browser libraries;
 - a fixed browser path readable by the unprivileged CI user;
+- stable `playwright` and version-check command links in `/opt/ci-tools/bin`;
 - `tini` as the container entrypoint for browser subprocess cleanup.
 
 The repository still installs its lockfile-managed Playwright package. The

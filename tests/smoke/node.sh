@@ -16,6 +16,10 @@ bundle_root="/opt/ci-tools/node/${expected_bundle}/node_modules"
 	"require('${bundle_root}/@redocly/cli/package.json').version") == "$expected_redocly" ]]
 [[ $NPM_CONFIG_CACHE == /cache/npm ]]
 
+for command in pnpm pnpx redocly; do
+	[[ $(command -v "$command") == "/opt/ci-tools/bin/${command}" ]]
+done
+
 if command -v vite >/dev/null 2>&1; then
 	printf 'ci-node must not expose the Vite toolchain\n' >&2
 	exit 1

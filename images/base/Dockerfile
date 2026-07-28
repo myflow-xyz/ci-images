@@ -183,6 +183,10 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
     && rm -rf /var/lib/apt/lists/* \
     && chmod 0755 /usr/local/libexec/ci/fetch-verified
 
+RUN test -n "${YARN_VERSION}" \
+    && rm -rf "/opt/yarn-v${YARN_VERSION}" \
+    && rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg
+
 COPY --from=base-go-tools /out/ /opt/ci-tools/
 
 RUN set -eu; \
@@ -241,13 +245,21 @@ RUN --mount=type=cache,target=/root/.npm \
       /tmp/npm-runtime/node_modules/brace-expansion \
       /tmp/npm-runtime/node_modules/npm/node_modules/brace-expansion; \
     rm -rf /usr/local/lib/node_modules/npm; \
-    mv /tmp/npm-runtime/node_modules/npm /usr/local/lib/node_modules/npm; \
-    ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm; \
-    ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx; \
+    rm -f /usr/local/bin/npm /usr/local/bin/npx; \
+    install -d /opt/ci-tools/npm; \
+    mv \
+      /tmp/npm-runtime/node_modules/npm \
+      "/opt/ci-tools/npm/${NPM_VERSION}"; \
+    ln -s \
+      "../npm/${NPM_VERSION}/bin/npm-cli.js" \
+      /opt/ci-tools/bin/npm; \
+    ln -s \
+      "../npm/${NPM_VERSION}/bin/npx-cli.js" \
+      /opt/ci-tools/bin/npx; \
     rm -rf /tmp/npm-runtime; \
-    test "$(npm --version)" = "${NPM_VERSION}"; \
+    test "$(/opt/ci-tools/bin/npm --version)" = "${NPM_VERSION}"; \
     test "$(node --print \
-      "require('/usr/local/lib/node_modules/npm/node_modules/brace-expansion/package.json').version")" \
+      "require('/opt/ci-tools/npm/${NPM_VERSION}/node_modules/brace-expansion/package.json').version")" \
       = "${NPM_BRACE_EXPANSION_VERSION}"
 
 COPY images/base/npm/package.json images/base/npm/package-lock.json \

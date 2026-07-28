@@ -44,7 +44,10 @@ RUN --mount=type=cache,target=/root/.npm \
     ln -s \
       /usr/local/libexec/ci/check-playwright-version \
       /opt/ci-tools/bin/check-playwright-version; \
-    "/opt/ci-tools/playwright/${PLAYWRIGHT_VERSION}/node_modules/.bin/playwright" \
+    ln -s \
+      "../playwright/${PLAYWRIGHT_VERSION}/node_modules/.bin/playwright" \
+      /opt/ci-tools/bin/playwright; \
+    playwright \
       install --with-deps chromium; \
     chmod -R a+rX "${PLAYWRIGHT_BROWSERS_PATH}"
 
