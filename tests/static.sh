@@ -21,8 +21,11 @@ sha256_file() {
 command -v jq >/dev/null 2>&1 || fail 'jq is required'
 
 required_files=(
+	.github/scripts/next-version.sh
+	.github/scripts/release-images.sh
 	README.md
 	docs/index.md
+	docs/release.md
 	docs/usage.md
 	docs/images/base.md
 	docs/images/go.md
@@ -39,6 +42,7 @@ required_files=(
 	images/playwright/Dockerfile
 	images/postgres/Dockerfile
 	manifests/versions.json
+	tests/release.sh
 )
 
 for relative_path in "${required_files[@]}"; do
@@ -191,5 +195,7 @@ if git -C "$repository_root" grep -nE \
 	-- README.md docs images manifests; then
 	fail 'obsolete repository or package naming remains'
 fi
+
+"${repository_root}/tests/release.sh"
 
 printf 'static verification passed\n'
