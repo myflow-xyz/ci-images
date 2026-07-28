@@ -7,7 +7,7 @@ without making them authoritative for application dependencies.
 ## Image hierarchy
 
 ```text
-node:24.18.0-bookworm-slim@<digest>
+debian:bookworm-slim@<digest>
 └── ci-base
     ├── ci-go
     └── ci-node
@@ -18,12 +18,15 @@ pgvector/pgvector:0.8.2-pg18-bookworm@<digest>
 └── ci-postgres
 ```
 
-- `ghcr.io/myflow-xyz/ci-base`: shared Node runtime, operating-system
-  utilities, and repository policy tools.
+`ci-node` imports its Node runtime from the digest-pinned
+`node:24.18.0-bookworm-slim` image without adding Node to `ci-base`.
+
+- `ghcr.io/myflow-xyz/ci-base`: operating-system utilities and
+  runtime-independent repository policy tools.
 - `ghcr.io/myflow-xyz/ci-go`: Go toolchain, native race-test prerequisites,
   and reusable Go CI executables.
-- `ghcr.io/myflow-xyz/ci-node`: generic Node.js and OpenAPI jobs that do not
-  require a frontend toolchain.
+- `ghcr.io/myflow-xyz/ci-node`: generic Node.js, Markdown, and OpenAPI jobs
+  that do not require a frontend toolchain.
 - `ghcr.io/myflow-xyz/ci-vite`: TypeScript, Vite, Vitest, Oxlint, and Oxfmt
   quality and build jobs.
 - `ghcr.io/myflow-xyz/ci-playwright`: Vite jobs that also require a

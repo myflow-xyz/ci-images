@@ -36,10 +36,12 @@ required_files=(
 	docs/images/playwright.md
 	docs/images/postgres.md
 	images/base/Dockerfile
-	images/base/npm-runtime/package.json
-	images/base/npm-runtime/package-lock.json
 	images/go/Dockerfile
 	images/node/Dockerfile
+	images/node/markdownlint/package.json
+	images/node/markdownlint/package-lock.json
+	images/node/npm-runtime/package.json
+	images/node/npm-runtime/package-lock.json
 	images/vite/Dockerfile
 	images/playwright/Dockerfile
 	images/postgres/Dockerfile
@@ -52,6 +54,11 @@ for relative_path in "${required_files[@]}"; do
 		fail "missing ${relative_path}"
 done
 
+for image_doc in "${repository_root}"/docs/images/*.md; do
+	grep --line-regexp '## Runtime environment' "$image_doc" >/dev/null ||
+		fail "missing runtime environment contract: ${image_doc#"$repository_root/"}"
+done
+
 jq --exit-status '
   .schema_version == 1 and
   .platforms == ["linux/amd64", "linux/arm64"] and
@@ -59,6 +66,8 @@ jq --exit-status '
   (.ci_user.uid | type == "number") and
   (.ci_user.gid | type == "number") and
   (.debian_snapshot | test("^[0-9]{8}T[0-9]{6}Z$")) and
+  (.upstream_images.debian.reference |
+    endswith("debian:bookworm-slim")) and
   (.upstream_images.node.reference |
     endswith("node:24.18.0-bookworm-slim")) and
   ([.upstream_images[].digest |
@@ -71,7 +80,7 @@ jq --exit-status '
     "ghcr.io/myflow-xyz/ci-postgres",
     "ghcr.io/myflow-xyz/ci-vite"
   ] | sort) and
-  .images.base.parent == "upstream_images.node" and
+  .images.base.parent == "upstream_images.debian" and
   .images.go.parent == "images.base" and
   .images.node.parent == "images.base" and
   .images.vite.parent == "images.node" and
@@ -129,17 +138,17 @@ assert_package_version() {
 }
 
 assert_package_version \
-	images/base/npm/package-lock.json \
+	images/node/markdownlint/package-lock.json \
 	markdownlint-cli2 \
-	"$(jq -r '.tools.base.markdownlint_cli2.version' "$manifest")"
+	"$(jq -r '.tools.node.markdownlint_cli2.version' "$manifest")"
 assert_package_version \
-	images/base/npm-runtime/package-lock.json \
+	images/node/npm-runtime/package-lock.json \
 	npm \
-	"$(jq -r '.tools.base.npm.version' "$manifest")"
+	"$(jq -r '.tools.node.npm.version' "$manifest")"
 assert_package_version \
-	images/base/npm-runtime/package-lock.json \
+	images/node/npm-runtime/package-lock.json \
 	brace-expansion \
-	"$(jq -r '.tools.base.npm.dependency_replacements["brace-expansion"]' "$manifest")"
+	"$(jq -r '.tools.node.npm.dependency_replacements["brace-expansion"]' "$manifest")"
 assert_package_version \
 	images/node/npm/package-lock.json \
 	pnpm \

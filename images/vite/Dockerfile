@@ -25,41 +25,41 @@ RUN set -eu; \
     /usr/local/libexec/ci/fetch-verified \
       "https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz" \
       "${go_sha256}" \
-      /tmp/go.tar.gz; \
-    tar -xzf /tmp/go.tar.gz -C /usr/local; \
-    rm -f /tmp/go.tar.gz; \
+      /var/tmp/go.tar.gz; \
+    tar -xzf /var/tmp/go.tar.gz -C /usr/local; \
+    rm -f /var/tmp/go.tar.gz; \
     test "$(/usr/local/go/bin/go version | awk '{print $3}')" \
       = "go${GO_VERSION}"
 
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
+RUN --mount=type=cache,target=/var/cache/go/mod \
+    --mount=type=cache,target=/var/cache/go/build \
     set -eu; \
-    git init /tmp/tsgolint; \
-    git -C /tmp/tsgolint remote add origin "${OXLINT_TSGOLINT_SOURCE}"; \
-    git -C /tmp/tsgolint fetch \
+    git init /var/tmp/tsgolint; \
+    git -C /var/tmp/tsgolint remote add origin "${OXLINT_TSGOLINT_SOURCE}"; \
+    git -C /var/tmp/tsgolint fetch \
       --depth 1 \
       origin \
       "${OXLINT_TSGOLINT_COMMIT}"; \
-    git -C /tmp/tsgolint checkout --detach FETCH_HEAD; \
-    git -C /tmp/tsgolint submodule update --init --depth 1; \
-    test "$(git -C /tmp/tsgolint rev-parse HEAD)" \
+    git -C /var/tmp/tsgolint checkout --detach FETCH_HEAD; \
+    git -C /var/tmp/tsgolint submodule update --init --depth 1; \
+    test "$(git -C /var/tmp/tsgolint rev-parse HEAD)" \
       = "${OXLINT_TSGOLINT_COMMIT}"; \
-    test "$(git -C /tmp/tsgolint/typescript-go rev-parse HEAD)" \
+    test "$(git -C /var/tmp/tsgolint/typescript-go rev-parse HEAD)" \
       = "${TYPESCRIPT_GO_COMMIT}"; \
     ( \
-      cd /tmp/tsgolint/typescript-go; \
+      cd /var/tmp/tsgolint/typescript-go; \
       git apply ../patches/*.patch \
     ); \
-    install -d /tmp/tsgolint/internal/collections /out; \
-    find /tmp/tsgolint/typescript-go/internal/collections \
+    install -d /var/tmp/tsgolint/internal/collections /out; \
+    find /var/tmp/tsgolint/typescript-go/internal/collections \
       -type f \
       ! -name '*_test.go' \
-      -exec cp {} /tmp/tsgolint/internal/collections/ \;; \
-    cd /tmp/tsgolint; \
+      -exec cp {} /var/tmp/tsgolint/internal/collections/ \;; \
+    cd /var/tmp/tsgolint; \
     CGO_ENABLED=0 \
-    GOCACHE=/root/.cache/go-build \
-    GOMODCACHE=/go/pkg/mod \
-    GOPATH=/go \
+    GOCACHE=/var/cache/go/build \
+    GOMODCACHE=/var/cache/go/mod \
+    GOPATH=/var/lib/go \
     GOTOOLCHAIN=local \
       /usr/local/go/bin/go build \
         -buildvcs=false \
@@ -84,13 +84,13 @@ ARG VITEST_VERSION
 USER root
 
 COPY images/vite/npm/package.json images/vite/npm/package-lock.json \
-  /tmp/vite-tools/
-COPY --from=tsgolint-builder /out/tsgolint /tmp/tsgolint
+  /var/tmp/vite-tools/
+COPY --from=tsgolint-builder /out/tsgolint /var/tmp/tsgolint
 
-RUN --mount=type=cache,target=/root/.npm \
+RUN --mount=type=cache,target=/var/cache/npm \
     set -eu; \
     node --input-type=commonjs --eval "\
-      const dependencies = require('/tmp/vite-tools/package.json').dependencies;\
+      const dependencies = require('/var/tmp/vite-tools/package.json').dependencies;\
       const expected = {\
         '@vitest/coverage-v8': '${VITEST_VERSION}',\
         'oxfmt': '${OXFMT_VERSION}',\
@@ -103,11 +103,11 @@ RUN --mount=type=cache,target=/root/.npm \
       for (const [name, version] of Object.entries(expected)) {\
         if (dependencies[name] !== version) throw new Error(name);\
       }"; \
-    NPM_CONFIG_CACHE=/root/.npm npm ci \
+    NPM_CONFIG_CACHE=/var/cache/npm npm ci \
       --fund=false \
       --no-audit \
       --omit=dev \
-      --prefix /tmp/vite-tools; \
+      --prefix /var/tmp/vite-tools; \
     case "${TARGETARCH}" in \
       amd64) tsgolint_package=linux-x64 ;; \
       arm64) tsgolint_package=linux-arm64 ;; \
@@ -117,12 +117,12 @@ RUN --mount=type=cache,target=/root/.npm \
         ;; \
     esac; \
     install -m 0755 \
-      /tmp/tsgolint \
-      "/tmp/vite-tools/node_modules/@oxlint-tsgolint/${tsgolint_package}/tsgolint"; \
-    rm -f /tmp/tsgolint; \
+      /var/tmp/tsgolint \
+      "/var/tmp/vite-tools/node_modules/@oxlint-tsgolint/${tsgolint_package}/tsgolint"; \
+    rm -f /var/tmp/tsgolint; \
     install -d /opt/ci-tools/vite; \
     mv \
-      /tmp/vite-tools \
+      /var/tmp/vite-tools \
       "/opt/ci-tools/vite/${VITE_TOOLS_BUNDLE_VERSION}"; \
     for command in \
       oxfmt \

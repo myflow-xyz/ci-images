@@ -22,6 +22,11 @@ commits recorded in the manifest with Go 1.26.5, then replaces the matching
 prebuilt executable from the npm package. The Go compiler and source trees are
 not retained in the runtime image.
 
+## Runtime environment
+
+This image sets no additional runtime environment variables. It inherits the
+[`ci-node` environment](node.md#runtime-environment) unchanged.
+
 ## Repository-local execution
 
 The image bundle is an audited compatibility and smoke-test baseline. It does

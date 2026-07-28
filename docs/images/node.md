@@ -7,13 +7,29 @@ CI tasks that do not require the Vite frontend toolchain.
 
 The initial image contract includes:
 
-- Node.js 24.18.0 with npm and npx 12.0.1 inherited from `ci-base`;
+- Node.js 24.18.0 imported from the digest-pinned official Node image;
+- npm and npx 12.0.1 from a committed lockfile;
 - pnpm 11.15.1;
+- `markdownlint-cli2` 0.23.2;
 - Redocly CLI 2.38.0 for OpenAPI validation;
 - explicit npm and pnpm cache paths.
 
-The Node tool dependency tree is installed from a committed npm lockfile into an
-immutable versioned directory. Stable command links are exposed through
+The npm runtime and Node tool dependency trees are installed from committed npm
+lockfiles into immutable versioned directories. Stable command links are
+exposed through `/opt/ci-tools/bin`.
+
+## Runtime environment
+
+This image adds these variables to the
+[`ci-base` environment](base.md#runtime-environment):
+
+```text
+NODE_VERSION=24.18.0
+NPM_CONFIG_CACHE=/var/cache/npm
+PNPM_CONFIG_STORE_DIR=/var/cache/pnpm/store
+```
+
+Image-managed npm, pnpm, and Markdown commands remain in
 `/opt/ci-tools/bin`.
 
 ## Dependency authority and caches
@@ -25,17 +41,18 @@ dependency before an image-global tool.
 The writable cache contract is:
 
 ```text
-npm cache=/cache/npm
-pnpm store=/cache/pnpm
+npm cache=/var/cache/npm
+pnpm store=/var/cache/pnpm/store
 ```
 
-The caches contain package content only. Do not persist `node_modules`, build
-output, or a repository workspace.
+pnpm creates a version-specific directory below the configured store root. The
+caches contain package content only. Do not persist `node_modules`, build output,
+or a repository workspace.
 
 ## Consumers
 
-Use `ci-node` for generic Node maintenance and OpenAPI jobs. MyFlow Storage
-Service uses it for Redocly linting.
+Use `ci-node` for generic Node maintenance, Markdown policy, and OpenAPI jobs.
+MyFlow Storage Service uses it for Redocly linting.
 
 Frontend projects use [`ci-vite`](vite.md). Browser jobs use
 [`ci-playwright`](playwright.md).

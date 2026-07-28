@@ -17,11 +17,39 @@ expected_govulncheck=$EXPECTED_GOVULNCHECK_VERSION
 : "${EXPECTED_SQLC_X_NET_VERSION:?EXPECTED_SQLC_X_NET_VERSION is not set}"
 : "${EXPECTED_SQLC_GRPC_VERSION:?EXPECTED_SQLC_GRPC_VERSION is not set}"
 
+expected_path=/usr/local/go/bin:/opt/ci-tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
 [[ $(go version | awk '{print $3}') == "go${expected_go}" ]]
+[[ $GOBIN == /opt/ci-tools/bin ]]
+[[ $GOCACHE == /var/cache/go/build ]]
+[[ $GOEXPERIMENT == jsonv2 ]]
+[[ $GOMODCACHE == /var/cache/go/mod ]]
+[[ $GOPATH == /var/lib/go ]]
+[[ $GOROOT == /usr/local/go ]]
+[[ $GOTMPDIR == /var/tmp/go ]]
 [[ $GOTOOLCHAIN == local ]]
-[[ $GOMODCACHE == /cache/go/modules ]]
-[[ $GOCACHE == /cache/go/build ]]
+[[ $PATH == "$expected_path" ]]
 command -v gcc >/dev/null
+
+touch \
+	/var/cache/go/build/.write-probe \
+	/var/cache/go/mod/.write-probe \
+	/var/lib/go/.write-probe \
+	/var/tmp/go/.write-probe
+rm -f \
+	/var/cache/go/build/.write-probe \
+	/var/cache/go/mod/.write-probe \
+	/var/lib/go/.write-probe \
+	/var/tmp/go/.write-probe
+
+for command in \
+	goimports \
+	golangci-lint \
+	goose \
+	govulncheck \
+	sqlc; do
+	[[ $(command -v "$command") == "/opt/ci-tools/bin/${command}" ]]
+done
 
 assert_module_version() {
 	local command=$1
@@ -81,7 +109,7 @@ assert_dependency_version \
 	google.golang.org/grpc \
 	"$EXPECTED_GOOSE_GRPC_VERSION"
 
-smoke_directory=$(mktemp -d /workspace/go-race-smoke.XXXXXX)
+smoke_directory=$(mktemp -d "${GOTMPDIR}/go-race-smoke.XXXXXX")
 trap 'rm -rf "$smoke_directory"' EXIT
 
 cat >"${smoke_directory}/go.mod" <<EOF

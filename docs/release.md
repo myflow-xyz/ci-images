@@ -61,8 +61,10 @@ completed registry promotion can be retried safely.
 | `run-<run>` | manual image publication | Ad hoc verification pointer. |
 | `vX.Y.Z` | manual release | Immutable suite release. |
 
-Consumers use `vX.Y.Z` for discovery and pin its OCI index digest in workflow
-configuration. Neither `edge` nor `latest` is a reproducible consumer pin.
+Consumers use the shared `vX.Y.Z` tag and pin its OCI index digest in workflow
+configuration. The container runtime selects the compatible platform manifest;
+architecture-specific suffix tags are not part of the release contract.
+Neither `edge` nor `latest` is a reproducible consumer pin.
 
 ## Verification
 
@@ -74,10 +76,11 @@ A release is successful only when:
 - each release tag resolves to the digest recorded in the GitHub Release;
 - that digest also matches the commit's immutable revision tag.
 
-The source image workflow already verified AMD64 and ARM64 manifests,
-attestations, smoke tests, and vulnerability policy before creating the
-immutable revision tags. The release workflow verifies and retags those exact
-indexes rather than repeating the build.
+The source image workflow already verified that every index contains
+`linux/amd64` and `linux/arm64` manifests, per-platform attestations, smoke
+tests, and vulnerability policy before creating the immutable revision tags.
+The release workflow verifies and retags those exact indexes rather than
+repeating the build.
 
 See [the usage guide](usage.md#pulling-and-pinning) for registry authentication,
 digest inspection, and pull examples.

@@ -11,11 +11,25 @@ The initial image contract includes:
 - Chromium installed for that exact Playwright release;
 - compatible Debian Bookworm browser libraries;
 - a fixed browser path readable by the unprivileged CI user;
+- stable `playwright` and version-check command links in `/opt/ci-tools/bin`;
 - `tini` as the container entrypoint for browser subprocess cleanup.
 
 The repository still installs its lockfile-managed Playwright package. The
 image supplies the matching browser and operating-system dependencies so a job
 does not download Chromium at runtime.
+
+## Runtime environment
+
+The effective environment is the
+[`ci-vite` environment](vite.md#runtime-environment) plus:
+
+```text
+PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+PLAYWRIGHT_VERSION=1.61.1
+```
+
+`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD` is scoped to the image build and is not
+retained in the runtime environment.
 
 ## Version enforcement
 

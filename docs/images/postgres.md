@@ -24,8 +24,29 @@ repository disabled during that refresh. The service base omits CA
 certificates, so the snapshot bootstrap uses HTTP with apt's signature
 verification; the isolated builder installs CA certificates before fetching Go
 over HTTPS. The image also replaces the upstream `gosu` executable with version
-1.19 built from its exact source commit using Go 1.26.5. Neither the Go compiler
-nor build sources are retained.
+1.19 built from its exact source commit using Go 1.26.5. The executable is kept
+in an immutable versioned directory and exposed through `/opt/ci-tools/bin`.
+Neither the Go compiler nor build sources are retained.
+
+## Runtime environment
+
+The effective runtime environment is:
+
+```text
+LANG=en_US.utf8
+LC_ALL=en_US.utf8
+PATH=/opt/ci-tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib/postgresql/18/bin
+PGDATA=/var/lib/postgresql/18/docker
+PG_MAJOR=18
+PGVECTOR_VERSION=0.8.2
+```
+
+This independent service lineage defines the same locale as `ci-base`, adds the
+`/opt/ci-tools/bin` prefix to the upstream `PATH`, preserves the upstream
+`PGDATA`, and exposes the service's PostgreSQL major and pgvector feature
+versions. Runtime values such as `POSTGRES_DB`, `POSTGRES_USER`, and
+`POSTGRES_PASSWORD` are consumer inputs to the preserved upstream entrypoint,
+not image defaults.
 
 ## Repository authority
 

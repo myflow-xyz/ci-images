@@ -8,7 +8,7 @@ authoritative.
 ## Architecture
 
 ```text
-node:24.18.0-bookworm-slim@<digest>
+debian:bookworm-slim@<digest>
 └── ci-base
     ├── ci-go
     └── ci-node
@@ -19,11 +19,15 @@ pgvector/pgvector:0.8.2-pg18-bookworm@<digest>
 └── ci-postgres
 ```
 
+`ci-node` imports its runtime from the digest-pinned
+`node:24.18.0-bookworm-slim` image.
+
 The inheritance graph reflects actual reuse:
 
-- `ci-base` carries Node because shared policy tools include Node applications.
+- `ci-base` contains runtime-independent operating-system and policy tools.
 - `ci-go` adds Go without inheriting the `ci-node` or frontend tool bundles.
-- `ci-node` adds package-management and generic Node CI tools.
+- `ci-node` adds Node, package management, Markdown linting, and generic Node
+  CI tools.
 - `ci-vite` adds the frontend quality and build tool bundle.
 - `ci-playwright` adds the browser matched to the repository Playwright release.
 - `ci-postgres` preserves its upstream PostgreSQL entrypoint and filesystem
@@ -37,7 +41,8 @@ See [the image catalog](#image-catalog) for each detailed contract.
   diagnostic tools.
 - [`ci-go`](images/go.md) provides the Go toolchain and reusable Go CI
   executables.
-- [`ci-node`](images/node.md) provides pnpm and generic Node/OpenAPI tooling.
+- [`ci-node`](images/node.md) provides Node, npm, pnpm, Markdown, and generic
+  OpenAPI tooling.
 - [`ci-vite`](images/vite.md) provides the Vite ecosystem quality and build
   bundle.
 - [`ci-playwright`](images/playwright.md) provides version-matched Chromium.
@@ -81,6 +86,16 @@ management:
 Job images run as an unprivileged CI user. They contain no Docker socket,
 credentials, application source, generated output, or service state.
 
+Organization-managed commands are exposed through `/opt/ci-tools/bin`.
+Persistent reusable caches use image-specific directories below `/var/cache`;
+temporary build artifacts use `/var/tmp`. Language runtimes and service
+executables retain their standard upstream filesystem layouts.
+
+`ci-base` owns the environment shared by job images. Descendants inherit that
+environment and define only image-specific additions or overrides.
+`ci-postgres` is a separate lineage, so cross-lineage invariants such as the
+UTF-8 locale are defined explicitly there.
+
 Writable dependency caches are external inputs. Consumers partition them by
 repository or equivalent trust domain, architecture, runtime version, and
 dependency lock hash. Jobs must retain a cache-bypass path because restored
@@ -90,22 +105,35 @@ caches are untrusted.
 created for each job; schemas, roles, extensions, and test data remain
 repository-owned.
 
-### Platform support
+### Multi-architecture image requirement
 
-Every published image name resolves to one OCI index containing:
+CI images use manifest-based multi-architecture publication. Every release tag
+must resolve to one OCI image index containing a runnable image manifest for
+each supported target platform. The supported set includes, at minimum:
 
-- `linux/amd64` for GitHub-hosted Linux jobs;
-- `linux/arm64` for MyFlow self-hosted Linux jobs.
+- `linux/amd64`;
+- `linux/arm64`.
 
-Consumer workflows pin the platform-independent index digest. A publication is
-not promoted unless both platform images pass their image-specific smoke tests.
+Build workflows pass target platforms explicitly. Dockerfiles use BuildKit
+target-platform inputs when artifact selection or build logic varies by
+architecture; builds must not infer or hard-code the builder host architecture.
+
+Consumer workflows use the shared architecture-neutral release tag and pin its
+OCI index digest. Architecture-specific suffix tags are not part of the
+consumer contract. The container runtime selects the host-compatible manifest
+from the index automatically.
+
+Before promotion or release, the publication workflow inspects the published
+index and verifies the complete required platform set. Both platform images
+must also pass their image-specific smoke tests.
 
 ## Build and release model
 
 Parent changes rebuild every descendant:
 
 1. `ci-base` is built and verified.
-2. `ci-go` and `ci-node` consume the resulting `ci-base` digest.
+2. `ci-go` consumes the resulting `ci-base` digest; `ci-node` combines that
+   digest with its pinned Node runtime source.
 3. `ci-vite` consumes the resulting `ci-node` digest.
 4. `ci-playwright` consumes the resulting `ci-vite` digest.
 5. `ci-postgres` builds independently from its pgvector base.

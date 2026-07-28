@@ -39,7 +39,7 @@ assert_package_version \
 	"${EXPECTED_OXFMT_VERSION:?EXPECTED_OXFMT_VERSION is not set}"
 
 for command in oxfmt oxlint tsc tsgolint tsserver vite vitest; do
-	command -v "$command" >/dev/null
+	[[ $(command -v "$command") == "/opt/ci-tools/bin/${command}" ]]
 done
 
 tsgolint_binary=$(find \
@@ -56,7 +56,7 @@ grep \
 	"$tsgolint_binary" \
 	>/dev/null
 
-smoke_directory=$(mktemp -d /workspace/vite-shadow-smoke.XXXXXX)
+smoke_directory=$(mktemp -d /var/tmp/vite-shadow-smoke.XXXXXX)
 trap 'rm -rf "$smoke_directory"' EXIT
 mkdir -p "${smoke_directory}/node_modules/.bin"
 

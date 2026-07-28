@@ -62,8 +62,8 @@ jobs:
             --fund=false \
             --ignore-scripts \
             --no-audit \
-            --prefix images/base/npm
-          images/base/npm/node_modules/.bin/markdownlint-cli2 \
+            --prefix images/node/markdownlint
+          images/node/markdownlint/node_modules/.bin/markdownlint-cli2 \
             README.md \
             "docs/**/*.md"
 
@@ -164,7 +164,7 @@ jobs:
               .github/scripts/*.sh
           docker run --rm \
             --volume "$GITHUB_WORKSPACE:/workspace:ro" \
-            ci-base:test \
+            ci-node:test \
             markdownlint-cli2 README.md "docs/**/*.md"
           docker run --rm \
             --volume "$GITHUB_WORKSPACE:/workspace:ro" \

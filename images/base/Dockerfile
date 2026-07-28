@@ -48,21 +48,21 @@ RUN set -eu; \
     /usr/local/libexec/ci/fetch-verified \
       "https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz" \
       "${go_sha256}" \
-      /tmp/go.tar.gz; \
-    tar -xzf /tmp/go.tar.gz -C /usr/local; \
-    rm -f /tmp/go.tar.gz; \
+      /var/tmp/go.tar.gz; \
+    tar -xzf /var/tmp/go.tar.gz -C /usr/local; \
+    rm -f /var/tmp/go.tar.gz; \
     test "$(/usr/local/go/bin/go version | awk '{print $3}')" \
       = "go${GO_VERSION}"
 
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
+RUN --mount=type=cache,target=/var/cache/go/mod \
+    --mount=type=cache,target=/var/cache/go/build \
     set -eu; \
     build_tool() { \
       name=$1; \
       package=$2; \
       version=$3; \
       shift 3; \
-      build_directory="/tmp/build/${name}"; \
+      build_directory="/var/tmp/build/${name}"; \
       output_directory="/out/${name}/${version#v}"; \
       install -d "${build_directory}" "${output_directory}"; \
       cd "${build_directory}"; \
@@ -88,9 +88,9 @@ RUN --mount=type=cache,target=/go/pkg/mod \
       fi; \
     }; \
     export \
-      GOCACHE=/root/.cache/go-build \
-      GOMODCACHE=/go/pkg/mod \
-      GOPATH=/go \
+      GOCACHE=/var/cache/go/build \
+      GOMODCACHE=/var/cache/go/mod \
+      GOPATH=/var/lib/go \
       GOTOOLCHAIN=local; \
     build_tool \
       actionlint \
@@ -122,9 +122,6 @@ ARG CI_UID=1001
 ARG DEBIAN_SNAPSHOT
 ARG GITLEAKS_VERSION
 ARG MANIFEST_SHA=unknown
-ARG MARKDOWNLINT_CLI2_VERSION
-ARG NPM_BRACE_EXPANSION_VERSION
-ARG NPM_VERSION
 ARG SHELLSPEC_SHA256
 ARG SHELLSPEC_VERSION
 ARG SHFMT_VERSION
@@ -133,12 +130,9 @@ ARG YQ_VERSION
 ENV CI=true \
     DEBIAN_FRONTEND=noninteractive \
     HOME=/home/ci \
-    LANG=C.UTF-8 \
-    LC_ALL=C.UTF-8 \
-    NPM_CONFIG_CACHE=/cache/npm \
     PATH=/opt/ci-tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
-    TZ=UTC \
-    XDG_CACHE_HOME=/cache/xdg
+    TMPDIR=/var/tmp \
+    TZ=UTC
 
 COPY images/common/fetch-verified /usr/local/libexec/ci/fetch-verified
 
@@ -168,6 +162,7 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
       grep \
       gzip \
       jq \
+      locales \
       make \
       openssl \
       procps \
@@ -180,8 +175,13 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
       wget \
       xz-utils \
       zip \
+    && sed -ri 's/^# (en_US.UTF-8 UTF-8)$/\1/' /etc/locale.gen \
+    && locale-gen \
     && rm -rf /var/lib/apt/lists/* \
     && chmod 0755 /usr/local/libexec/ci/fetch-verified
+
+ENV LANG=en_US.utf8 \
+    LC_ALL=en_US.utf8
 
 COPY --from=base-go-tools /out/ /opt/ci-tools/
 
@@ -205,75 +205,14 @@ RUN set -eu; \
     /usr/local/libexec/ci/fetch-verified \
       "https://github.com/shellspec/shellspec/archive/refs/tags/${SHELLSPEC_VERSION}.tar.gz" \
       "${SHELLSPEC_SHA256}" \
-      /tmp/shellspec.tar.gz; \
-    tar -xzf /tmp/shellspec.tar.gz \
+      /var/tmp/shellspec.tar.gz; \
+    tar -xzf /var/tmp/shellspec.tar.gz \
       --strip-components=1 \
       -C "/opt/ci-tools/shellspec/${SHELLSPEC_VERSION}"; \
     ln -s \
       "../shellspec/${SHELLSPEC_VERSION}/shellspec" \
       /opt/ci-tools/bin/shellspec; \
-    rm -f /tmp/shellspec.tar.gz
-
-COPY images/base/npm-runtime/package.json \
-  images/base/npm-runtime/package-lock.json \
-  /tmp/npm-runtime/
-
-RUN --mount=type=cache,target=/root/.npm \
-    set -eu; \
-    test "$(node --print \
-      "require('/tmp/npm-runtime/package.json').dependencies.npm")" \
-      = "${NPM_VERSION}"; \
-    NPM_CONFIG_CACHE=/root/.npm npm ci \
-      --fund=false \
-      --ignore-scripts \
-      --no-audit \
-      --omit=dev \
-      --prefix /tmp/npm-runtime; \
-    test "$(node --print \
-      "require('/tmp/npm-runtime/node_modules/npm/package.json').version")" \
-      = "${NPM_VERSION}"; \
-    test "$(node --print \
-      "require('/tmp/npm-runtime/node_modules/brace-expansion/package.json').version")" \
-      = "${NPM_BRACE_EXPANSION_VERSION}"; \
-    rm -rf \
-      /tmp/npm-runtime/node_modules/npm/node_modules/brace-expansion; \
-    mv \
-      /tmp/npm-runtime/node_modules/brace-expansion \
-      /tmp/npm-runtime/node_modules/npm/node_modules/brace-expansion; \
-    rm -rf /usr/local/lib/node_modules/npm; \
-    mv /tmp/npm-runtime/node_modules/npm /usr/local/lib/node_modules/npm; \
-    ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm; \
-    ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx; \
-    rm -rf /tmp/npm-runtime; \
-    test "$(npm --version)" = "${NPM_VERSION}"; \
-    test "$(node --print \
-      "require('/usr/local/lib/node_modules/npm/node_modules/brace-expansion/package.json').version")" \
-      = "${NPM_BRACE_EXPANSION_VERSION}"
-
-COPY images/base/npm/package.json images/base/npm/package-lock.json \
-  /tmp/markdownlint-tools/
-
-RUN --mount=type=cache,target=/root/.npm \
-    set -eu; \
-    test "$(node --print \
-      "require('/tmp/markdownlint-tools/package.json').dependencies['markdownlint-cli2']")" \
-      = "${MARKDOWNLINT_CLI2_VERSION}"; \
-    NPM_CONFIG_CACHE=/root/.npm npm ci \
-      --fund=false \
-      --ignore-scripts \
-      --no-audit \
-      --omit=dev \
-      --prefix /tmp/markdownlint-tools; \
-    test "$(node --print \
-      "require('/tmp/markdownlint-tools/node_modules/markdownlint-cli2/package.json').version")" \
-      = "${MARKDOWNLINT_CLI2_VERSION}"; \
-    install -d /opt/ci-tools/markdownlint-cli2; \
-    mv \
-      /tmp/markdownlint-tools \
-      "/opt/ci-tools/markdownlint-cli2/${MARKDOWNLINT_CLI2_VERSION}"; \
-    ln -s \
-      "../markdownlint-cli2/${MARKDOWNLINT_CLI2_VERSION}/node_modules/.bin/markdownlint-cli2" \
-      /opt/ci-tools/bin/markdownlint-cli2
+    rm -f /var/tmp/shellspec.tar.gz
 
 RUN set -eu; \
     groupadd --gid "${CI_GID}" ci; \
@@ -283,10 +222,8 @@ RUN set -eu; \
       --shell /bin/bash \
       --uid "${CI_UID}" \
       ci; \
+    install -d -m 1777 /var/tmp; \
     install -d -o ci -g ci \
-      /cache/npm \
-      /cache/xdg \
-      /home/ci/.config \
       /workspace; \
     chown -R ci:ci /home/ci; \
     git config --system --add safe.directory /workspace

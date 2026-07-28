@@ -9,6 +9,10 @@ expected_playwright=$EXPECTED_PLAYWRIGHT_VERSION
 [[ $PLAYWRIGHT_BROWSERS_PATH == /ms-playwright ]]
 [[ $(ps -p 1 -o comm= | tr -d ' ') == tini ]]
 
+for command in check-playwright-version playwright; do
+	[[ $(command -v "$command") == "/opt/ci-tools/bin/${command}" ]]
+done
+
 check-playwright-version "$expected_playwright"
 
 if mismatch_output=$(
