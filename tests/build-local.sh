@@ -40,6 +40,7 @@ sha256_file() {
 build_created=$(git -C "$repository_root" show -s --format=%cI HEAD)
 build_revision=$(git -C "$repository_root" rev-parse HEAD)
 manifest_sha=$(sha256_file "$manifest")
+debian_image=$(image_reference debian)
 node_image=$(image_reference node)
 pgvector_image=$(image_reference pgvector)
 
@@ -66,7 +67,7 @@ build_base() {
 		--load \
 		--tag ci-base:test \
 		"${common_labels[@]}" \
-		--build-arg "BASE_IMAGE=${node_image}" \
+		--build-arg "BASE_IMAGE=${debian_image}" \
 		--build-arg "CI_GID=$(json '.ci_user.gid')" \
 		--build-arg "CI_UID=$(json '.ci_user.uid')" \
 		--build-arg "DEBIAN_SNAPSHOT=$(json '.debian_snapshot')" \
@@ -82,12 +83,6 @@ build_base() {
 		"GO_SHA256_AMD64=$(json '.tools.go.assets.amd64.sha256')" \
 		--build-arg \
 		"GO_SHA256_ARM64=$(json '.tools.go.assets.arm64.sha256')" \
-		--build-arg \
-		"MARKDOWNLINT_CLI2_VERSION=$(json '.tools.base.markdownlint_cli2.version')" \
-		--build-arg \
-		"NPM_VERSION=$(json '.tools.base.npm.version')" \
-		--build-arg \
-		"NPM_BRACE_EXPANSION_VERSION=$(json '.tools.base.npm.dependency_replacements["brace-expansion"]')" \
 		--build-arg \
 		"SHELLSPEC_VERSION=$(json '.tools.base.shellspec.version')" \
 		--build-arg \
@@ -135,8 +130,16 @@ build_node() {
 		--tag ci-node:test \
 		"${common_labels[@]}" \
 		--build-arg BASE_IMAGE=ci-base:test \
+		--build-arg "NODE_IMAGE=${node_image}" \
+		--build-arg \
+		"MARKDOWNLINT_CLI2_VERSION=$(json '.tools.node.markdownlint_cli2.version')" \
 		--build-arg \
 		"NODE_TOOLS_BUNDLE_VERSION=$(json '.tools.node.bundle_version')" \
+		--build-arg "NODE_VERSION=$(json '.tools.node.runtime')" \
+		--build-arg \
+		"NPM_VERSION=$(json '.tools.node.npm.version')" \
+		--build-arg \
+		"NPM_BRACE_EXPANSION_VERSION=$(json '.tools.node.npm.dependency_replacements["brace-expansion"]')" \
 		--build-arg "PNPM_VERSION=$(json '.tools.node.pnpm')" \
 		--build-arg "REDOCLY_VERSION=$(json '.tools.node.redocly')" \
 		"$repository_root"

@@ -38,15 +38,11 @@ if [[ $target == all || $target == base ]]; then
 		ci-base:test \
 		base \
 		--env "EXPECTED_CI_UID=$(json '.ci_user.uid')" \
-		--env "EXPECTED_NODE_VERSION=$(json '.tools.node.runtime')" \
 		--env "EXPECTED_TOOLCHAIN_GO_VERSION=$(json '.tools.go.runtime')" \
 		--env \
 		"EXPECTED_ACTIONLINT_VERSION=$(json '.tools.base.actionlint.version')" \
 		--env \
 		"EXPECTED_GITLEAKS_VERSION=$(json '.tools.base.gitleaks.version')" \
-		--env \
-		"EXPECTED_MARKDOWNLINT_VERSION=$(json '.tools.base.markdownlint_cli2.version')" \
-		--env "EXPECTED_NPM_VERSION=$(json '.tools.base.npm.version')" \
 		--env "EXPECTED_SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
 		--env "EXPECTED_YQ_VERSION=$(json '.tools.base.yq.version')"
 fi
@@ -82,7 +78,10 @@ if [[ $target == all || $target == node ]]; then
 		node \
 		--env "EXPECTED_NODE_VERSION=$(json '.tools.node.runtime')" \
 		--env \
+		"EXPECTED_MARKDOWNLINT_VERSION=$(json '.tools.node.markdownlint_cli2.version')" \
+		--env \
 		"EXPECTED_NODE_BUNDLE_VERSION=$(json '.tools.node.bundle_version')" \
+		--env "EXPECTED_NPM_VERSION=$(json '.tools.node.npm.version')" \
 		--env "EXPECTED_PNPM_VERSION=$(json '.tools.node.pnpm')" \
 		--env "EXPECTED_REDOCLY_VERSION=$(json '.tools.node.redocly')"
 fi

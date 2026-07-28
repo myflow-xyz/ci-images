@@ -1,8 +1,8 @@
 {
-  "name": "@myflow-xyz/ci-base-tools",
+  "name": "@myflow-xyz/ci-node-markdownlint",
   "version": "1.0.0",
   "private": true,
-  "description": "Locked Node-based policy tools for the MyFlow CI base image",
+  "description": "Locked Markdown policy tools for the MyFlow CI Node image",
   "license": "AGPL-3.0-only",
   "dependencies": {
     "markdownlint-cli2": "0.23.2"

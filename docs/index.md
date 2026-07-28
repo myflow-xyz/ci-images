@@ -8,7 +8,7 @@ authoritative.
 ## Architecture
 
 ```text
-node:24.18.0-bookworm-slim@<digest>
+debian:bookworm-slim@<digest>
 └── ci-base
     ├── ci-go
     └── ci-node
@@ -19,11 +19,15 @@ pgvector/pgvector:0.8.2-pg18-bookworm@<digest>
 └── ci-postgres
 ```
 
+`ci-node` imports its runtime from the digest-pinned
+`node:24.18.0-bookworm-slim` image.
+
 The inheritance graph reflects actual reuse:
 
-- `ci-base` carries Node because shared policy tools include Node applications.
+- `ci-base` contains runtime-independent operating-system and policy tools.
 - `ci-go` adds Go without inheriting the `ci-node` or frontend tool bundles.
-- `ci-node` adds package-management and generic Node CI tools.
+- `ci-node` adds Node, package management, Markdown linting, and generic Node
+  CI tools.
 - `ci-vite` adds the frontend quality and build tool bundle.
 - `ci-playwright` adds the browser matched to the repository Playwright release.
 - `ci-postgres` preserves its upstream PostgreSQL entrypoint and filesystem
@@ -37,7 +41,8 @@ See [the image catalog](#image-catalog) for each detailed contract.
   diagnostic tools.
 - [`ci-go`](images/go.md) provides the Go toolchain and reusable Go CI
   executables.
-- [`ci-node`](images/node.md) provides pnpm and generic Node/OpenAPI tooling.
+- [`ci-node`](images/node.md) provides Node, npm, pnpm, Markdown, and generic
+  OpenAPI tooling.
 - [`ci-vite`](images/vite.md) provides the Vite ecosystem quality and build
   bundle.
 - [`ci-playwright`](images/playwright.md) provides version-matched Chromium.
@@ -115,7 +120,8 @@ not promoted unless both platform images pass their image-specific smoke tests.
 Parent changes rebuild every descendant:
 
 1. `ci-base` is built and verified.
-2. `ci-go` and `ci-node` consume the resulting `ci-base` digest.
+2. `ci-go` consumes the resulting `ci-base` digest; `ci-node` combines that
+   digest with its pinned Node runtime source.
 3. `ci-vite` consumes the resulting `ci-node` digest.
 4. `ci-playwright` consumes the resulting `ci-vite` digest.
 5. `ci-postgres` builds independently from its pgvector base.

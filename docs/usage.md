@@ -140,7 +140,7 @@ The images define these writable container paths:
 /var/cache/go/build
 /var/cache/go/mod
 /var/cache/npm
-/var/cache/pnpm
+/var/cache/pnpm/store
 ```
 
 On GitHub-hosted runners, save and restore these paths with the repository's

@@ -122,9 +122,6 @@ ARG CI_UID=1001
 ARG DEBIAN_SNAPSHOT
 ARG GITLEAKS_VERSION
 ARG MANIFEST_SHA=unknown
-ARG MARKDOWNLINT_CLI2_VERSION
-ARG NPM_BRACE_EXPANSION_VERSION
-ARG NPM_VERSION
 ARG SHELLSPEC_SHA256
 ARG SHELLSPEC_VERSION
 ARG SHFMT_VERSION
@@ -133,7 +130,6 @@ ARG YQ_VERSION
 ENV CI=true \
     DEBIAN_FRONTEND=noninteractive \
     HOME=/home/ci \
-    NPM_CONFIG_CACHE=/var/cache/npm \
     PATH=/opt/ci-tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
     TMPDIR=/var/tmp \
     TZ=UTC
@@ -187,10 +183,6 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
 ENV LANG=en_US.utf8 \
     LC_ALL=en_US.utf8
 
-RUN test -n "${YARN_VERSION}" \
-    && rm -rf "/opt/yarn-v${YARN_VERSION}" \
-    && rm -f /usr/local/bin/yarn /usr/local/bin/yarnpkg
-
 COPY --from=base-go-tools /out/ /opt/ci-tools/
 
 RUN set -eu; \
@@ -222,75 +214,6 @@ RUN set -eu; \
       /opt/ci-tools/bin/shellspec; \
     rm -f /var/tmp/shellspec.tar.gz
 
-COPY images/base/npm-runtime/package.json \
-  images/base/npm-runtime/package-lock.json \
-  /var/tmp/npm-runtime/
-
-RUN --mount=type=cache,target=/var/cache/npm \
-    set -eu; \
-    test "$(node --print \
-      "require('/var/tmp/npm-runtime/package.json').dependencies.npm")" \
-      = "${NPM_VERSION}"; \
-    NPM_CONFIG_CACHE=/var/cache/npm npm ci \
-      --fund=false \
-      --ignore-scripts \
-      --no-audit \
-      --omit=dev \
-      --prefix /var/tmp/npm-runtime; \
-    test "$(node --print \
-      "require('/var/tmp/npm-runtime/node_modules/npm/package.json').version")" \
-      = "${NPM_VERSION}"; \
-    test "$(node --print \
-      "require('/var/tmp/npm-runtime/node_modules/brace-expansion/package.json').version")" \
-      = "${NPM_BRACE_EXPANSION_VERSION}"; \
-    rm -rf \
-      /var/tmp/npm-runtime/node_modules/npm/node_modules/brace-expansion; \
-    mv \
-      /var/tmp/npm-runtime/node_modules/brace-expansion \
-      /var/tmp/npm-runtime/node_modules/npm/node_modules/brace-expansion; \
-    rm -rf /usr/local/lib/node_modules/npm; \
-    rm -f /usr/local/bin/npm /usr/local/bin/npx; \
-    install -d /opt/ci-tools/npm; \
-    mv \
-      /var/tmp/npm-runtime/node_modules/npm \
-      "/opt/ci-tools/npm/${NPM_VERSION}"; \
-    ln -s \
-      "../npm/${NPM_VERSION}/bin/npm-cli.js" \
-      /opt/ci-tools/bin/npm; \
-    ln -s \
-      "../npm/${NPM_VERSION}/bin/npx-cli.js" \
-      /opt/ci-tools/bin/npx; \
-    rm -rf /var/tmp/npm-runtime; \
-    test "$(/opt/ci-tools/bin/npm --version)" = "${NPM_VERSION}"; \
-    test "$(node --print \
-      "require('/opt/ci-tools/npm/${NPM_VERSION}/node_modules/brace-expansion/package.json').version")" \
-      = "${NPM_BRACE_EXPANSION_VERSION}"
-
-COPY images/base/npm/package.json images/base/npm/package-lock.json \
-  /var/tmp/markdownlint-tools/
-
-RUN --mount=type=cache,target=/var/cache/npm \
-    set -eu; \
-    test "$(node --print \
-      "require('/var/tmp/markdownlint-tools/package.json').dependencies['markdownlint-cli2']")" \
-      = "${MARKDOWNLINT_CLI2_VERSION}"; \
-    NPM_CONFIG_CACHE=/var/cache/npm npm ci \
-      --fund=false \
-      --ignore-scripts \
-      --no-audit \
-      --omit=dev \
-      --prefix /var/tmp/markdownlint-tools; \
-    test "$(node --print \
-      "require('/var/tmp/markdownlint-tools/node_modules/markdownlint-cli2/package.json').version")" \
-      = "${MARKDOWNLINT_CLI2_VERSION}"; \
-    install -d /opt/ci-tools/markdownlint-cli2; \
-    mv \
-      /var/tmp/markdownlint-tools \
-      "/opt/ci-tools/markdownlint-cli2/${MARKDOWNLINT_CLI2_VERSION}"; \
-    ln -s \
-      "../markdownlint-cli2/${MARKDOWNLINT_CLI2_VERSION}/node_modules/.bin/markdownlint-cli2" \
-      /opt/ci-tools/bin/markdownlint-cli2
-
 RUN set -eu; \
     groupadd --gid "${CI_GID}" ci; \
     useradd \
@@ -301,8 +224,6 @@ RUN set -eu; \
       ci; \
     install -d -m 1777 /var/tmp; \
     install -d -o ci -g ci \
-      /home/ci/.config \
-      /var/cache/npm \
       /workspace; \
     chown -R ci:ci /home/ci; \
     git config --system --add safe.directory /workspace
