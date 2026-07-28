@@ -1,0 +1,20 @@
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Dependency installs and generated test output
+node_modules/
+coverage/
+
+# Logs
+*.log
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo

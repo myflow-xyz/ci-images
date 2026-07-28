@@ -1,0 +1,26 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{json,yml,yaml}]
+indent_style = space
+indent_size = 2
+
+[*.md]
+indent_style = space
+indent_size = 2
+max_line_length = 80
+
+[Dockerfile]
+indent_style = space
+indent_size = 4
+
+[*.sh]
+indent_style = tab
+
+[images/{common/fetch-verified,playwright/check-version}]
+indent_style = tab
