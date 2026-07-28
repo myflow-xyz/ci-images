@@ -43,13 +43,15 @@ docker buildx imagetools inspect ghcr.io/myflow-xyz/ci-go:v0.1.0
 ```
 
 Compare the reported OCI index digest with the digest table in the matching
-GitHub Release. Then pull or configure the image by digest:
+GitHub Release. Then pull or configure the shared release tag pinned to that
+index digest:
 
 ```bash
-docker pull ghcr.io/myflow-xyz/ci-go@sha256:<digest>
+docker pull ghcr.io/myflow-xyz/ci-go:v0.1.0@sha256:<digest>
 ```
 
-The index digest selects AMD64 or ARM64 automatically. Use `vX.Y.Z` for stable
+The container runtime selects AMD64 or ARM64 from the index automatically.
+Architecture-specific suffix tags are not required. Use `vX.Y.Z` for stable
 release discovery, `latest` only to inspect the current verified `main` suite,
 and `edge` only for integration testing. Do not consume candidate or
 run-specific tags.
@@ -72,7 +74,7 @@ jobs:
       contents: read
       packages: read
     container:
-      image: ghcr.io/myflow-xyz/ci-go@sha256:<digest>
+      image: ghcr.io/myflow-xyz/ci-go:v0.1.0@sha256:<digest>
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -99,13 +101,13 @@ jobs:
       contents: read
       packages: read
     container:
-      image: ghcr.io/myflow-xyz/ci-go@sha256:<digest>
+      image: ghcr.io/myflow-xyz/ci-go:v0.1.0@sha256:<digest>
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     services:
       postgres:
-        image: ghcr.io/myflow-xyz/ci-postgres@sha256:<digest>
+        image: ghcr.io/myflow-xyz/ci-postgres:v0.1.0@sha256:<digest>
         credentials:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}

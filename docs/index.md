@@ -105,15 +105,27 @@ caches are untrusted.
 created for each job; schemas, roles, extensions, and test data remain
 repository-owned.
 
-### Platform support
+### Multi-architecture image requirement
 
-Every published image name resolves to one OCI index containing:
+CI images use manifest-based multi-architecture publication. Every release tag
+must resolve to one OCI image index containing a runnable image manifest for
+each supported target platform. The supported set includes, at minimum:
 
-- `linux/amd64` for GitHub-hosted Linux jobs;
-- `linux/arm64` for MyFlow self-hosted Linux jobs.
+- `linux/amd64`;
+- `linux/arm64`.
 
-Consumer workflows pin the platform-independent index digest. A publication is
-not promoted unless both platform images pass their image-specific smoke tests.
+Build workflows pass target platforms explicitly. Dockerfiles use BuildKit
+target-platform inputs when artifact selection or build logic varies by
+architecture; builds must not infer or hard-code the builder host architecture.
+
+Consumer workflows use the shared architecture-neutral release tag and pin its
+OCI index digest. Architecture-specific suffix tags are not part of the
+consumer contract. The container runtime selects the host-compatible manifest
+from the index automatically.
+
+Before promotion or release, the publication workflow inspects the published
+index and verifies the complete required platform set. Both platform images
+must also pass their image-specific smoke tests.
 
 ## Build and release model
 
