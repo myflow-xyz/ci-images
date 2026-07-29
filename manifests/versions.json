@@ -136,9 +136,10 @@
       "npm": {
         "version": "12.0.1",
         "lockfile": "images/node/npm-runtime/package-lock.json",
-        "lockfile_sha256": "0443e53e2e7b5144391d060e65ef47a27ebcec777d243296c7f6118b094dc705",
+        "lockfile_sha256": "57c98364420a0212ed671b6390a514a72441ee17256d486b84dc32a40dd15428",
         "dependency_replacements": {
-          "brace-expansion": "5.0.8"
+          "brace-expansion": "5.0.8",
+          "tar": "7.5.21"
         }
       },
       "markdownlint_cli2": {

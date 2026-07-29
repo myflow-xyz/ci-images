@@ -81,6 +81,10 @@ if [[ $target == all || $target == node ]]; then
 		"EXPECTED_MARKDOWNLINT_VERSION=$(json '.tools.node.markdownlint_cli2.version')" \
 		--env \
 		"EXPECTED_NODE_BUNDLE_VERSION=$(json '.tools.node.bundle_version')" \
+		--env \
+		"EXPECTED_NPM_BRACE_EXPANSION_VERSION=$(json '.tools.node.npm.dependency_replacements["brace-expansion"]')" \
+		--env \
+		"EXPECTED_NPM_TAR_VERSION=$(json '.tools.node.npm.dependency_replacements.tar')" \
 		--env "EXPECTED_NPM_VERSION=$(json '.tools.node.npm.version')" \
 		--env "EXPECTED_PNPM_VERSION=$(json '.tools.node.pnpm')" \
 		--env "EXPECTED_REDOCLY_VERSION=$(json '.tools.node.redocly')"

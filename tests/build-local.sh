@@ -140,6 +140,8 @@ build_node() {
 		"NPM_VERSION=$(json '.tools.node.npm.version')" \
 		--build-arg \
 		"NPM_BRACE_EXPANSION_VERSION=$(json '.tools.node.npm.dependency_replacements["brace-expansion"]')" \
+		--build-arg \
+		"NPM_TAR_VERSION=$(json '.tools.node.npm.dependency_replacements.tar')" \
 		--build-arg "PNPM_VERSION=$(json '.tools.node.pnpm')" \
 		--build-arg "REDOCLY_VERSION=$(json '.tools.node.redocly')" \
 		"$repository_root"

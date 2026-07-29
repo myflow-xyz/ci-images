@@ -16,7 +16,8 @@ The initial image contract includes:
 
 The npm runtime and Node tool dependency trees are installed from committed npm
 lockfiles into immutable versioned directories. Stable command links are
-exposed through `/opt/ci-tools/bin`.
+exposed through `/opt/ci-tools/bin`. Reviewed replacements remove vulnerable
+dependencies bundled by the pinned npm release.
 
 ## Runtime environment
 
