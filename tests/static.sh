@@ -63,8 +63,8 @@ jq --exit-status '
   .schema_version == 1 and
   .platforms == ["linux/amd64", "linux/arm64"] and
   .ci_user.name == "ci" and
-  (.ci_user.uid | type == "number") and
-  (.ci_user.gid | type == "number") and
+  .ci_user.uid == 1001 and
+  .ci_user.gid == 2001 and
   (.debian_snapshot | test("^[0-9]{8}T[0-9]{6}Z$")) and
   (.upstream_images.debian.reference |
     endswith("debian:bookworm-slim")) and

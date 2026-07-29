@@ -7,7 +7,7 @@
   "ci_user": {
     "name": "ci",
     "uid": 1001,
-    "gid": 1001
+    "gid": 2001
   },
   "debian_snapshot": "20260727T000000Z",
   "upstream_images": {

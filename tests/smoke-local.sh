@@ -38,6 +38,7 @@ if [[ $target == all || $target == base ]]; then
 		ci-base:test \
 		base \
 		--env "EXPECTED_CI_UID=$(json '.ci_user.uid')" \
+		--env "EXPECTED_CI_GID=$(json '.ci_user.gid')" \
 		--env "EXPECTED_TOOLCHAIN_GO_VERSION=$(json '.tools.go.runtime')" \
 		--env \
 		"EXPECTED_ACTIONLINT_VERSION=$(json '.tools.base.actionlint.version')" \

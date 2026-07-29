@@ -3,6 +3,7 @@
 set -euo pipefail
 
 expected_uid=${EXPECTED_CI_UID:?EXPECTED_CI_UID is not set}
+expected_gid=${EXPECTED_CI_GID:?EXPECTED_CI_GID is not set}
 expected_go=${EXPECTED_TOOLCHAIN_GO_VERSION:?EXPECTED_TOOLCHAIN_GO_VERSION is not set}
 : "${EXPECTED_ACTIONLINT_VERSION:?EXPECTED_ACTIONLINT_VERSION is not set}"
 : "${EXPECTED_GITLEAKS_X_CRYPTO_VERSION:?EXPECTED_GITLEAKS_X_CRYPTO_VERSION is not set}"
@@ -13,6 +14,7 @@ expected_go=${EXPECTED_TOOLCHAIN_GO_VERSION:?EXPECTED_TOOLCHAIN_GO_VERSION is no
 : "${EXPECTED_YQ_X_TEXT_VERSION:?EXPECTED_YQ_X_TEXT_VERSION is not set}"
 
 [[ $(id -u) == "$expected_uid" ]]
+[[ $(id -g) == "$expected_gid" ]]
 [[ $HOME == /home/ci ]]
 [[ $LANG == en_US.utf8 ]]
 [[ $LC_ALL == en_US.utf8 ]]
