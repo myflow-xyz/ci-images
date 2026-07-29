@@ -8,10 +8,10 @@ Vite quality, test, coverage, and production build jobs.
 The compatibility bundle includes:
 
 - TypeScript 6.0.3;
-- Vite 8.1.0;
-- Vitest 4.1.9;
-- `@vitest/coverage-v8` 4.1.9;
-- Oxlint 1.71.0;
+- Vite 8.1.5;
+- Vitest 4.1.10;
+- `@vitest/coverage-v8` 4.1.10;
+- Oxlint 1.72.0;
 - `oxlint-tsgolint` 0.23.0;
 - Oxfmt 0.56.0.
 

@@ -154,14 +154,14 @@
       "redocly": "2.41.1"
     },
     "vite": {
-      "bundle_version": "1",
+      "bundle_version": "2",
       "lockfile": "images/vite/npm/package-lock.json",
-      "lockfile_sha256": "7d9cbbe33d854a159699b2a1b37fcf108d2bc9934970acd2063f3feaf7408e38",
+      "lockfile_sha256": "e48e833d1b662a3cfd23898ace4c68b6cd38f9116e2045bfd6e7e95b249cb60e",
       "typescript": "6.0.3",
-      "vite": "8.1.0",
-      "vitest": "4.1.9",
-      "coverage_v8": "4.1.9",
-      "oxlint": "1.71.0",
+      "vite": "8.1.5",
+      "vitest": "4.1.10",
+      "coverage_v8": "4.1.10",
+      "oxlint": "1.72.0",
       "oxlint_tsgolint": "0.23.0",
       "oxlint_tsgolint_source": {
         "repository": "https://github.com/oxc-project/tsgolint",
