@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE} AS base-go-tools
+FROM ${BASE_IMAGE} AS base-go-tools-builder
 
 ARG ACTIONLINT_VERSION
 ARG DEBIAN_SNAPSHOT
@@ -183,7 +183,7 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
 ENV LANG=en_US.utf8 \
     LC_ALL=en_US.utf8
 
-COPY --from=base-go-tools /out/ /opt/ci-tools/
+COPY --from=base-go-tools-builder /out/ /opt/ci-tools/
 
 RUN set -eu; \
     install -d /opt/ci-tools/bin; \
