@@ -10,6 +10,7 @@ expected_go=${EXPECTED_TOOLCHAIN_GO_VERSION:?EXPECTED_TOOLCHAIN_GO_VERSION is no
 : "${EXPECTED_GITLEAKS_VERSION:?EXPECTED_GITLEAKS_VERSION is not set}"
 : "${EXPECTED_SHFMT_VERSION:?EXPECTED_SHFMT_VERSION is not set}"
 : "${EXPECTED_YQ_VERSION:?EXPECTED_YQ_VERSION is not set}"
+: "${EXPECTED_YQ_X_TEXT_VERSION:?EXPECTED_YQ_X_TEXT_VERSION is not set}"
 
 [[ $(id -u) == "$expected_uid" ]]
 [[ $HOME == /home/ci ]]
@@ -61,6 +62,12 @@ shfmt --version |
 	grep --fixed-strings "$EXPECTED_SHFMT_VERSION" >/dev/null
 yq --version |
 	grep --fixed-strings "$EXPECTED_YQ_VERSION" >/dev/null
+grep \
+	--binary-files=text \
+	--fixed-strings \
+	$'dep\tgolang.org/x/text\t'"${EXPECTED_YQ_X_TEXT_VERSION}" \
+	"$(command -v yq)" \
+	>/dev/null
 
 for command in actionlint gitleaks shfmt yq; do
 	grep \

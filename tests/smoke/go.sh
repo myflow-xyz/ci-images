@@ -9,6 +9,7 @@ expected_goose=${EXPECTED_GOOSE_VERSION:?EXPECTED_GOOSE_VERSION is not set}
 : "${EXPECTED_GOOSE_X_CRYPTO_VERSION:?EXPECTED_GOOSE_X_CRYPTO_VERSION is not set}"
 : "${EXPECTED_GOOSE_X_NET_VERSION:?EXPECTED_GOOSE_X_NET_VERSION is not set}"
 : "${EXPECTED_GOLANGCI_LINT_VERSION:?EXPECTED_GOLANGCI_LINT_VERSION is not set}"
+: "${EXPECTED_GOLANGCI_LINT_X_TEXT_VERSION:?EXPECTED_GOLANGCI_LINT_X_TEXT_VERSION is not set}"
 : "${EXPECTED_GOIMPORTS_VERSION:?EXPECTED_GOIMPORTS_VERSION is not set}"
 : "${EXPECTED_GOVULNCHECK_VERSION:?EXPECTED_GOVULNCHECK_VERSION is not set}"
 expected_golangci=$EXPECTED_GOLANGCI_LINT_VERSION
@@ -108,6 +109,10 @@ assert_dependency_version \
 	goose \
 	google.golang.org/grpc \
 	"$EXPECTED_GOOSE_GRPC_VERSION"
+assert_dependency_version \
+	golangci-lint \
+	golang.org/x/text \
+	"$EXPECTED_GOLANGCI_LINT_X_TEXT_VERSION"
 
 smoke_directory=$(mktemp -d "${GOTMPDIR}/go-race-smoke.XXXXXX")
 trap 'rm -rf "$smoke_directory"' EXIT

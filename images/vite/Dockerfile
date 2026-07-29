@@ -8,6 +8,7 @@ ARG GO_SHA256_ARM64
 ARG GO_VERSION
 ARG OXLINT_TSGOLINT_COMMIT
 ARG OXLINT_TSGOLINT_SOURCE
+ARG OXLINT_TSGOLINT_X_TEXT_VERSION
 ARG TARGETARCH
 ARG TYPESCRIPT_GO_COMMIT
 
@@ -56,16 +57,18 @@ RUN --mount=type=cache,target=/var/cache/go/mod \
       ! -name '*_test.go' \
       -exec cp {} /var/tmp/tsgolint/internal/collections/ \;; \
     cd /var/tmp/tsgolint; \
-    CGO_ENABLED=0 \
-    GOCACHE=/var/cache/go/build \
-    GOMODCACHE=/var/cache/go/mod \
-    GOPATH=/var/lib/go \
-    GOTOOLCHAIN=local \
-      /usr/local/go/bin/go build \
-        -buildvcs=false \
-        -trimpath \
-        -o /out/tsgolint \
-        ./cmd/tsgolint
+    export \
+      GOCACHE=/var/cache/go/build \
+      GOMODCACHE=/var/cache/go/mod \
+      GOPATH=/var/lib/go \
+      GOTOOLCHAIN=local; \
+    /usr/local/go/bin/go get \
+      "golang.org/x/text@${OXLINT_TSGOLINT_X_TEXT_VERSION}"; \
+    CGO_ENABLED=0 /usr/local/go/bin/go build \
+      -buildvcs=false \
+      -trimpath \
+      -o /out/tsgolint \
+      ./cmd/tsgolint
 
 FROM ${BASE_IMAGE}
 

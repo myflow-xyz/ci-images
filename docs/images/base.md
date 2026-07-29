@@ -43,10 +43,11 @@ The base image includes:
 - `tini` for descendants that require subprocess reaping.
 
 actionlint, gitleaks, shfmt, and yq are built from exact module releases with
-Go 1.26.5; the reviewed gitleaks dependency override is recorded in the version
-manifest. Tools are installed into immutable versioned directories and exposed
-through stable links in `/opt/ci-tools/bin`. The Go compiler is a build input
-and is not retained in this image.
+Go 1.26.5. Narrow dependency overrides used to remove known vulnerabilities
+from released tools are recorded in the version manifest and verified by image
+smoke tests. Tools are installed into immutable versioned directories and
+exposed through stable links in `/opt/ci-tools/bin`. The Go compiler is a build
+input and is not retained in this image.
 
 ## Runtime contract
 

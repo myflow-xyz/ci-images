@@ -14,6 +14,7 @@ ARG GO_VERSION
 ARG SHFMT_VERSION
 ARG TARGETARCH
 ARG YQ_VERSION
+ARG YQ_X_TEXT_VERSION
 
 USER root
 
@@ -110,7 +111,8 @@ RUN --mount=type=cache,target=/var/cache/go/mod \
     build_tool \
       yq \
       github.com/mikefarah/yq/v4 \
-      "v${YQ_VERSION}"
+      "v${YQ_VERSION}" \
+      "golang.org/x/text@${YQ_X_TEXT_VERSION}"
 
 FROM ${BASE_IMAGE}
 

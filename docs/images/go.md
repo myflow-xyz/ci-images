@@ -22,11 +22,10 @@ External Go executables are built from exact module versions into immutable
 versioned directories. Stable links are exposed through
 `/opt/ci-tools/bin`.
 
-The manifest records narrow dependency overrides used to rebuild sqlc and
-Goose when their released binaries contain a fixed HIGH or CRITICAL
-vulnerability. The image smoke contract verifies those resolved module
-versions; an override is removed when the upstream tool release incorporates
-the fix.
+The manifest records narrow dependency overrides used to rebuild a tool when
+its released dependency graph contains a fixed HIGH or CRITICAL vulnerability.
+The image smoke contract verifies those resolved module versions; an override
+is removed when the upstream tool release incorporates the fix.
 
 ## Runtime environment
 

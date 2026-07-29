@@ -86,7 +86,10 @@
       "yq": {
         "version": "4.53.3",
         "source": "https://github.com/mikefarah/yq",
-        "module": "github.com/mikefarah/yq/v4"
+        "module": "github.com/mikefarah/yq/v4",
+        "dependency_overrides": {
+          "golang.org/x/text": "v0.39.0"
+        }
       }
     },
     "go": {
@@ -121,7 +124,10 @@
       },
       "golangci_lint": {
         "module": "github.com/golangci/golangci-lint/v2/cmd/golangci-lint",
-        "version": "v2.12.2"
+        "version": "v2.12.2",
+        "dependency_overrides": {
+          "golang.org/x/text": "v0.39.0"
+        }
       },
       "goimports": {
         "module": "golang.org/x/tools/cmd/goimports",
@@ -167,7 +173,10 @@
       "oxlint_tsgolint_source": {
         "repository": "https://github.com/oxc-project/tsgolint",
         "commit": "0e575fae8407227601f66c1d8d8927a535aea58b",
-        "typescript_go_commit": "c282336ea94f8a2e63187afd0f8d4bfb3b3f4d3b"
+        "typescript_go_commit": "c282336ea94f8a2e63187afd0f8d4bfb3b3f4d3b",
+        "dependency_overrides": {
+          "golang.org/x/text": "v0.39.0"
+        }
       },
       "oxfmt": "0.56.0"
     },

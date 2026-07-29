@@ -204,7 +204,9 @@ publish_image base \
 	--build-arg \
 	"SHELLSPEC_SHA256=$(json '.tools.base.shellspec.asset.sha256')" \
 	--build-arg "SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
-	--build-arg "YQ_VERSION=$(json '.tools.base.yq.version')"
+	--build-arg "YQ_VERSION=$(json '.tools.base.yq.version')" \
+	--build-arg \
+	"YQ_X_TEXT_VERSION=$(json '.tools.base.yq.dependency_overrides["golang.org/x/text"]')"
 
 publish_image go \
 	--build-arg "BASE_IMAGE=${base_reference}" \
@@ -227,6 +229,8 @@ publish_image go \
 	"GOOSE_GRPC_VERSION=$(json '.tools.go.goose.dependency_overrides["google.golang.org/grpc"]')" \
 	--build-arg \
 	"GOLANGCI_LINT_VERSION=$(json '.tools.go.golangci_lint.version')" \
+	--build-arg \
+	"GOLANGCI_LINT_X_TEXT_VERSION=$(json '.tools.go.golangci_lint.dependency_overrides["golang.org/x/text"]')" \
 	--build-arg \
 	"GOIMPORTS_VERSION=$(json '.tools.go.goimports.version')" \
 	--build-arg \
@@ -269,6 +273,8 @@ publish_image vite \
 	"OXLINT_TSGOLINT_SOURCE=$(json '.tools.vite.oxlint_tsgolint_source.repository')" \
 	--build-arg \
 	"OXLINT_TSGOLINT_COMMIT=$(json '.tools.vite.oxlint_tsgolint_source.commit')" \
+	--build-arg \
+	"OXLINT_TSGOLINT_X_TEXT_VERSION=$(json '.tools.vite.oxlint_tsgolint_source.dependency_overrides["golang.org/x/text"]')" \
 	--build-arg \
 	"TYPESCRIPT_GO_COMMIT=$(json '.tools.vite.oxlint_tsgolint_source.typescript_go_commit')" \
 	--build-arg "OXFMT_VERSION=$(json '.tools.vite.oxfmt')"
