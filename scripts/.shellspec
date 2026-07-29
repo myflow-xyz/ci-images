@@ -1,0 +1,5 @@
+--shell bash
++q
+--default-path tests
+--helperdir tests
+--require spec_helper
