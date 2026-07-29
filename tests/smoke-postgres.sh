@@ -54,6 +54,7 @@ expected_go=$(jq -r '.tools.go.runtime' "$manifest")
 [[ $(docker exec "$container_name" printenv PGVECTOR_VERSION) == "$expected_pgvector" ]]
 [[ $(docker exec "$container_name" gosu --version | awk '{print $1}') == "$expected_gosu" ]]
 [[ $(docker exec "$container_name" sh -c 'command -v gosu') == /opt/ci-tools/bin/gosu ]]
+[[ $(docker exec "$container_name" readlink -f /opt/ci-tools/bin/gosu) == /usr/local/bin/gosu ]]
 [[ $(docker exec "$container_name" printenv PATH) == /opt/ci-tools/bin:* ]]
 [[ $(docker exec "$container_name" sh -c 'command -v postgres') == "/usr/lib/postgresql/${expected_postgres}/bin/postgres" ]]
 docker exec "$container_name" \
@@ -61,7 +62,7 @@ docker exec "$container_name" \
 	--binary-files=text \
 	--fixed-strings \
 	"go${expected_go}" \
-	/opt/ci-tools/bin/gosu \
+	/usr/local/bin/gosu \
 	>/dev/null
 
 actual_postgres=$(

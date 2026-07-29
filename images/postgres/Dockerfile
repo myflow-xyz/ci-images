@@ -99,12 +99,12 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
 
 COPY --from=gosu-builder \
   /out/gosu \
-  /opt/ci-tools/gosu/${GOSU_VERSION}/gosu
+  /usr/local/bin/gosu
 
 RUN set -eu; \
     install -d /opt/ci-tools/bin; \
     ln -s \
-      "../gosu/${GOSU_VERSION}/gosu" \
+      /usr/local/bin/gosu \
       /opt/ci-tools/bin/gosu; \
     test "$(gosu --version | awk '{print $1}')" = "${GOSU_VERSION}"
 
