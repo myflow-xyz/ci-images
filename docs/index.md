@@ -7,7 +7,8 @@ overview.
 
 ## Operator guides
 
-- [Using the CI images](usage.md)
+- [Using the CI images](usage.md), including
+  [self-hosted bind-mount permissions](usage.md#self-hosted-bind-mount-permissions)
 - [Releasing the CI images](release.md)
 
 ## Image contracts
@@ -29,4 +30,7 @@ overview.
   the build, smoke-test, scan, and promotion policy.
 - [Release promotion](../.github/workflows/release.yml) defines stable suite
   releases.
-- [`tests/`](../tests) encodes static and runtime image contracts.
+- [Runner permission setup](../scripts/docs/setup-runner-permissions.md)
+  documents the independent self-hosted helper.
+- [`scripts/tests/`](../scripts/tests) verifies the runner helper independently
+  from the image contracts in [`tests/`](../tests).

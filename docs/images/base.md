@@ -62,6 +62,9 @@ home, workspace, and `/var/tmp` directories but does not assume that an
 arbitrary host bind mount is writable. Descendants provision only the
 runtime-specific reusable caches they require below `/var/cache`.
 
+Self-hosted bind-mount permissions are defined in the
+[usage guide](../usage.md#self-hosted-bind-mount-permissions).
+
 The image intentionally excludes:
 
 - Docker CLI and Docker socket access;

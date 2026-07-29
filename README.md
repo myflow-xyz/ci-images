@@ -49,6 +49,7 @@ job image.
 │   └── usage.md      # authentication and consumer workflow guidance
 ├── images/           # Dockerfiles and immutable installation inputs
 ├── manifests/        # reviewed versions, digests, source pins, and checksums
+├── scripts/          # self-hosted runner administration helpers
 ├── tests/            # static contracts and image smoke tests
 └── .github/
     └── workflows/    # verification and GHCR publication
@@ -67,9 +68,13 @@ Use [the usage guide](docs/usage.md) to select and pin an image, and follow
   commits with reviewed security overrides.
 - Images contain no application source, credentials, generated output, or
   mutable service data.
-- Job images run as a non-root user and do not imply Docker daemon access.
-- Writable caches are mounted explicitly and partitioned by repository, runtime,
-  architecture, and dependency lock hash.
+- Job images run as the non-root `ci` user with UID `1001` for GitHub-hosted
+  job-container compatibility and primary GID `2001`. Self-hosted bind mounts
+  delegate write access through the dedicated host group `mfci` with GID
+  `2001`, rather than matching the runner UID or using root.
+- Job images do not imply Docker daemon access.
+- Writable caches are mounted explicitly and partitioned by trust domain,
+  runtime, architecture, and dependency lock hash.
 
 ## License
 
