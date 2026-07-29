@@ -9,9 +9,9 @@ The initial image contract includes:
 
 - Node.js 24.18.0 imported from the digest-pinned official Node image;
 - npm and npx 12.0.1 from a committed lockfile;
-- pnpm 11.15.1;
+- pnpm 11.17.0;
 - `markdownlint-cli2` 0.23.2;
-- Redocly CLI 2.38.0 for OpenAPI validation;
+- Redocly CLI 2.41.1 for OpenAPI validation;
 - explicit npm and pnpm cache paths.
 
 The npm runtime and Node tool dependency trees are installed from committed npm
