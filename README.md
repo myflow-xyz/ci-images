@@ -44,7 +44,7 @@ job image.
 .
 ├── docs/
 │   ├── images/       # image contracts and included tools
-│   ├── index.md      # architecture and design boundaries
+│   ├── index.md      # documentation map
 │   ├── release.md    # versioning, promotion, and verification
 │   └── usage.md      # authentication and consumer workflow guidance
 ├── images/           # Dockerfiles and immutable installation inputs
@@ -54,8 +54,8 @@ job image.
     └── workflows/    # verification and GHCR publication
 ```
 
-Start with [the design overview](docs/index.md), use
-[the consumer guide](docs/usage.md) to select and pin an image, and follow
+Browse [the documentation index](docs/index.md) for detailed image contracts.
+Use [the usage guide](docs/usage.md) to select and pin an image, and follow
 [the release guide](docs/release.md) when publishing a stable suite version.
 
 ## Design boundaries
