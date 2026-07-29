@@ -63,7 +63,7 @@ The image intentionally excludes:
 - user-scoped application configuration or state;
 - repository-specific credentials, configuration, and generated output.
 
-## Consumers
+## Usage
 
 Use `ci-base` directly for workflow, shell, secret, and runtime-independent
 repository policy gates. Markdown, Go, generic Node, Vite, and browser jobs use

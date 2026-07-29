@@ -46,5 +46,4 @@ content and change only when the image is rebuilt.
 Jobs should use the IPC configuration recommended by Playwright. They do not
 receive broad Linux capabilities or Docker socket access.
 
-PMem UI uses this image for Chromium smoke and E2E jobs. Non-browser frontend
-jobs use [`ci-vite`](vite.md).
+Non-browser frontend jobs use [`ci-vite`](vite.md).

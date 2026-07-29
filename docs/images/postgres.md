@@ -62,12 +62,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 Database containers and data directories are job-scoped. Do not restore or
 share PostgreSQL data directories as dependency caches.
 
-## Consumers
-
-- PMem uses this service for pgvector-backed tests.
-- MyFlow Identity Service uses it for PostgreSQL and `pgcrypto` tests.
-- MyFlow Storage Service uses it for PostgreSQL migration and integration
-  tests.
+## Usage
 
 Containerized jobs address the service by its workflow label on port 5432.
 Host-executed jobs publish a dynamic host port instead.

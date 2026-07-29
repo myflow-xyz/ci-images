@@ -5,7 +5,7 @@ Vite quality, test, coverage, and production build jobs.
 
 ## Included tools
 
-The initial compatibility bundle matches the PMem UI dependency graph:
+The compatibility bundle includes:
 
 - TypeScript 6.0.3;
 - Vite 8.1.0;
@@ -38,9 +38,9 @@ the image-global stable links. A mismatch between repository and image pins
 fails a compatibility check; the job does not silently substitute the bundled
 version.
 
-## Consumers
+## Usage
 
-PMem UI uses this image for formatting, lint, type-check, unit test, coverage,
-and production build jobs.
+Use `ci-vite` for formatting, lint, type-check, unit test, coverage, and
+production build jobs.
 
 Use [`ci-playwright`](playwright.md) when a job also launches Chromium.

@@ -57,13 +57,9 @@ Consumers partition `GOMODCACHE` and `GOCACHE` by repository, architecture, Go
 version, and `go.sum` hash. Jobs may bypass the caches without changing
 behavior.
 
-## Consumers
+## Usage
 
-- PMem uses this image for Go verification and release gates.
-- MyFlow API Gateway uses it for pure Go and generation jobs.
-- MyFlow Identity Service uses it for build, sqlc, Goose, lint, race, and test
-  jobs.
-- MyFlow Storage Service uses it for Go build, test, and migration jobs.
+Use `ci-go` for Go generation, build, lint, race, test, and release jobs.
 
 Add [`ci-postgres`](postgres.md) as a service when a job requires PostgreSQL.
 Docker Compose conformance remains outside the ordinary job-image contract.

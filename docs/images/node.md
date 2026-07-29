@@ -49,10 +49,9 @@ pnpm creates a version-specific directory below the configured store root. The
 caches contain package content only. Do not persist `node_modules`, build output,
 or a repository workspace.
 
-## Consumers
+## Usage
 
 Use `ci-node` for generic Node maintenance, Markdown policy, and OpenAPI jobs.
-MyFlow Storage Service uses it for Redocly linting.
 
 Frontend projects use [`ci-vite`](vite.md). Browser jobs use
 [`ci-playwright`](playwright.md).
