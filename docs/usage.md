@@ -5,7 +5,8 @@ security surface, and accidental tool coupling.
 
 ## Image selection
 
-- Use `ci-base` for repository policy, shell, and documentation checks.
+- Use `ci-base` for repository policy, shell, Python standard-library
+  automation, and documentation checks.
 - Use `ci-go` for Go build, generation, lint, test, and release jobs.
 - Use `ci-node` for generic Node tasks such as Redocly OpenAPI linting.
 - Use `ci-vite` for TypeScript and Vite quality, test, and build jobs.

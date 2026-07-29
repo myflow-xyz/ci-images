@@ -35,6 +35,7 @@ for command in \
 	gitleaks \
 	jq \
 	make \
+	python3 \
 	rg \
 	shellcheck \
 	shellspec \
@@ -42,6 +43,17 @@ for command in \
 	yq; do
 	command -v "$command" >/dev/null
 done
+
+python3 -c '
+import json
+import socket
+import urllib.parse
+import urllib.request
+
+assert json.loads("{\"ok\": true}")["ok"]
+assert socket.gethostname()
+assert urllib.parse.urlsplit("https://ci.example/path").hostname == "ci.example"
+'
 
 actionlint --version 2>&1 |
 	grep --fixed-strings "$EXPECTED_ACTIONLINT_VERSION" >/dev/null
@@ -90,6 +102,13 @@ done
 for command in go markdownlint-cli2 node npm npx yarn yarnpkg; do
 	if command -v "$command" >/dev/null 2>&1; then
 		printf 'runtime command is present in ci-base: %s\n' "$command" >&2
+		exit 1
+	fi
+done
+
+for command in pip pip3; do
+	if command -v "$command" >/dev/null 2>&1; then
+		printf 'Python package manager is present in ci-base: %s\n' "$command" >&2
 		exit 1
 	fi
 done

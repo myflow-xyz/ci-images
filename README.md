@@ -21,8 +21,8 @@ pgvector/pgvector:0.8.2-pg18-bookworm@<digest>
 `ci-node` imports its Node runtime from the digest-pinned
 `node:24.18.0-bookworm-slim` image without adding Node to `ci-base`.
 
-- `ghcr.io/myflow-xyz/ci-base`: operating-system utilities and
-  runtime-independent repository policy tools.
+- `ghcr.io/myflow-xyz/ci-base`: operating-system utilities, Python
+  standard-library scripting, and runtime-independent repository policy tools.
 - `ghcr.io/myflow-xyz/ci-go`: Go toolchain, native race-test prerequisites,
   and reusable Go CI executables.
 - `ghcr.io/myflow-xyz/ci-node`: generic Node.js, Markdown, and OpenAPI jobs

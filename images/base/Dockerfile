@@ -170,6 +170,7 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
       make \
       openssl \
       procps \
+      python3 \
       ripgrep \
       sed \
       shellcheck \
