@@ -45,10 +45,18 @@ done
 actionlint --version 2>&1 |
 	grep --fixed-strings "$EXPECTED_ACTIONLINT_VERSION" >/dev/null
 [[ $(gitleaks version) == "$EXPECTED_GITLEAKS_VERSION" ]]
-go version -m "$(command -v gitleaks)" |
-	grep -F $'\tdep\tgithub.com/ulikunitz/xz\t'"${EXPECTED_GITLEAKS_XZ_VERSION}" >/dev/null
-go version -m "$(command -v gitleaks)" |
-	grep -F $'\tdep\tgolang.org/x/crypto\t'"${EXPECTED_GITLEAKS_X_CRYPTO_VERSION}" >/dev/null
+grep \
+	--binary-files=text \
+	--fixed-strings \
+	$'dep\tgithub.com/ulikunitz/xz\t'"${EXPECTED_GITLEAKS_XZ_VERSION}" \
+	"$(command -v gitleaks)" \
+	>/dev/null
+grep \
+	--binary-files=text \
+	--fixed-strings \
+	$'dep\tgolang.org/x/crypto\t'"${EXPECTED_GITLEAKS_X_CRYPTO_VERSION}" \
+	"$(command -v gitleaks)" \
+	>/dev/null
 shfmt --version |
 	grep --fixed-strings "$EXPECTED_SHFMT_VERSION" >/dev/null
 yq --version |
@@ -72,7 +80,7 @@ for command in \
 	[[ $(command -v "$command") == "/opt/ci-tools/bin/${command}" ]]
 done
 
-for command in markdownlint-cli2 node npm npx yarn yarnpkg; do
+for command in go markdownlint-cli2 node npm npx yarn yarnpkg; do
 	if command -v "$command" >/dev/null 2>&1; then
 		printf 'runtime command is present in ci-base: %s\n' "$command" >&2
 		exit 1
