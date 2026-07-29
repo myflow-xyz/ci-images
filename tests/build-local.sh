@@ -78,6 +78,8 @@ build_base() {
 		--build-arg \
 		"GITLEAKS_X_CRYPTO_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["golang.org/x/crypto"]')" \
 		--build-arg \
+		"GITLEAKS_XZ_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["github.com/ulikunitz/xz"]')" \
+		--build-arg \
 		"GO_VERSION=$(json '.tools.go.runtime')" \
 		--build-arg \
 		"GO_SHA256_AMD64=$(json '.tools.go.assets.amd64.sha256')" \

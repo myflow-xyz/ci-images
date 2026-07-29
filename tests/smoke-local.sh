@@ -43,6 +43,10 @@ if [[ $target == all || $target == base ]]; then
 		"EXPECTED_ACTIONLINT_VERSION=$(json '.tools.base.actionlint.version')" \
 		--env \
 		"EXPECTED_GITLEAKS_VERSION=$(json '.tools.base.gitleaks.version')" \
+		--env \
+		"EXPECTED_GITLEAKS_X_CRYPTO_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["golang.org/x/crypto"]')" \
+		--env \
+		"EXPECTED_GITLEAKS_XZ_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["github.com/ulikunitz/xz"]')" \
 		--env "EXPECTED_SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
 		--env "EXPECTED_YQ_VERSION=$(json '.tools.base.yq.version')"
 fi

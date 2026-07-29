@@ -14,8 +14,8 @@ The initial image contract includes:
   race-enabled tests;
 - Go's standard build, format, vet, test, and coverage commands;
 - sqlc 1.31.1;
-- Goose 3.27.1;
-- golangci-lint 2.12.1;
+- Goose 3.27.3;
+- golangci-lint 2.12.2;
 - pinned `goimports` and `govulncheck` releases.
 
 External Go executables are built from exact module versions into immutable

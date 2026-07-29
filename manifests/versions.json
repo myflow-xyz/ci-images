@@ -66,7 +66,8 @@
         "source": "https://github.com/gitleaks/gitleaks",
         "module": "github.com/zricethezav/gitleaks/v8",
         "dependency_overrides": {
-          "golang.org/x/crypto": "v0.52.0"
+          "github.com/ulikunitz/xz": "v0.5.15",
+          "golang.org/x/crypto": "v0.54.0"
         }
       },
       "shellspec": {
@@ -105,22 +106,22 @@
         "module": "github.com/sqlc-dev/sqlc/cmd/sqlc",
         "version": "v1.31.1",
         "dependency_overrides": {
-          "golang.org/x/net": "v0.55.0",
+          "golang.org/x/net": "v0.57.0",
           "google.golang.org/grpc": "v1.82.1"
         }
       },
       "goose": {
         "module": "github.com/pressly/goose/v3/cmd/goose",
-        "version": "v3.27.1",
+        "version": "v3.27.3",
         "dependency_overrides": {
-          "golang.org/x/crypto": "v0.52.0",
-          "golang.org/x/net": "v0.55.0",
+          "golang.org/x/crypto": "v0.54.0",
+          "golang.org/x/net": "v0.57.0",
           "google.golang.org/grpc": "v1.82.1"
         }
       },
       "golangci_lint": {
         "module": "github.com/golangci/golangci-lint/v2/cmd/golangci-lint",
-        "version": "v2.12.1"
+        "version": "v2.12.2"
       },
       "goimports": {
         "module": "golang.org/x/tools/cmd/goimports",

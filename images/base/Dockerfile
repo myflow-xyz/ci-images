@@ -7,6 +7,7 @@ ARG ACTIONLINT_VERSION
 ARG DEBIAN_SNAPSHOT
 ARG GITLEAKS_VERSION
 ARG GITLEAKS_X_CRYPTO_VERSION
+ARG GITLEAKS_XZ_VERSION
 ARG GO_SHA256_AMD64
 ARG GO_SHA256_ARM64
 ARG GO_VERSION
@@ -100,6 +101,7 @@ RUN --mount=type=cache,target=/var/cache/go/mod \
       gitleaks \
       github.com/zricethezav/gitleaks/v8 \
       "v${GITLEAKS_VERSION}" \
+      "github.com/ulikunitz/xz@${GITLEAKS_XZ_VERSION}" \
       "golang.org/x/crypto@${GITLEAKS_X_CRYPTO_VERSION}"; \
     build_tool \
       shfmt \
