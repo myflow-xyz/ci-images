@@ -78,9 +78,10 @@ A release is successful only when:
 
 The source image workflow already verified that every index contains
 `linux/amd64` and `linux/arm64` manifests, per-platform attestations, smoke
-tests, and vulnerability policy before creating the immutable revision tags.
-The release workflow verifies and retags those exact indexes rather than
-repeating the build.
+tests, standard GitHub-hosted job-container write compatibility, and
+vulnerability policy before creating the immutable revision tags. The release
+workflow verifies and retags those exact indexes rather than repeating the
+build.
 
 See [the usage guide](usage.md#pulling-and-pinning) for registry authentication,
 digest inspection, and pull examples.

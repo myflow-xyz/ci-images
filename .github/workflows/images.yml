@@ -188,6 +188,7 @@ jobs:
       contents: read
       packages: write
     outputs:
+      base_image: ${{ steps.publish.outputs.base_image }}
       images: ${{ steps.publish.outputs.images }}
     steps:
       - name: Check out source
@@ -220,13 +221,68 @@ jobs:
           OUTPUT_FILE: ${{ runner.temp }}/published-images.json
         run: |
           .github/scripts/publish-images.sh "$OUTPUT_FILE"
+          base_image=$(
+            jq --exit-status --raw-output '
+              map(select(.name == "base")) |
+              if length == 1 then .[0].ref
+              else error("expected one base image")
+              end
+            ' "$OUTPUT_FILE"
+          )
           images=$(jq --compact-output . "$OUTPUT_FILE")
+          printf 'base_image=%s\n' "$base_image" >>"$GITHUB_OUTPUT"
           printf 'images=%s\n' "$images" >>"$GITHUB_OUTPUT"
+
+  hosted-container:
+    name: Hosted job-container compatibility
+    if: needs.publish.result == 'success'
+    needs: publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read
+    container:
+      image: ${{ needs.publish.outputs.base_image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Verify runner file-command mounts
+        id: mounts
+        run: |
+          test "$(id -u)" = 1001
+          test "$(id -g)" = 2001
+          test "$(stat --format=%u "$GITHUB_ENV")" = 1001
+          printf 'MFCI_FILE_COMMAND=ok\n' >>"$GITHUB_ENV"
+          printf 'written=true\n' >>"$GITHUB_OUTPUT"
+
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Verify runner workspace mount
+        env:
+          OUTPUT_WRITTEN: ${{ steps.mounts.outputs.written }}
+        run: |
+          test "$MFCI_FILE_COMMAND" = ok
+          test "$OUTPUT_WRITTEN" = true
+          probe="$GITHUB_WORKSPACE/.mfci-write-probe"
+          : >"$probe"
+          rm -f "$probe"
 
   scan:
     name: Scan ${{ matrix.image.name }} (${{ matrix.platform }})
-    if: needs.publish.result == 'success'
-    needs: publish
+    if: >-
+      needs.publish.result == 'success' &&
+      needs.hosted-container.result == 'success'
+    needs:
+      - hosted-container
+      - publish
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
