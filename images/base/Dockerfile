@@ -1,18 +1,20 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE} AS base-go-tools
+FROM ${BASE_IMAGE} AS base-go-tools-builder
 
 ARG ACTIONLINT_VERSION
 ARG DEBIAN_SNAPSHOT
 ARG GITLEAKS_VERSION
 ARG GITLEAKS_X_CRYPTO_VERSION
+ARG GITLEAKS_XZ_VERSION
 ARG GO_SHA256_AMD64
 ARG GO_SHA256_ARM64
 ARG GO_VERSION
 ARG SHFMT_VERSION
 ARG TARGETARCH
 ARG YQ_VERSION
+ARG YQ_X_TEXT_VERSION
 
 USER root
 
@@ -100,6 +102,7 @@ RUN --mount=type=cache,target=/var/cache/go/mod \
       gitleaks \
       github.com/zricethezav/gitleaks/v8 \
       "v${GITLEAKS_VERSION}" \
+      "github.com/ulikunitz/xz@${GITLEAKS_XZ_VERSION}" \
       "golang.org/x/crypto@${GITLEAKS_X_CRYPTO_VERSION}"; \
     build_tool \
       shfmt \
@@ -108,7 +111,8 @@ RUN --mount=type=cache,target=/var/cache/go/mod \
     build_tool \
       yq \
       github.com/mikefarah/yq/v4 \
-      "v${YQ_VERSION}"
+      "v${YQ_VERSION}" \
+      "golang.org/x/text@${YQ_X_TEXT_VERSION}"
 
 FROM ${BASE_IMAGE}
 
@@ -183,7 +187,7 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
 ENV LANG=en_US.utf8 \
     LC_ALL=en_US.utf8
 
-COPY --from=base-go-tools /out/ /opt/ci-tools/
+COPY --from=base-go-tools-builder /out/ /opt/ci-tools/
 
 RUN set -eu; \
     install -d /opt/ci-tools/bin; \

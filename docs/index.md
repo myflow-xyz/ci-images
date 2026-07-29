@@ -1,188 +1,32 @@
-# CI image design
+# Documentation
 
-This repository owns the reusable Linux execution environments for MyFlow
-GitHub Actions jobs. It separates image lifecycle and security maintenance from
-application repositories while keeping application dependency manifests
-authoritative.
+The [repository README](../README.md) owns the project overview, image
+hierarchy, repository structure, and high-level design boundaries. This page
+routes to the detailed operational and image contracts without repeating that
+overview.
 
-## Architecture
+## Operator guides
 
-```text
-debian:bookworm-slim@<digest>
-└── ci-base
-    ├── ci-go
-    └── ci-node
-        └── ci-vite
-            └── ci-playwright
+- [Using the CI images](usage.md)
+- [Releasing the CI images](release.md)
 
-pgvector/pgvector:0.8.2-pg18-bookworm@<digest>
-└── ci-postgres
-```
+## Image contracts
 
-`ci-node` imports its runtime from the digest-pinned
-`node:24.18.0-bookworm-slim` image.
+- [`ci-base`](images/base.md)
+- [`ci-go`](images/go.md)
+- [`ci-node`](images/node.md)
+- [`ci-vite`](images/vite.md)
+- [`ci-playwright`](images/playwright.md)
+- [`ci-postgres`](images/postgres.md)
 
-The inheritance graph reflects actual reuse:
+## Source authorities
 
-- `ci-base` contains runtime-independent operating-system and policy tools.
-- `ci-go` adds Go without inheriting the `ci-node` or frontend tool bundles.
-- `ci-node` adds Node, package management, Markdown linting, and generic Node
-  CI tools.
-- `ci-vite` adds the frontend quality and build tool bundle.
-- `ci-playwright` adds the browser matched to the repository Playwright release.
-- `ci-postgres` preserves its upstream PostgreSQL entrypoint and filesystem
-  contract on a separate service-image lineage.
-
-See [the image catalog](#image-catalog) for each detailed contract.
-
-## Image catalog
-
-- [`ci-base`](images/base.md) provides common operating-system, policy, and
-  diagnostic tools.
-- [`ci-go`](images/go.md) provides the Go toolchain and reusable Go CI
-  executables.
-- [`ci-node`](images/node.md) provides Node, npm, pnpm, Markdown, and generic
-  OpenAPI tooling.
-- [`ci-vite`](images/vite.md) provides the Vite ecosystem quality and build
-  bundle.
-- [`ci-playwright`](images/playwright.md) provides version-matched Chromium.
-- [`ci-postgres`](images/postgres.md) provides PostgreSQL 18 and pgvector as a
-  service.
-
-## Design rules
-
-### Reproducible inputs
-
-- Upstream images are selected by immutable OCI digest.
-- Directly downloaded archives are verified against reviewed SHA-256 values.
-- Node tool dependency trees are committed as npm lockfiles.
-- Go executables are source-built with the pinned Go toolchain from exact
-  module versions or source commits. Reviewed dependency overrides are recorded
-  in the version manifest.
-- Debian packages are resolved from a reviewed snapshot rather than a moving
-  package mirror.
-- Published images carry source revision, version-manifest, SBOM, and provenance
-  metadata.
-
-The version manifest is the review surface for updating upstream images,
-runtimes, source revisions, security overrides, and direct downloads. Native
-lock data remains beside the build input that consumes it.
-
-### Repository authority
-
-The images accelerate jobs; they do not replace repository dependency
-management:
-
-- `go.mod` and `go.sum` own Go library versions.
-- `package.json` and the frozen package-manager lockfile own application and
-  frontend package versions.
-- Repository scripts invoke local Node executables through package scripts or
-  `pnpm exec`.
-- A version mismatch fails visibly instead of silently substituting an
-  image-global executable.
-
-### Runtime isolation
-
-Job images run as an unprivileged CI user. They contain no Docker socket,
-credentials, application source, generated output, or service state.
-
-Organization-managed commands are exposed through `/opt/ci-tools/bin`.
-Persistent reusable caches use image-specific directories below `/var/cache`;
-temporary build artifacts use `/var/tmp`. Language runtimes and service
-executables retain their standard upstream filesystem layouts.
-
-`ci-base` owns the environment shared by job images. Descendants inherit that
-environment and define only image-specific additions or overrides.
-`ci-postgres` is a separate lineage, so cross-lineage invariants such as the
-UTF-8 locale are defined explicitly there.
-
-Writable dependency caches are external inputs. Consumers partition them by
-repository or equivalent trust domain, architecture, runtime version, and
-dependency lock hash. Jobs must retain a cache-bypass path because restored
-caches are untrusted.
-
-`ci-postgres` runs as its upstream database user. A new service container is
-created for each job; schemas, roles, extensions, and test data remain
-repository-owned.
-
-### Multi-architecture image requirement
-
-CI images use manifest-based multi-architecture publication. Every release tag
-must resolve to one OCI image index containing a runnable image manifest for
-each supported target platform. The supported set includes, at minimum:
-
-- `linux/amd64`;
-- `linux/arm64`.
-
-Build workflows pass target platforms explicitly. Dockerfiles use BuildKit
-target-platform inputs when artifact selection or build logic varies by
-architecture; builds must not infer or hard-code the builder host architecture.
-
-Consumer workflows use the shared architecture-neutral release tag and pin its
-OCI index digest. Architecture-specific suffix tags are not part of the
-consumer contract. The container runtime selects the host-compatible manifest
-from the index automatically.
-
-Before promotion or release, the publication workflow inspects the published
-index and verifies the complete required platform set. Both platform images
-must also pass their image-specific smoke tests.
-
-## Build and release model
-
-Parent changes rebuild every descendant:
-
-1. `ci-base` is built and verified.
-2. `ci-go` consumes the resulting `ci-base` digest; `ci-node` combines that
-   digest with its pinned Node runtime source.
-3. `ci-vite` consumes the resulting `ci-node` digest.
-4. `ci-playwright` consumes the resulting `ci-vite` digest.
-5. `ci-postgres` builds independently from its pgvector base.
-
-Publication produces immutable digests and descriptive tags. Verified
-`develop` pushes update `edge`; verified `main` pushes update `latest`. Manual
-image publications use a run-specific tag and never create a stable release.
-
-A separate manual release promotes the current verified `main` digests to one
-suite-wide `vX.Y.Z` version without rebuilding them. The operator selects a
-patch, minor, or major bump; the Git tag and GitHub Release are created only
-after all six registry tags are verified.
-
-Tags are discovery aids; consumers use digests. A promoted digest must have:
-
-- image-specific smoke results;
-- an SBOM and build provenance;
-- vulnerability scans with no fixed HIGH or CRITICAL finding in either
-  platform image;
-- a retained previous digest for rollback.
-
-Read [the usage guide](usage.md) for job-container and service-container
-contracts. Read [the release guide](release.md) for version selection,
-promotion invariants, verification, and recovery.
-
-## Scope boundaries
-
-This repository does not:
-
-- package application runtimes for production deployment;
-- own application dependencies or database migrations;
-- provide a privileged Docker-in-Docker environment;
-- replace macOS tooling for jobs that cannot run in Linux containers;
-- package repository-specific Redis, Tyk, Nginx, Grafana, or Prometheus
-  services.
-
-Docker Compose conformance jobs remain on a separately controlled runner unless
-a dedicated privileged image contract is designed.
-
-## References
-
-- [GitHub Actions: running jobs in a container][job-containers]
-- [GitHub Actions: service containers][service-containers]
-- [GitHub Actions: dependency caching][dependency-caching]
-- [Playwright Docker guidance][playwright-docker]
-- [pgvector Docker images][pgvector-docker]
-
-[dependency-caching]: https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching
-[job-containers]: https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/run-jobs-in-a-container
-[pgvector-docker]: https://github.com/pgvector/pgvector#docker
-[playwright-docker]: https://playwright.dev/docs/docker
-[service-containers]: https://docs.github.com/en/actions/tutorials/use-containerized-services/use-docker-service-containers
+- [`manifests/versions.json`](../manifests/versions.json) records reviewed
+  versions, digests, source revisions, dependency overrides, and checksums.
+- [`images/`](../images) contains the immutable image build definitions and
+  installation inputs.
+- [Image verification and publication](../.github/workflows/images.yml) defines
+  the build, smoke-test, scan, and promotion policy.
+- [Release promotion](../.github/workflows/release.yml) defines stable suite
+  releases.
+- [`tests/`](../tests) encodes static and runtime image contracts.

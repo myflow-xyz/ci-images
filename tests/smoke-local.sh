@@ -43,8 +43,14 @@ if [[ $target == all || $target == base ]]; then
 		"EXPECTED_ACTIONLINT_VERSION=$(json '.tools.base.actionlint.version')" \
 		--env \
 		"EXPECTED_GITLEAKS_VERSION=$(json '.tools.base.gitleaks.version')" \
+		--env \
+		"EXPECTED_GITLEAKS_X_CRYPTO_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["golang.org/x/crypto"]')" \
+		--env \
+		"EXPECTED_GITLEAKS_XZ_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["github.com/ulikunitz/xz"]')" \
 		--env "EXPECTED_SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
-		--env "EXPECTED_YQ_VERSION=$(json '.tools.base.yq.version')"
+		--env "EXPECTED_YQ_VERSION=$(json '.tools.base.yq.version')" \
+		--env \
+		"EXPECTED_YQ_X_TEXT_VERSION=$(json '.tools.base.yq.dependency_overrides["golang.org/x/text"]')"
 fi
 
 if [[ $target == all || $target == go ]]; then
@@ -62,6 +68,8 @@ if [[ $target == all || $target == go ]]; then
 		"EXPECTED_GOOSE_GRPC_VERSION=$(json '.tools.go.goose.dependency_overrides["google.golang.org/grpc"]')" \
 		--env \
 		"EXPECTED_GOLANGCI_LINT_VERSION=$(json '.tools.go.golangci_lint.version')" \
+		--env \
+		"EXPECTED_GOLANGCI_LINT_X_TEXT_VERSION=$(json '.tools.go.golangci_lint.dependency_overrides["golang.org/x/text"]')" \
 		--env \
 		"EXPECTED_GOIMPORTS_VERSION=$(json '.tools.go.goimports.version')" \
 		--env \
@@ -81,6 +89,10 @@ if [[ $target == all || $target == node ]]; then
 		"EXPECTED_MARKDOWNLINT_VERSION=$(json '.tools.node.markdownlint_cli2.version')" \
 		--env \
 		"EXPECTED_NODE_BUNDLE_VERSION=$(json '.tools.node.bundle_version')" \
+		--env \
+		"EXPECTED_NPM_BRACE_EXPANSION_VERSION=$(json '.tools.node.npm.dependency_replacements["brace-expansion"]')" \
+		--env \
+		"EXPECTED_NPM_TAR_VERSION=$(json '.tools.node.npm.dependency_replacements.tar')" \
 		--env "EXPECTED_NPM_VERSION=$(json '.tools.node.npm.version')" \
 		--env "EXPECTED_PNPM_VERSION=$(json '.tools.node.pnpm')" \
 		--env "EXPECTED_REDOCLY_VERSION=$(json '.tools.node.redocly')"
@@ -102,6 +114,8 @@ if [[ $target == all || $target == vite ]]; then
 		--env "EXPECTED_OXLINT_VERSION=$(json '.tools.vite.oxlint')" \
 		--env \
 		"EXPECTED_OXLINT_TSGOLINT_VERSION=$(json '.tools.vite.oxlint_tsgolint')" \
+		--env \
+		"EXPECTED_OXLINT_TSGOLINT_X_TEXT_VERSION=$(json '.tools.vite.oxlint_tsgolint_source.dependency_overrides["golang.org/x/text"]')" \
 		--env "EXPECTED_OXFMT_VERSION=$(json '.tools.vite.oxfmt')"
 fi
 

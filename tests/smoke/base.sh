@@ -5,9 +5,12 @@ set -euo pipefail
 expected_uid=${EXPECTED_CI_UID:?EXPECTED_CI_UID is not set}
 expected_go=${EXPECTED_TOOLCHAIN_GO_VERSION:?EXPECTED_TOOLCHAIN_GO_VERSION is not set}
 : "${EXPECTED_ACTIONLINT_VERSION:?EXPECTED_ACTIONLINT_VERSION is not set}"
+: "${EXPECTED_GITLEAKS_X_CRYPTO_VERSION:?EXPECTED_GITLEAKS_X_CRYPTO_VERSION is not set}"
+: "${EXPECTED_GITLEAKS_XZ_VERSION:?EXPECTED_GITLEAKS_XZ_VERSION is not set}"
 : "${EXPECTED_GITLEAKS_VERSION:?EXPECTED_GITLEAKS_VERSION is not set}"
 : "${EXPECTED_SHFMT_VERSION:?EXPECTED_SHFMT_VERSION is not set}"
 : "${EXPECTED_YQ_VERSION:?EXPECTED_YQ_VERSION is not set}"
+: "${EXPECTED_YQ_X_TEXT_VERSION:?EXPECTED_YQ_X_TEXT_VERSION is not set}"
 
 [[ $(id -u) == "$expected_uid" ]]
 [[ $HOME == /home/ci ]]
@@ -43,10 +46,28 @@ done
 actionlint --version 2>&1 |
 	grep --fixed-strings "$EXPECTED_ACTIONLINT_VERSION" >/dev/null
 [[ $(gitleaks version) == "$EXPECTED_GITLEAKS_VERSION" ]]
+grep \
+	--binary-files=text \
+	--fixed-strings \
+	$'dep\tgithub.com/ulikunitz/xz\t'"${EXPECTED_GITLEAKS_XZ_VERSION}" \
+	"$(command -v gitleaks)" \
+	>/dev/null
+grep \
+	--binary-files=text \
+	--fixed-strings \
+	$'dep\tgolang.org/x/crypto\t'"${EXPECTED_GITLEAKS_X_CRYPTO_VERSION}" \
+	"$(command -v gitleaks)" \
+	>/dev/null
 shfmt --version |
 	grep --fixed-strings "$EXPECTED_SHFMT_VERSION" >/dev/null
 yq --version |
 	grep --fixed-strings "$EXPECTED_YQ_VERSION" >/dev/null
+grep \
+	--binary-files=text \
+	--fixed-strings \
+	$'dep\tgolang.org/x/text\t'"${EXPECTED_YQ_X_TEXT_VERSION}" \
+	"$(command -v yq)" \
+	>/dev/null
 
 for command in actionlint gitleaks shfmt yq; do
 	grep \
@@ -66,7 +87,7 @@ for command in \
 	[[ $(command -v "$command") == "/opt/ci-tools/bin/${command}" ]]
 done
 
-for command in markdownlint-cli2 node npm npx yarn yarnpkg; do
+for command in go markdownlint-cli2 node npm npx yarn yarnpkg; do
 	if command -v "$command" >/dev/null 2>&1; then
 		printf 'runtime command is present in ci-base: %s\n' "$command" >&2
 		exit 1

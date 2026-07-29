@@ -66,7 +66,8 @@
         "source": "https://github.com/gitleaks/gitleaks",
         "module": "github.com/zricethezav/gitleaks/v8",
         "dependency_overrides": {
-          "golang.org/x/crypto": "v0.52.0"
+          "github.com/ulikunitz/xz": "v0.5.15",
+          "golang.org/x/crypto": "v0.54.0"
         }
       },
       "shellspec": {
@@ -85,7 +86,10 @@
       "yq": {
         "version": "4.53.3",
         "source": "https://github.com/mikefarah/yq",
-        "module": "github.com/mikefarah/yq/v4"
+        "module": "github.com/mikefarah/yq/v4",
+        "dependency_overrides": {
+          "golang.org/x/text": "v0.39.0"
+        }
       }
     },
     "go": {
@@ -105,22 +109,25 @@
         "module": "github.com/sqlc-dev/sqlc/cmd/sqlc",
         "version": "v1.31.1",
         "dependency_overrides": {
-          "golang.org/x/net": "v0.55.0",
+          "golang.org/x/net": "v0.57.0",
           "google.golang.org/grpc": "v1.82.1"
         }
       },
       "goose": {
         "module": "github.com/pressly/goose/v3/cmd/goose",
-        "version": "v3.27.1",
+        "version": "v3.27.3",
         "dependency_overrides": {
-          "golang.org/x/crypto": "v0.52.0",
-          "golang.org/x/net": "v0.55.0",
+          "golang.org/x/crypto": "v0.54.0",
+          "golang.org/x/net": "v0.57.0",
           "google.golang.org/grpc": "v1.82.1"
         }
       },
       "golangci_lint": {
         "module": "github.com/golangci/golangci-lint/v2/cmd/golangci-lint",
-        "version": "v2.12.1"
+        "version": "v2.12.2",
+        "dependency_overrides": {
+          "golang.org/x/text": "v0.39.0"
+        }
       },
       "goimports": {
         "module": "golang.org/x/tools/cmd/goimports",
@@ -136,9 +143,10 @@
       "npm": {
         "version": "12.0.1",
         "lockfile": "images/node/npm-runtime/package-lock.json",
-        "lockfile_sha256": "0443e53e2e7b5144391d060e65ef47a27ebcec777d243296c7f6118b094dc705",
+        "lockfile_sha256": "57c98364420a0212ed671b6390a514a72441ee17256d486b84dc32a40dd15428",
         "dependency_replacements": {
-          "brace-expansion": "5.0.8"
+          "brace-expansion": "5.0.8",
+          "tar": "7.5.21"
         }
       },
       "markdownlint_cli2": {
@@ -146,33 +154,36 @@
         "lockfile": "images/node/markdownlint/package-lock.json",
         "lockfile_sha256": "67ac75155d173347711bf06819067cd0a2dd5407c110b0f14730b3e3c9e3c0b3"
       },
-      "bundle_version": "1",
+      "bundle_version": "2",
       "lockfile": "images/node/npm/package-lock.json",
-      "lockfile_sha256": "465b55739cd68e8d65e4ec80a5912e4e11f264123218cc7f7ab09c10e9be5da6",
-      "pnpm": "11.15.1",
-      "redocly": "2.38.0"
+      "lockfile_sha256": "7e2964cb59e5592079c712c3ca3f9b939c848a8eb4a61bfbb08dfdd1c9fb8053",
+      "pnpm": "11.17.0",
+      "redocly": "2.41.1"
     },
     "vite": {
-      "bundle_version": "1",
+      "bundle_version": "2",
       "lockfile": "images/vite/npm/package-lock.json",
-      "lockfile_sha256": "7d9cbbe33d854a159699b2a1b37fcf108d2bc9934970acd2063f3feaf7408e38",
+      "lockfile_sha256": "e48e833d1b662a3cfd23898ace4c68b6cd38f9116e2045bfd6e7e95b249cb60e",
       "typescript": "6.0.3",
-      "vite": "8.1.0",
-      "vitest": "4.1.9",
-      "coverage_v8": "4.1.9",
-      "oxlint": "1.71.0",
+      "vite": "8.1.5",
+      "vitest": "4.1.10",
+      "coverage_v8": "4.1.10",
+      "oxlint": "1.72.0",
       "oxlint_tsgolint": "0.23.0",
       "oxlint_tsgolint_source": {
         "repository": "https://github.com/oxc-project/tsgolint",
         "commit": "0e575fae8407227601f66c1d8d8927a535aea58b",
-        "typescript_go_commit": "c282336ea94f8a2e63187afd0f8d4bfb3b3f4d3b"
+        "typescript_go_commit": "c282336ea94f8a2e63187afd0f8d4bfb3b3f4d3b",
+        "dependency_overrides": {
+          "golang.org/x/text": "v0.39.0"
+        }
       },
       "oxfmt": "0.56.0"
     },
     "playwright": {
-      "version": "1.61.1",
+      "version": "1.62.0",
       "lockfile": "images/playwright/npm/package-lock.json",
-      "lockfile_sha256": "a1e53470b11316c115449073edc3845c8ca24fc6018743764712d02610b73b42"
+      "lockfile_sha256": "8d35ef9c5f1d3ac654d01461c19c3a453845e749ad0df1c47a573af97d900bd6"
     },
     "postgres": {
       "postgres": "18",

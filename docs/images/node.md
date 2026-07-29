@@ -9,14 +9,15 @@ The initial image contract includes:
 
 - Node.js 24.18.0 imported from the digest-pinned official Node image;
 - npm and npx 12.0.1 from a committed lockfile;
-- pnpm 11.15.1;
+- pnpm 11.17.0;
 - `markdownlint-cli2` 0.23.2;
-- Redocly CLI 2.38.0 for OpenAPI validation;
+- Redocly CLI 2.41.1 for OpenAPI validation;
 - explicit npm and pnpm cache paths.
 
 The npm runtime and Node tool dependency trees are installed from committed npm
 lockfiles into immutable versioned directories. Stable command links are
-exposed through `/opt/ci-tools/bin`.
+exposed through `/opt/ci-tools/bin`. Reviewed replacements remove vulnerable
+dependencies bundled by the pinned npm release.
 
 ## Runtime environment
 
@@ -49,10 +50,9 @@ pnpm creates a version-specific directory below the configured store root. The
 caches contain package content only. Do not persist `node_modules`, build output,
 or a repository workspace.
 
-## Consumers
+## Usage
 
 Use `ci-node` for generic Node maintenance, Markdown policy, and OpenAPI jobs.
-MyFlow Storage Service uses it for Redocly linting.
 
 Frontend projects use [`ci-vite`](vite.md). Browser jobs use
 [`ci-playwright`](playwright.md).

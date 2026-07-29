@@ -14,19 +14,18 @@ The initial image contract includes:
   race-enabled tests;
 - Go's standard build, format, vet, test, and coverage commands;
 - sqlc 1.31.1;
-- Goose 3.27.1;
-- golangci-lint 2.12.1;
+- Goose 3.27.3;
+- golangci-lint 2.12.2;
 - pinned `goimports` and `govulncheck` releases.
 
 External Go executables are built from exact module versions into immutable
 versioned directories. Stable links are exposed through
 `/opt/ci-tools/bin`.
 
-The manifest records narrow dependency overrides used to rebuild sqlc and
-Goose when their released binaries contain a fixed HIGH or CRITICAL
-vulnerability. The image smoke contract verifies those resolved module
-versions; an override is removed when the upstream tool release incorporates
-the fix.
+The manifest records narrow dependency overrides used to rebuild a tool when
+its released dependency graph contains a fixed HIGH or CRITICAL vulnerability.
+The image smoke contract verifies those resolved module versions; an override
+is removed when the upstream tool release incorporates the fix.
 
 ## Runtime environment
 
@@ -57,13 +56,9 @@ Consumers partition `GOMODCACHE` and `GOCACHE` by repository, architecture, Go
 version, and `go.sum` hash. Jobs may bypass the caches without changing
 behavior.
 
-## Consumers
+## Usage
 
-- PMem uses this image for Go verification and release gates.
-- MyFlow API Gateway uses it for pure Go and generation jobs.
-- MyFlow Identity Service uses it for build, sqlc, Goose, lint, race, and test
-  jobs.
-- MyFlow Storage Service uses it for Go build, test, and migration jobs.
+Use `ci-go` for Go generation, build, lint, race, test, and release jobs.
 
 Add [`ci-postgres`](postgres.md) as a service when a job requires PostgreSQL.
 Docker Compose conformance remains outside the ordinary job-image contract.

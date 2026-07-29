@@ -6,17 +6,24 @@ expected_node=${EXPECTED_NODE_VERSION:?EXPECTED_NODE_VERSION is not set}
 expected_pnpm=${EXPECTED_PNPM_VERSION:?EXPECTED_PNPM_VERSION is not set}
 : "${EXPECTED_MARKDOWNLINT_VERSION:?EXPECTED_MARKDOWNLINT_VERSION is not set}"
 : "${EXPECTED_NODE_BUNDLE_VERSION:?EXPECTED_NODE_BUNDLE_VERSION is not set}"
+: "${EXPECTED_NPM_BRACE_EXPANSION_VERSION:?EXPECTED_NPM_BRACE_EXPANSION_VERSION is not set}"
+: "${EXPECTED_NPM_TAR_VERSION:?EXPECTED_NPM_TAR_VERSION is not set}"
 : "${EXPECTED_NPM_VERSION:?EXPECTED_NPM_VERSION is not set}"
 : "${EXPECTED_REDOCLY_VERSION:?EXPECTED_REDOCLY_VERSION is not set}"
 expected_bundle=$EXPECTED_NODE_BUNDLE_VERSION
 expected_markdownlint=$EXPECTED_MARKDOWNLINT_VERSION
 expected_redocly=$EXPECTED_REDOCLY_VERSION
 bundle_root="/opt/ci-tools/node/${expected_bundle}/node_modules"
+npm_root="/opt/ci-tools/npm/${EXPECTED_NPM_VERSION}/node_modules"
 expected_store="/var/cache/pnpm/store/v${expected_pnpm%%.*}"
 
 [[ $(node --version) == "v${expected_node}" ]]
 [[ $NODE_VERSION == "$expected_node" ]]
 [[ $(npm --version) == "$EXPECTED_NPM_VERSION" ]]
+[[ $(node --print \
+	"require('${npm_root}/brace-expansion/package.json').version") == "$EXPECTED_NPM_BRACE_EXPANSION_VERSION" ]]
+[[ $(node --print \
+	"require('${npm_root}/tar/package.json').version") == "$EXPECTED_NPM_TAR_VERSION" ]]
 [[ $(pnpm --version) == "$expected_pnpm" ]]
 markdownlint-cli2 --version 2>&1 |
 	grep --fixed-strings "markdownlint-cli2 v${expected_markdownlint}" >/dev/null

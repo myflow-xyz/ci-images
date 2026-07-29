@@ -13,6 +13,7 @@ ARG MARKDOWNLINT_CLI2_VERSION
 ARG NODE_TOOLS_BUNDLE_VERSION
 ARG NODE_VERSION
 ARG NPM_BRACE_EXPANSION_VERSION
+ARG NPM_TAR_VERSION
 ARG NPM_VERSION
 ARG PNPM_VERSION
 ARG REDOCLY_VERSION
@@ -62,11 +63,18 @@ RUN --mount=from=node-runtime,source=/usr/local/lib/node_modules/npm,target=/usr
     test "$(node --print \
       "require('/var/tmp/npm-runtime/node_modules/brace-expansion/package.json').version")" \
       = "${NPM_BRACE_EXPANSION_VERSION}"; \
+    test "$(node --print \
+      "require('/var/tmp/npm-runtime/node_modules/tar/package.json').version")" \
+      = "${NPM_TAR_VERSION}"; \
     rm -rf \
-      /var/tmp/npm-runtime/node_modules/npm/node_modules/brace-expansion; \
+      /var/tmp/npm-runtime/node_modules/npm/node_modules/brace-expansion \
+      /var/tmp/npm-runtime/node_modules/npm/node_modules/tar; \
     mv \
       /var/tmp/npm-runtime/node_modules/brace-expansion \
       /var/tmp/npm-runtime/node_modules/npm/node_modules/brace-expansion; \
+    mv \
+      /var/tmp/npm-runtime/node_modules/tar \
+      /var/tmp/npm-runtime/node_modules/npm/node_modules/tar; \
     install -d /opt/ci-tools/npm; \
     mv \
       /var/tmp/npm-runtime/node_modules/npm \
@@ -81,7 +89,10 @@ RUN --mount=from=node-runtime,source=/usr/local/lib/node_modules/npm,target=/usr
     test "$(/opt/ci-tools/bin/npm --version)" = "${NPM_VERSION}"; \
     test "$(node --print \
       "require('/opt/ci-tools/npm/${NPM_VERSION}/node_modules/brace-expansion/package.json').version")" \
-      = "${NPM_BRACE_EXPANSION_VERSION}"
+      = "${NPM_BRACE_EXPANSION_VERSION}"; \
+    test "$(node --print \
+      "require('/opt/ci-tools/npm/${NPM_VERSION}/node_modules/tar/package.json').version")" \
+      = "${NPM_TAR_VERSION}"
 
 COPY images/node/markdownlint/package.json \
   images/node/markdownlint/package-lock.json \

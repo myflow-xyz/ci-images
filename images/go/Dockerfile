@@ -6,6 +6,7 @@ FROM ${BASE_IMAGE}
 ARG BUILD_CREATED=unknown
 ARG BUILD_REVISION=unknown
 ARG GOLANGCI_LINT_VERSION
+ARG GOLANGCI_LINT_X_TEXT_VERSION
 ARG GOIMPORTS_VERSION
 ARG GOOSE_VERSION
 ARG GOOSE_X_CRYPTO_VERSION
@@ -93,7 +94,8 @@ RUN --mount=type=cache,target=/var/cache/go/mod \
     build_tool \
       golangci-lint \
       github.com/golangci/golangci-lint/v2/cmd/golangci-lint \
-      "${GOLANGCI_LINT_VERSION}"; \
+      "${GOLANGCI_LINT_VERSION}" \
+      "golang.org/x/text@${GOLANGCI_LINT_X_TEXT_VERSION}"; \
     build_tool \
       goimports \
       golang.org/x/tools/cmd/goimports \
