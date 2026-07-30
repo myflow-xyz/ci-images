@@ -64,15 +64,19 @@ sudo scripts/setup-runner-permissions.sh --dry-run
 ```
 
 For a workflow that intentionally depends on these bind mounts, verify the
-existing host state without root access or mutations:
+existing host state without root access or mutations. Run this directly from a
+host-side step inherited from the runner service:
 
 ```bash
 scripts/setup-runner-permissions.sh --check
 ```
 
-On failure, stop the workflow. A runner operator must drain the runner, apply
-the required host changes with `sudo`, restart the runner service when
-reported, and then rerun the workflow.
+`--check` requires the invoking UID to match the resolved runner owner. It
+verifies both the account database and the current process's effective groups;
+do not invoke it through `sudo`, `su`, or another fresh login that would receive
+a new group list. On failure, stop the workflow. A runner operator must drain
+the runner, apply the required host changes with `sudo`, restart the runner
+service when reported, and then rerun the workflow.
 
 Apply and verify the permission contract:
 

@@ -213,9 +213,12 @@ documents host provisioning, supported layouts, safety boundaries, and its
 test contract. It manages only repository `_work` trees and `shared/cache`; it
 does not make runner installation directories group-writable.
 
-An opt-in host preflight may run the helper with `--check`. It only verifies
-existing state and must fail the job rather than repair a runner. The runner
-operator applies changes separately before the workflow is rerun.
+An opt-in host preflight may run the helper with `--check` directly from a
+host-side step inherited from the runner service. It verifies the invoking
+runner process's effective shared-group membership in addition to the host
+filesystem state. It must fail the job rather than repair a runner. The runner
+operator applies changes and restarts the service separately before the
+workflow is rerun.
 
 The runner account owns each managed `_work` or `shared/cache` root. Files and
 directories created below those roots may retain the container UID; the shared

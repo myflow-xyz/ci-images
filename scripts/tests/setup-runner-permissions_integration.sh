@@ -39,6 +39,16 @@ group_record=$(getent group "$owner_gid")
 [[ -n $group_record ]] || fail "test group is unavailable: ${owner_gid}"
 IFS=: read -r group_name _ group_gid _ <<<"$group_record"
 
+stale_gid=
+while IFS=: read -r _ _ candidate_gid _; do
+	[[ $candidate_gid =~ ^[0-9]+$ ]] || continue
+	((candidate_gid != 0)) || continue
+	[[ $candidate_gid != "$group_gid" ]] || continue
+	stale_gid=$candidate_gid
+	break
+done < <(getent group)
+[[ -n $stale_gid ]] || fail 'an alternate test group is unavailable'
+
 probe_uid=65534
 if [[ $probe_uid == "$owner_uid" ]]; then
 	probe_uid=65533
@@ -180,6 +190,34 @@ check_output=$(
 	fail 'verification-only mode was not reported'
 [[ $check_output == *'verified status=ok mode=check targets=3'* ]] ||
 	fail 'verification-only success was not reported'
+[[ $check_output == *'configured-membership=present effective-membership=present'* ]] ||
+	fail 'configured and effective memberships were not reported separately'
+
+assert_fails_with \
+	'stale effective group membership' \
+	'resolved group is not effective for the current runner process; restart the runner service' \
+	setpriv \
+	--reuid "$owner_uid" \
+	--regid "$stale_gid" \
+	--clear-groups \
+	"$helper" \
+	--runner-root "$runner_root" \
+	--owner "$owner_name" \
+	--group "$group_name" \
+	--check
+
+assert_fails_with \
+	'wrong verification caller' \
+	"--check must run as resolved owner: ${owner_name}(${owner_uid})" \
+	setpriv \
+	--reuid "$probe_uid" \
+	--regid "$group_gid" \
+	--clear-groups \
+	"$helper" \
+	--runner-root "$runner_root" \
+	--owner "$owner_name" \
+	--group "$group_name" \
+	--check
 
 chmod 0600 "$work_file"
 check_failure_before=$(stat --format '%u:%g:%a' "$work_file")
@@ -415,6 +453,10 @@ empty_dry_run_output=$(
 assert_fails_with \
 	'missing shared parent check' \
 	"shared root is missing: ${empty_root}/shared" \
+	setpriv \
+	--reuid "$owner_uid" \
+	--regid "$owner_gid" \
+	--init-groups \
 	"$helper" \
 	--runner-root "$empty_root" \
 	--owner "$owner_name" \

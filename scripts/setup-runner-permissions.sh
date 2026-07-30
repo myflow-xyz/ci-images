@@ -170,6 +170,43 @@ IFS=: read -r group_name _ group_gid _ <<<"${group_records[0]}"
 ((group_gid != 0)) ||
 	fail "group must not be root: ${group_name}"
 
+group_list_has_gid() {
+	local group_list=$1
+	local current_gid
+	local -a group_ids=()
+
+	read -r -a group_ids <<<"$group_list"
+	for current_gid in "${group_ids[@]}"; do
+		[[ $current_gid != "$group_gid" ]] || return 0
+	done
+	return 1
+}
+
+owner_has_configured_group() {
+	local configured_groups
+
+	configured_groups=$(id -G "$owner_name") ||
+		fail "cannot resolve owner groups: ${owner_name}"
+	group_list_has_gid "$configured_groups"
+}
+
+current_process_has_group() {
+	local effective_groups
+
+	effective_groups=$(id -G) ||
+		fail 'cannot resolve current process groups'
+	group_list_has_gid "$effective_groups"
+}
+
+if $check_only; then
+	((EUID == owner_uid)) ||
+		fail "--check must run as resolved owner: ${owner_name}(${owner_uid})"
+	owner_has_configured_group ||
+		fail "owner is not configured for resolved group: ${owner_name}/${group_name}"
+	current_process_has_group ||
+		fail "resolved group is not effective for the current runner process; restart the runner service: ${owner_name}/${group_name}"
+fi
+
 [[ $runner_root == /* ]] ||
 	fail "runner root must be an absolute path: ${runner_root}"
 [[ $runner_root != / ]] ||
@@ -239,21 +276,7 @@ for target in "${existing_targets[@]}"; do
 	reject_unsupported_entries "$target"
 done
 
-owner_has_group() {
-	local current_gid
-	local owner_groups
-	local -a owner_group_ids=()
-
-	owner_groups=$(id -G "$owner_name") ||
-		fail "cannot resolve owner groups: ${owner_name}"
-	read -r -a owner_group_ids <<<"$owner_groups"
-	for current_gid in "${owner_group_ids[@]}"; do
-		[[ $current_gid != "$group_gid" ]] || return 0
-	done
-	return 1
-}
-
-if owner_has_group; then
+if owner_has_configured_group; then
 	membership_plan=present
 else
 	membership_plan=add
@@ -267,7 +290,7 @@ elif $dry_run; then
 fi
 target_count=$((${#workdirs[@]} + 1))
 printf \
-	'%s: plan mode=%s root=%s owner=%s(%s) group=%s(%s) workdirs=%s shared=%s cache=%s membership=%s\n' \
+	'%s: plan mode=%s root=%s owner=%s(%s) group=%s(%s) workdirs=%s shared=%s cache=%s configured-membership=%s\n' \
 	"$program_name" \
 	"$mode" \
 	"$runner_root" \
@@ -477,22 +500,19 @@ verify_permissions() {
 }
 
 if $check_only; then
-	owner_has_group ||
-		fail "owner is not a member of resolved group: ${owner_name}/${group_name}"
-
 	for target in "${targets[@]}"; do
 		verify_permissions "$target"
 	done
 
 	printf \
-		'%s: verified status=ok mode=check targets=%s membership=present\n' \
+		'%s: verified status=ok mode=check targets=%s configured-membership=present effective-membership=present\n' \
 		"$program_name" \
 		"$target_count"
 	exit 0
 fi
 
 membership_result=present
-if ! owner_has_group; then
+if ! owner_has_configured_group; then
 	usermod --append --groups "$group_name" "$owner_name"
 	membership_result=added
 fi
@@ -517,7 +537,7 @@ if [[ $cache_state == create ]]; then
 		"$cache_root"
 fi
 
-owner_has_group ||
+owner_has_configured_group ||
 	fail "owner is not a member of resolved group: ${owner_name}/${group_name}"
 
 for target in "${targets[@]}"; do
