@@ -48,12 +48,14 @@ Python is intentionally limited to the Debian interpreter and standard library.
 The image does not include pip, virtual-environment support, development
 headers, or third-party Python packages.
 
-actionlint, gitleaks, shfmt, and yq are built from exact module releases with
-Go 1.26.5. Narrow dependency overrides used to remove known vulnerabilities
-from released tools are recorded in the version manifest and verified by image
-smoke tests. Tools are installed into immutable versioned directories and
-exposed through stable links in `/opt/ci-tools/bin`. The Go compiler is a build
-input and is not retained in this image.
+Git is built from a checksum-pinned upstream source release so the protected
+system configuration can scope trust to GitHub's workspace tree. actionlint,
+gitleaks, shfmt, and yq are built from exact module releases with Go 1.26.5.
+Narrow dependency overrides used to remove known vulnerabilities from released
+tools are recorded in the version manifest and verified by image smoke tests.
+Go tools are installed into immutable versioned directories and exposed through
+stable links in `/opt/ci-tools/bin`. Compilers are build inputs and are not
+retained in this image.
 
 ## Runtime contract
 
@@ -61,6 +63,10 @@ Ordinary commands run as the unprivileged `ci` user. The image provides writable
 home, workspace, and `/var/tmp` directories but does not assume that an
 arbitrary host bind mount is writable. Descendants provision only the
 runtime-specific reusable caches they require below `/var/cache`.
+
+The protected system Git configuration trusts the repository at `/workspace`
+for direct Docker use and repositories below `/__w` for GitHub job containers.
+It does not disable Git's ownership check elsewhere.
 
 Self-hosted bind-mount permissions are defined in the
 [usage guide](../usage.md#self-hosted-bind-mount-permissions).

@@ -1,6 +1,78 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 
 ARG BASE_IMAGE
+FROM ${BASE_IMAGE} AS base-git-builder
+
+ARG DEBIAN_SNAPSHOT
+ARG GIT_SHA256
+ARG GIT_VERSION
+
+USER root
+
+COPY images/common/fetch-verified /usr/local/libexec/ci/fetch-verified
+
+RUN test -n "${DEBIAN_SNAPSHOT}" \
+    && sed -ri \
+      "s|URIs: http://deb.debian.org/debian$|URIs: http://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}/|" \
+      /etc/apt/sources.list.d/debian.sources \
+    && sed -ri \
+      "s|URIs: http://deb.debian.org/debian-security$|URIs: http://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT}/|" \
+      /etc/apt/sources.list.d/debian.sources \
+    && printf '%s\n' \
+      'Acquire::Check-Valid-Until "false";' \
+      'Acquire::Retries "5";' \
+      > /etc/apt/apt.conf.d/99-ci-snapshot \
+    && apt-get update \
+    && apt-get install --yes --no-install-recommends \
+      build-essential \
+      ca-certificates \
+      curl \
+      gettext \
+      libcurl4-openssl-dev \
+      libexpat1-dev \
+      libpcre2-dev \
+      libssl-dev \
+      perl \
+      xz-utils \
+      zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && chmod 0755 /usr/local/libexec/ci/fetch-verified
+
+RUN set -eu; \
+    /usr/local/libexec/ci/fetch-verified \
+      "https://www.kernel.org/pub/software/scm/git/git-${GIT_VERSION}.tar.xz" \
+      "${GIT_SHA256}" \
+      /var/tmp/git.tar.xz; \
+    install -d /var/tmp/git /out; \
+    tar -xJf /var/tmp/git.tar.xz \
+      --strip-components=1 \
+      -C /var/tmp/git; \
+    make \
+      -C /var/tmp/git \
+      -j2 \
+      NO_RUST=YesPlease \
+      NO_TCLTK=YesPlease \
+      prefix=/usr/local \
+      sysconfdir=/etc \
+      all; \
+    make \
+      -C /var/tmp/git \
+      NO_RUST=YesPlease \
+      NO_TCLTK=YesPlease \
+      prefix=/usr/local \
+      sysconfdir=/etc \
+      strip; \
+    make \
+      -C /var/tmp/git \
+      DESTDIR=/out \
+      NO_RUST=YesPlease \
+      NO_TCLTK=YesPlease \
+      prefix=/usr/local \
+      sysconfdir=/etc \
+      install; \
+    test "$(/out/usr/local/bin/git version)" = "git version ${GIT_VERSION}"; \
+    rm -rf /var/tmp/git /var/tmp/git.tar.xz
+
 FROM ${BASE_IMAGE} AS base-go-tools-builder
 
 ARG ACTIONLINT_VERSION
@@ -189,6 +261,7 @@ ENV LANG=en_US.utf8 \
     LC_ALL=en_US.utf8
 
 COPY --from=base-go-tools-builder /out/ /opt/ci-tools/
+COPY --from=base-git-builder /out/ /
 
 RUN set -eu; \
     install -d /opt/ci-tools/bin; \
@@ -231,7 +304,8 @@ RUN set -eu; \
     install -d -o ci -g ci \
       /workspace; \
     chown -R ci:ci /home/ci; \
-    git config --system --add safe.directory /workspace
+    git config --system --add safe.directory /workspace; \
+    git config --system --add safe.directory '/__w/*'
 
 LABEL org.opencontainers.image.created="${BUILD_CREATED}" \
       org.opencontainers.image.description="Shared MyFlow CI job environment" \

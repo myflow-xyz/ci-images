@@ -61,6 +61,14 @@
         "source": "https://github.com/rhysd/actionlint",
         "module": "github.com/rhysd/actionlint/cmd/actionlint"
       },
+      "git": {
+        "version": "2.55.0",
+        "source": "https://git-scm.com",
+        "asset": {
+          "url": "https://www.kernel.org/pub/software/scm/git/git-2.55.0.tar.xz",
+          "sha256": "457fdb04dc8728e007d4688695e6912e6f680727920f2a40bf11eacc17505357"
+        }
+      },
       "gitleaks": {
         "version": "8.30.1",
         "source": "https://github.com/gitleaks/gitleaks",

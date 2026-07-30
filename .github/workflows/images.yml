@@ -274,6 +274,7 @@ jobs:
           probe="$GITHUB_WORKSPACE/.mfci-write-probe"
           : >"$probe"
           rm -f "$probe"
+          test -z "$(git status --short)"
 
   scan:
     name: Scan ${{ matrix.image.name }} (${{ matrix.platform }})

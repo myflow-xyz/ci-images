@@ -43,6 +43,8 @@ if [[ $target == all || $target == base ]]; then
 		--env \
 		"EXPECTED_ACTIONLINT_VERSION=$(json '.tools.base.actionlint.version')" \
 		--env \
+		"EXPECTED_GIT_VERSION=$(json '.tools.base.git.version')" \
+		--env \
 		"EXPECTED_GITLEAKS_VERSION=$(json '.tools.base.gitleaks.version')" \
 		--env \
 		"EXPECTED_GITLEAKS_X_CRYPTO_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["golang.org/x/crypto"]')" \
@@ -52,6 +54,12 @@ if [[ $target == all || $target == base ]]; then
 		--env "EXPECTED_YQ_VERSION=$(json '.tools.base.yq.version')" \
 		--env \
 		"EXPECTED_YQ_X_TEXT_VERSION=$(json '.tools.base.yq.dependency_overrides["golang.org/x/text"]')"
+	smoke_script \
+		ci-base:test \
+		base-git \
+		--user 0:0 \
+		--env "EXPECTED_CI_UID=$(json '.ci_user.uid')" \
+		--env "EXPECTED_CI_GID=$(json '.ci_user.gid')"
 fi
 
 if [[ $target == all || $target == go ]]; then
