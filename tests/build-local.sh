@@ -145,7 +145,11 @@ build_node() {
 		--build-arg \
 		"NPM_VERSION=$(json '.tools.node.npm.version')" \
 		--build-arg \
+		"NPM_ASSET_URL=$(json '.tools.node.npm.asset.url')" \
+		--build-arg \
 		"NPM_BRACE_EXPANSION_VERSION=$(json '.tools.node.npm.dependency_replacements["brace-expansion"]')" \
+		--build-arg \
+		"NPM_SHA256=$(json '.tools.node.npm.asset.sha256')" \
 		--build-arg \
 		"NPM_TAR_VERSION=$(json '.tools.node.npm.dependency_replacements.tar')" \
 		--build-arg "PNPM_VERSION=$(json '.tools.node.pnpm')" \

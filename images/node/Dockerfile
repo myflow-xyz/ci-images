@@ -12,7 +12,9 @@ ARG MANIFEST_SHA=unknown
 ARG MARKDOWNLINT_CLI2_VERSION
 ARG NODE_TOOLS_BUNDLE_VERSION
 ARG NODE_VERSION
+ARG NPM_ASSET_URL
 ARG NPM_BRACE_EXPANSION_VERSION
+ARG NPM_SHA256
 ARG NPM_TAR_VERSION
 ARG NPM_VERSION
 ARG PNPM_VERSION
@@ -48,8 +50,17 @@ COPY images/node/npm-runtime/package.json \
 RUN --mount=from=node-runtime,source=/usr/local/lib/node_modules/npm,target=/usr/local/lib/node_modules/npm,ro \
     --mount=type=cache,target=/var/cache/npm \
     set -eu; \
+    /usr/local/libexec/ci/fetch-verified \
+      "${NPM_ASSET_URL}" \
+      "${NPM_SHA256}" \
+      /var/tmp/npm.tgz; \
+    install -d /var/tmp/npm-package; \
+    tar -xzf /var/tmp/npm.tgz \
+      --strip-components=1 \
+      -C /var/tmp/npm-package; \
+    rm -f /var/tmp/npm.tgz; \
     test "$(node --print \
-      "require('/var/tmp/npm-runtime/package.json').dependencies.npm")" \
+      "require('/var/tmp/npm-package/package.json').version")" \
       = "${NPM_VERSION}"; \
     node /usr/local/lib/node_modules/npm/bin/npm-cli.js ci \
       --fund=false \
@@ -58,26 +69,23 @@ RUN --mount=from=node-runtime,source=/usr/local/lib/node_modules/npm,target=/usr
       --omit=dev \
       --prefix /var/tmp/npm-runtime; \
     test "$(node --print \
-      "require('/var/tmp/npm-runtime/node_modules/npm/package.json').version")" \
-      = "${NPM_VERSION}"; \
-    test "$(node --print \
       "require('/var/tmp/npm-runtime/node_modules/brace-expansion/package.json').version")" \
       = "${NPM_BRACE_EXPANSION_VERSION}"; \
     test "$(node --print \
       "require('/var/tmp/npm-runtime/node_modules/tar/package.json').version")" \
       = "${NPM_TAR_VERSION}"; \
     rm -rf \
-      /var/tmp/npm-runtime/node_modules/npm/node_modules/brace-expansion \
-      /var/tmp/npm-runtime/node_modules/npm/node_modules/tar; \
+      /var/tmp/npm-package/node_modules/brace-expansion \
+      /var/tmp/npm-package/node_modules/tar; \
     mv \
       /var/tmp/npm-runtime/node_modules/brace-expansion \
-      /var/tmp/npm-runtime/node_modules/npm/node_modules/brace-expansion; \
+      /var/tmp/npm-package/node_modules/brace-expansion; \
     mv \
       /var/tmp/npm-runtime/node_modules/tar \
-      /var/tmp/npm-runtime/node_modules/npm/node_modules/tar; \
+      /var/tmp/npm-package/node_modules/tar; \
     install -d /opt/ci-tools/npm; \
     mv \
-      /var/tmp/npm-runtime/node_modules/npm \
+      /var/tmp/npm-package \
       "/opt/ci-tools/npm/${NPM_VERSION}"; \
     ln -s \
       "../npm/${NPM_VERSION}/bin/npm-cli.js" \

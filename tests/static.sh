@@ -91,6 +91,10 @@ jq --exit-status '
   (.tools.vite.oxlint_tsgolint_source.typescript_go_commit |
     test("^[0-9a-f]{40}$")) and
   (.tools.postgres.gosu.commit | test("^[0-9a-f]{40}$")) and
+  (.tools.node.npm as $npm |
+    $npm.asset.url ==
+      ("https://registry.npmjs.org/npm/-/npm-" +
+       $npm.version + ".tgz")) and
   ([.tools.base.gitleaks.dependency_overrides[],
     .tools.base.yq.dependency_overrides[],
     .tools.go.golangci_lint.dependency_overrides[],
@@ -144,10 +148,10 @@ assert_package_version \
 	images/node/markdownlint/package-lock.json \
 	markdownlint-cli2 \
 	"$(jq -r '.tools.node.markdownlint_cli2.version' "$manifest")"
-assert_package_version \
-	images/node/npm-runtime/package-lock.json \
-	npm \
-	"$(jq -r '.tools.node.npm.version' "$manifest")"
+jq --exit-status \
+	'.packages | has("node_modules/npm") | not' \
+	"${repository_root}/images/node/npm-runtime/package-lock.json" >/dev/null ||
+	fail 'npm artifact must remain outside the replacement lockfile'
 assert_package_version \
 	images/node/npm-runtime/package-lock.json \
 	brace-expansion \

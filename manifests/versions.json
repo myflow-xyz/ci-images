@@ -141,12 +141,16 @@
     "node": {
       "runtime": "24.18.0",
       "npm": {
-        "version": "12.0.1",
+        "version": "12.0.2",
+        "asset": {
+          "url": "https://registry.npmjs.org/npm/-/npm-12.0.2.tgz",
+          "sha256": "5dbb86c71d07a1957f2e90734092dd6a58bdcd9ebc2d8d41ca1c6e6a21d364e1"
+        },
         "lockfile": "images/node/npm-runtime/package-lock.json",
-        "lockfile_sha256": "57c98364420a0212ed671b6390a514a72441ee17256d486b84dc32a40dd15428",
+        "lockfile_sha256": "dcc8d4a090bd578df4228185a71a3e713ba82ba431db06cc84ae2082a7328f8c",
         "dependency_replacements": {
           "brace-expansion": "5.0.8",
-          "tar": "7.5.21"
+          "tar": "7.5.22"
         }
       },
       "markdownlint_cli2": {
