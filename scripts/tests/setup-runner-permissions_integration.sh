@@ -43,6 +43,10 @@ probe_uid=65534
 if [[ $probe_uid == "$owner_uid" ]]; then
 	probe_uid=65533
 fi
+acl_probe_uid=65532
+if [[ $acl_probe_uid == "$owner_uid" ]]; then
+	acl_probe_uid=65531
+fi
 
 temporary_directory=$(mktemp -d)
 trap 'rm -rf "$temporary_directory"' EXIT
@@ -105,6 +109,14 @@ setfacl \
 	--modify \
 	default:user::rwx,default:group::---,default:mask::---,default:other::rwx \
 	"${runner_root}/repository-a/_work"
+setfacl \
+	--modify \
+	"user:${acl_probe_uid}:rwx,default:user:${acl_probe_uid}:rwx" \
+	"${runner_root}/repository-a/_work"
+setfacl \
+	--modify \
+	"user:${acl_probe_uid}:rw" \
+	"${runner_root}/repository-a/_work/project/nested/data"
 
 work_file="${runner_root}/repository-a/_work/project/nested/data"
 before_dry_run=$(stat --format '%u:%g:%a' "$work_file")
@@ -164,6 +176,27 @@ declare -a targets=(
 	"${runner_root}/repository-b/_work"
 	"${runner_root}/shared/cache"
 )
+expected_directory_acl=$(
+	printf '%s\n' \
+		'user::rwx' \
+		'group::rwx' \
+		'other::---' \
+		'default:user::rwx' \
+		'default:group::rwx' \
+		'default:other::---'
+)
+expected_executable_acl=$(
+	printf '%s\n' \
+		'user::rwx' \
+		'group::rwx' \
+		'other::---'
+)
+expected_file_acl=$(
+	printf '%s\n' \
+		'user::rw-' \
+		'group::rw-' \
+		'other::---'
+)
 
 for target in "${targets[@]}"; do
 	if find "$target" \
@@ -180,16 +213,19 @@ for target in "${targets[@]}"; do
 	fi
 
 	while IFS= read -r directory; do
-		getfacl -cp "$directory" |
-			grep -qx 'default:group::rwx' ||
-			fail "default group ACL is missing: ${directory}"
-		getfacl -cp "$directory" |
-			grep -qx 'default:mask::rwx' ||
-			fail "default ACL mask is missing: ${directory}"
-		getfacl -cp "$directory" |
-			grep -qx 'default:other::---' ||
-			fail "default other ACL was not restricted: ${directory}"
+		[[ $(getfacl -cp "$directory") == "$expected_directory_acl" ]] ||
+			fail "directory ACL was not replaced exactly: ${directory}"
 	done < <(find "$target" -type d)
+
+	while IFS= read -r executable; do
+		[[ $(getfacl -cp "$executable") == "$expected_executable_acl" ]] ||
+			fail "executable ACL was not replaced exactly: ${executable}"
+	done < <(find "$target" -type f -perm /111)
+
+	while IFS= read -r regular_file; do
+		[[ $(getfacl -cp "$regular_file") == "$expected_file_acl" ]] ||
+			fail "file ACL was not replaced exactly: ${regular_file}"
+	done < <(find "$target" -type f ! -perm /111)
 done
 
 outside_after=$(
@@ -235,6 +271,26 @@ assert_fails_with \
 	--group 0 \
 	--dry-run
 
+special_root="${temporary_directory}/special-root"
+mkdir -p \
+	"${special_root}/shared/cache" \
+	"${special_root}/repository/_work"
+special_file="${special_root}/repository/_work/data"
+printf 'unchanged\n' >"$special_file"
+chmod 0604 "$special_file"
+mkfifo "${special_root}/repository/_work/job.fifo"
+special_before=$(stat --format '%u:%g:%a' "$special_file")
+assert_fails_with \
+	'unsupported file type' \
+	"unsupported file type: ${special_root}/repository/_work/job.fifo" \
+	"$helper" \
+	--runner-root "$special_root" \
+	--owner "$owner_name" \
+	--group "$group_name"
+special_after=$(stat --format '%u:%g:%a' "$special_file")
+[[ $special_after == "$special_before" ]] ||
+	fail 'unsupported entry detection did not precede mutation'
+
 group_probe="${runner_root}/repository-a/_work/group-probe"
 # shellcheck disable=SC2016
 setpriv \
@@ -257,8 +313,22 @@ setpriv \
 	fail 'a new file did not inherit writable group access'
 
 empty_root="${temporary_directory}/empty-root"
-mkdir -p "${empty_root}/shared"
-chmod 0755 "$empty_root" "${empty_root}/shared"
+mkdir -p "$empty_root"
+chmod 0755 "$empty_root"
+
+empty_dry_run_output=$(
+	"$helper" \
+		--runner-root "$empty_root" \
+		--owner "$owner_name" \
+		--group "$group_name" \
+		--dry-run
+)
+[[ $empty_dry_run_output == *'shared=create'* ]] ||
+	fail 'missing shared parent creation was not planned'
+[[ $empty_dry_run_output == *'cache=create'* ]] ||
+	fail 'missing cache creation was not planned'
+[[ ! -e ${empty_root}/shared ]] ||
+	fail 'dry-run created the shared parent'
 
 create_output=$(
 	"$helper" \
@@ -266,10 +336,17 @@ create_output=$(
 		--owner "$owner_name" \
 		--group "$group_name"
 )
+[[ $create_output == *'shared=create'* ]] ||
+	fail 'missing shared parent creation was not reported'
 [[ $create_output == *'cache=create'* ]] ||
 	fail 'missing cache creation was not reported'
 [[ $create_output == *'verified status=ok targets=1'* ]] ||
 	fail 'created cache verification was not reported'
+shared_identity=$(
+	stat --format '%u:%g:%a' "${empty_root}/shared"
+)
+[[ $shared_identity == "${owner_uid}:${owner_gid}:755" ]] ||
+	fail 'missing shared parent was not safely provisioned'
 cache_identity=$(
 	stat --format '%u:%g:%a' "${empty_root}/shared/cache"
 )

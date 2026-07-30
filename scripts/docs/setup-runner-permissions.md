@@ -13,7 +13,14 @@ The helper manages only these paths below the selected runner root:
 ```
 
 It leaves the runner root, `shared`, and each runner installation directory
-outside the writable group boundary. Symbolic links are not followed.
+outside the writable group boundary. Symbolic links are not followed. Existing
+named ACL entries below managed paths are removed so only the resolved owner,
+shared group, and no-access `other` entry remain. FIFOs, sockets, and device
+nodes are rejected before any permission changes.
+
+When `shared` is absent, the helper creates it as mode `0755`, owned by the
+resolved runner owner and that account's primary group. The shared CI group
+receives write access only from `shared/cache` downward.
 
 ## Requirements
 
@@ -70,10 +77,10 @@ sudo scripts/setup-runner-permissions.sh \
 The apply run:
 
 - adds the owner to the shared group when needed;
-- creates `shared/cache` when absent;
+- creates a non-group-writable `shared` parent and `shared/cache` when absent;
 - recursively assigns the resolved owner and group;
 - grants owner and group access while removing other-access bits;
-- configures setgid and default ACL inheritance on directories;
+- replaces existing ACLs and configures setgid inheritance on directories;
 - preserves whether regular files are executable;
 - verifies ownership, modes, ACLs, and group membership.
 

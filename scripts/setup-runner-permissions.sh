@@ -166,8 +166,13 @@ runner_root=$(readlink -f -- "$runner_root")
 shared_root="${runner_root}/shared"
 cache_root="${shared_root}/cache"
 
-[[ -d $shared_root && ! -L $shared_root ]] ||
-	fail "shared root must be a real directory: ${shared_root}"
+shared_state=existing
+if [[ -e $shared_root || -L $shared_root ]]; then
+	[[ -d $shared_root && ! -L $shared_root ]] ||
+		fail "shared root must be a real directory: ${shared_root}"
+else
+	shared_state=create
+fi
 
 cache_state=existing
 if [[ -e $cache_root || -L $cache_root ]]; then
@@ -191,6 +196,29 @@ for workdir in "${workdir_candidates[@]}"; do
 	[[ -d $workdir ]] ||
 		fail "work tree is not a directory: ${workdir}"
 	workdirs+=("$workdir")
+done
+
+reject_unsupported_entries() {
+	local target=$1
+	local unsupported_entry
+
+	unsupported_entry=$(
+		find "$target" \
+			! \( -type d -o -type f -o -type l \) \
+			-print \
+			-quit
+	)
+	[[ -z $unsupported_entry ]] ||
+		fail "unsupported file type: ${unsupported_entry}"
+}
+
+declare -a existing_targets=("${workdirs[@]}")
+if [[ $cache_state == existing ]]; then
+	existing_targets+=("$cache_root")
+fi
+
+for target in "${existing_targets[@]}"; do
+	reject_unsupported_entries "$target"
 done
 
 owner_has_group() {
@@ -217,7 +245,7 @@ mode=apply
 $dry_run && mode=dry-run
 target_count=$((${#workdirs[@]} + 1))
 printf \
-	'%s: plan mode=%s root=%s owner=%s(%s) group=%s(%s) workdirs=%s cache=%s membership=%s\n' \
+	'%s: plan mode=%s root=%s owner=%s(%s) group=%s(%s) workdirs=%s shared=%s cache=%s membership=%s\n' \
 	"$program_name" \
 	"$mode" \
 	"$runner_root" \
@@ -226,6 +254,7 @@ printf \
 	"$group_name" \
 	"$group_gid" \
 	"${#workdirs[@]}" \
+	"$shared_state" \
 	"$cache_state" \
 	"$membership_plan"
 
@@ -240,6 +269,16 @@ membership_result=present
 if ! owner_has_group; then
 	usermod --append --groups "$group_name" "$owner_name"
 	membership_result=added
+fi
+
+if [[ $shared_state == create ]]; then
+	install \
+		--directory \
+		--owner "$owner_uid" \
+		--group "$owner_primary_gid" \
+		--mode 0755 \
+		-- \
+		"$shared_root"
 fi
 
 if [[ $cache_state == create ]]; then
@@ -257,6 +296,7 @@ declare -a targets=("${workdirs[@]}" "$cache_root")
 apply_permissions() {
 	local target=$1
 
+	reject_unsupported_entries "$target"
 	find "$target" \
 		-exec chown --no-dereference "${owner_uid}:${group_gid}" -- {} +
 	find "$target" \
@@ -265,8 +305,8 @@ apply_permissions() {
 	find "$target" \
 		-type d \
 		-exec setfacl \
-		--modify \
-		user::rwx,group::rwx,mask::rwx,other::---,default:user::rwx,default:group::rwx,default:mask::rwx,default:other::--- \
+		--set \
+		user::rwx,group::rwx,other::---,default:user::rwx,default:group::rwx,default:other::--- \
 		-- \
 		{} +
 	find "$target" \
@@ -277,7 +317,7 @@ apply_permissions() {
 		-type f \
 		-perm /111 \
 		-exec setfacl \
-		--modify user::rwx,group::rwx,mask::rwx,other::--- \
+		--set user::rwx,group::rwx,other::--- \
 		-- \
 		{} +
 	find "$target" \
@@ -288,7 +328,7 @@ apply_permissions() {
 		-type f \
 		! -perm /111 \
 		-exec setfacl \
-		--modify user::rw,group::rw,mask::rw,other::--- \
+		--set user::rw,group::rw,other::--- \
 		-- \
 		{} +
 }
@@ -306,49 +346,48 @@ acl_records_match() {
 			RS = ""
 		}
 		{
-			owner_ok = 0
-			group_ok = 0
-			mask_ok = 0
-			other_ok = 0
-			default_owner_ok = 0
-			default_group_ok = 0
-			default_mask_ok = 0
-			default_other_ok = 0
+			owner_count = 0
+			group_count = 0
+			other_count = 0
+			default_owner_count = 0
+			default_group_count = 0
+			default_other_count = 0
+			entry_count = 0
 
 			line_count = split($0, lines, "\n")
 			for (line_number = 1; line_number <= line_count; line_number++) {
+				if (lines[line_number] == "") {
+					continue
+				}
+				entry_count++
 				if (lines[line_number] == "user::" owner_permissions) {
-					owner_ok = 1
+					owner_count++
 				} else if (lines[line_number] == "group::" group_permissions) {
-					group_ok = 1
-				} else if (lines[line_number] == "mask::" group_permissions) {
-					mask_ok = 1
+					group_count++
 				} else if (lines[line_number] == "other::---") {
-					other_ok = 1
+					other_count++
 				} else if (lines[line_number] == "default:user::" owner_permissions) {
-					default_owner_ok = 1
+					default_owner_count++
 				} else if (lines[line_number] == "default:group::" group_permissions) {
-					default_group_ok = 1
-				} else if (lines[line_number] == "default:mask::" group_permissions) {
-					default_mask_ok = 1
+					default_group_count++
 				} else if (lines[line_number] == "default:other::---") {
-					default_other_ok = 1
+					default_other_count++
+				} else {
+					exit 1
 				}
 			}
 
-			if (!owner_ok || !group_ok || !mask_ok || !other_ok) {
+			if (owner_count != 1 || group_count != 1 || other_count != 1) {
 				exit 1
 			}
-			if (include_defaults == "true" && !default_owner_ok) {
+			if (include_defaults == "true" &&
+			    (entry_count != 6 ||
+			     default_owner_count != 1 ||
+			     default_group_count != 1 ||
+			     default_other_count != 1)) {
 				exit 1
 			}
-			if (include_defaults == "true" && !default_group_ok) {
-				exit 1
-			}
-			if (include_defaults == "true" && !default_mask_ok) {
-				exit 1
-			}
-			if (include_defaults == "true" && !default_other_ok) {
+			if (include_defaults != "true" && entry_count != 3) {
 				exit 1
 			}
 		}
@@ -358,6 +397,8 @@ acl_records_match() {
 verify_permissions() {
 	local target=$1
 	local mismatch
+
+	reject_unsupported_entries "$target"
 
 	mismatch=$(
 		find "$target" \
