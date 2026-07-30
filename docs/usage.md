@@ -185,6 +185,10 @@ Update and republish the shared image, or select an older compatible digest.
 
 ## Self-hosted bind-mount permissions
 
+This setup is needed only when a job intentionally bind-mounts host workspaces
+or caches. Jobs without those mounts do not need the host group or permission
+helper.
+
 Job images retain the fixed unprivileged `ci` identity with UID `1001` and
 primary GID `2001`. A self-hosted runner grants access to bind-mounted
 workspaces and caches through the dedicated host group `mfci` with GID `2001`.
@@ -208,6 +212,10 @@ The independent
 documents host provisioning, supported layouts, safety boundaries, and its
 test contract. It manages only repository `_work` trees and `shared/cache`; it
 does not make runner installation directories group-writable.
+
+An opt-in host preflight may run the helper with `--check`. It only verifies
+existing state and must fail the job rather than repair a runner. The runner
+operator applies changes separately before the workflow is rerun.
 
 Pre-create every exact cache bind source before Docker starts a job. Docker may
 otherwise create a missing source with unsuitable ownership.

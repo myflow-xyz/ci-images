@@ -11,10 +11,11 @@ runner_root=/opt/actions-runner
 owner_spec=github-runner
 group_spec=mfci
 dry_run=false
+check_only=false
 
 usage() {
 	printf '%s\n' \
-		"Usage: sudo ${program_name} [options]" \
+		"Usage: ${program_name} [options]" \
 		'' \
 		'Configure writable GitHub Actions runner data under:' \
 		'  <runner-root>/*/_work' \
@@ -24,8 +25,11 @@ usage() {
 		'  --runner-root PATH Runner root (default: /opt/actions-runner)' \
 		'  --owner USER|UID   Resolved file owner (default: github-runner)' \
 		'  --group GROUP|GID  Resolved shared group (default: mfci)' \
+		'  --check            Verify without changing the host' \
 		'  --dry-run          Resolve and report without changing the host' \
-		'  -h, --help         Show this help'
+		'  -h, --help         Show this help' \
+		'' \
+		'Apply mode (default) and --dry-run require root.'
 }
 
 usage_error() {
@@ -82,6 +86,10 @@ while (($# > 0)); do
 		dry_run=true
 		shift
 		;;
+	--check)
+		check_only=true
+		shift
+		;;
 	-h | --help)
 		usage
 		exit 0
@@ -99,22 +107,32 @@ while (($# > 0)); do
 	esac
 done
 
-((EUID == 0)) ||
-	fail 'run as root (for example, with sudo)'
+$check_only && $dry_run &&
+	usage_error '--check and --dry-run are mutually exclusive'
+
+if ! $check_only; then
+	((EUID == 0)) ||
+		fail 'run as root (for example, with sudo)'
+fi
 
 required_commands=(
 	awk
-	chmod
-	chown
 	find
 	getent
 	getfacl
 	id
-	install
 	readlink
-	setfacl
-	usermod
 )
+
+if ! $check_only; then
+	required_commands+=(
+		chmod
+		chown
+		install
+		setfacl
+		usermod
+	)
+fi
 
 for command_name in "${required_commands[@]}"; do
 	command -v "$command_name" >/dev/null 2>&1 ||
@@ -242,7 +260,11 @@ else
 fi
 
 mode=apply
-$dry_run && mode=dry-run
+if $check_only; then
+	mode=check
+elif $dry_run; then
+	mode=dry-run
+fi
 target_count=$((${#workdirs[@]} + 1))
 printf \
 	'%s: plan mode=%s root=%s owner=%s(%s) group=%s(%s) workdirs=%s shared=%s cache=%s membership=%s\n' \
@@ -265,30 +287,11 @@ if $dry_run; then
 	exit 0
 fi
 
-membership_result=present
-if ! owner_has_group; then
-	usermod --append --groups "$group_name" "$owner_name"
-	membership_result=added
-fi
-
-if [[ $shared_state == create ]]; then
-	install \
-		--directory \
-		--owner "$owner_uid" \
-		--group "$owner_primary_gid" \
-		--mode 0755 \
-		-- \
-		"$shared_root"
-fi
-
-if [[ $cache_state == create ]]; then
-	install \
-		--directory \
-		--owner "$owner_uid" \
-		--group "$group_gid" \
-		--mode 2770 \
-		-- \
-		"$cache_root"
+if $check_only; then
+	[[ $shared_state == existing ]] ||
+		fail "shared root is missing: ${shared_root}"
+	[[ $cache_state == existing ]] ||
+		fail "cache root is missing: ${cache_root}"
 fi
 
 declare -a targets=("${workdirs[@]}" "$cache_root")
@@ -481,6 +484,47 @@ verify_permissions() {
 		acl_records_match rw- rw- false ||
 		fail "file ACL verification failed below: ${target}"
 }
+
+if $check_only; then
+	owner_has_group ||
+		fail "owner is not a member of resolved group: ${owner_name}/${group_name}"
+
+	for target in "${targets[@]}"; do
+		verify_permissions "$target"
+	done
+
+	printf \
+		'%s: verified status=ok mode=check targets=%s membership=present\n' \
+		"$program_name" \
+		"$target_count"
+	exit 0
+fi
+
+membership_result=present
+if ! owner_has_group; then
+	usermod --append --groups "$group_name" "$owner_name"
+	membership_result=added
+fi
+
+if [[ $shared_state == create ]]; then
+	install \
+		--directory \
+		--owner "$owner_uid" \
+		--group "$owner_primary_gid" \
+		--mode 0755 \
+		-- \
+		"$shared_root"
+fi
+
+if [[ $cache_state == create ]]; then
+	install \
+		--directory \
+		--owner "$owner_uid" \
+		--group "$group_gid" \
+		--mode 2770 \
+		-- \
+		"$cache_root"
+fi
 
 owner_has_group ||
 	fail "owner is not a member of resolved group: ${owner_name}/${group_name}"

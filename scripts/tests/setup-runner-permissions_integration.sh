@@ -163,6 +163,41 @@ apply_output=$(
 [[ $apply_output == *'membership=present'* ]] ||
 	fail 'existing group membership was not reported'
 
+check_output=$(
+	setpriv \
+		--reuid "$owner_uid" \
+		--regid "$owner_gid" \
+		--init-groups \
+		"$helper" \
+		--runner-root "$runner_root" \
+		--owner "$owner_name" \
+		--group "$group_name" \
+		--check
+)
+[[ $check_output == *'mode=check'* ]] ||
+	fail 'verification-only mode was not reported'
+[[ $check_output == *'verified status=ok mode=check targets=3'* ]] ||
+	fail 'verification-only success was not reported'
+
+chmod 0600 "$work_file"
+check_failure_before=$(stat --format '%u:%g:%a' "$work_file")
+assert_fails_with \
+	'verification-only mode mismatch' \
+	"file mode verification failed: ${work_file}" \
+	setpriv \
+	--reuid "$owner_uid" \
+	--regid "$owner_gid" \
+	--init-groups \
+	"$helper" \
+	--runner-root "$runner_root" \
+	--owner "$owner_name" \
+	--group "$group_name" \
+	--check
+check_failure_after=$(stat --format '%u:%g:%a' "$work_file")
+[[ $check_failure_after == "$check_failure_before" ]] ||
+	fail 'verification-only mode changed a target'
+chmod 0660 "$work_file"
+
 [[ $(stat --format %A "$work_file") == -rw-rw---- ]] ||
 	fail 'an existing regular file did not receive owner and group write access'
 tool_mode=$(
@@ -329,6 +364,16 @@ empty_dry_run_output=$(
 	fail 'missing cache creation was not planned'
 [[ ! -e ${empty_root}/shared ]] ||
 	fail 'dry-run created the shared parent'
+assert_fails_with \
+	'missing shared parent check' \
+	"shared root is missing: ${empty_root}/shared" \
+	"$helper" \
+	--runner-root "$empty_root" \
+	--owner "$owner_name" \
+	--group "$group_name" \
+	--check
+[[ ! -e ${empty_root}/shared ]] ||
+	fail 'verification-only mode created the shared parent'
 
 create_output=$(
 	"$helper" \

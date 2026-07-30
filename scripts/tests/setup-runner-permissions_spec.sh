@@ -8,6 +8,7 @@ Describe 'setup-runner-permissions.sh CLI'
 		The status should be success
 		The output should include '<runner-root>/*/_work'
 		The output should include '--runner-root PATH'
+		The output should include '--check'
 		The output should not include 'runner-home'
 		The error should be blank
 	End
@@ -28,6 +29,12 @@ Describe 'setup-runner-permissions.sh CLI'
 		When run "$helper" /opt/actions-runner
 		The status should eq 64
 		The error should include 'unexpected argument'
+	End
+
+	It 'rejects conflicting read-only modes'
+		When run "$helper" --check --dry-run
+		The status should eq 64
+		The error should include 'mutually exclusive'
 	End
 
 	It 'accepts the runner-root equals form before privilege validation'

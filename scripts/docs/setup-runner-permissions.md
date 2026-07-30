@@ -25,7 +25,7 @@ receives write access only from `shared/cache` downward.
 ## Requirements
 
 - Linux with Bash, GNU account utilities, and POSIX ACL tools;
-- execution through `sudo`;
+- execution through `sudo` for planning or applying changes;
 - an existing non-root runner owner and shared group;
 - drained runners while existing trees are normalized.
 
@@ -58,6 +58,17 @@ Preview the resolved identities and targets without changing the host:
 ```bash
 sudo scripts/setup-runner-permissions.sh --dry-run
 ```
+
+For a workflow that intentionally depends on these bind mounts, verify the
+existing host state without root access or mutations:
+
+```bash
+scripts/setup-runner-permissions.sh --check
+```
+
+On failure, stop the workflow. A runner operator must drain the runner, apply
+the required host changes with `sudo`, restart the runner service when
+reported, and then rerun the workflow.
 
 Apply and verify the permission contract:
 
@@ -119,6 +130,9 @@ The integration test requires root and the same Linux ACL tools as the helper:
 ```bash
 sudo scripts/tests/setup-runner-permissions_integration.sh
 ```
+
+The independent `Runner helper / Contract` workflow runs both suites against
+disposable test directories. It does not inspect or change runner host paths.
 
 ShellSpec DSL indentation is retained in the specification file because shfmt
 does not model ShellSpec's block syntax.
