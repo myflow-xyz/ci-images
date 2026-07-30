@@ -22,13 +22,15 @@ for index in "${!names[@]}"; do
 	name=${names[$index]}
 	image="ghcr.io/myflow-xyz/ci-${name}"
 	digest=$(printf 'sha256:%064d' "$((index + 1))")
+	attempt=$((index < 3 ? 1 : 2))
 	records+=(
 		"$(jq --compact-output --null-input \
 			--arg name "$name" \
 			--arg image "$image" \
 			--arg digest "$digest" \
+			--arg candidate "${image}:candidate-123-${attempt}" \
 			'{name: $name, image: $image, digest: $digest,
-				ref: ($image + "@" + $digest)}')"
+				ref: ($image + "@" + $digest), candidate: $candidate}')"
 	)
 done
 
@@ -38,7 +40,14 @@ jq --exit-status \
 	'
 		length == 6 and
 		[.[].name] == $expected_names and
-		([.[] | .ref == (.image + "@" + .digest)] | all)
+		([
+			.[] |
+			.ref == (.image + "@" + .digest) and
+			(
+				(.image + ":candidate-123-") as $candidate_prefix |
+				(.candidate | startswith($candidate_prefix))
+			)
+		] | all)
 	' \
 	"$output_file" >/dev/null ||
 	fail 'valid image records were not preserved'
@@ -75,6 +84,25 @@ if "$collector" \
 fi
 grep -q 'suite contract' "$failure_output" ||
 	fail 'invalid image reference diagnostic'
+
+invalid_record=$(
+	jq --compact-output \
+		'.candidate = "ghcr.io/myflow-xyz/ci-node:candidate-123-1"' \
+		<<<"${records[0]}"
+)
+if "$collector" \
+	"$output_file" \
+	"$invalid_record" \
+	"${records[1]}" \
+	"${records[2]}" \
+	"${records[3]}" \
+	"${records[4]}" \
+	"${records[5]}" \
+	>"$failure_output" 2>&1; then
+	fail 'candidate for another image was accepted'
+fi
+grep -q 'suite contract' "$failure_output" ||
+	fail 'candidate image diagnostic'
 
 if "$publisher" unknown "$output_file" "" \
 	>"$failure_output" 2>&1; then
@@ -201,7 +229,8 @@ for name in "${names[@]}"; do
 		'
 			.name == $name and
 			.image == ("ghcr.io/myflow-xyz/ci-" + $name) and
-			.ref == (.image + "@" + .digest)
+			.ref == (.image + "@" + .digest) and
+			.candidate == (.image + ":candidate-123-1")
 		' \
 		"$output_file" >/dev/null ||
 		fail "invalid ${name} publication record"

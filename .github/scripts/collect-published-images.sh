@@ -27,7 +27,16 @@ printf '%s\n' "$@" |
 				.[] |
 				.image == ("ghcr.io/myflow-xyz/ci-" + .name) and
 				(.digest | test("^sha256:[0-9a-f]{64}$")) and
-				.ref == (.image + "@" + .digest)
+				.ref == (.image + "@" + .digest) and
+				(try (
+					(.image + ":candidate-") as $candidate_prefix |
+					(.candidate | startswith($candidate_prefix)) and
+					(
+						.candidate |
+						ltrimstr($candidate_prefix) |
+						test("^[1-9][0-9]*-[1-9][0-9]*$")
+					)
+				) catch false)
 			] | all)
 		) then
 			.

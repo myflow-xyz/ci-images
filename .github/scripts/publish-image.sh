@@ -74,7 +74,8 @@ if [[ ! $revision =~ ^[0-9a-f]{40}$ ]]; then
 	printf 'invalid source revision: %s\n' "$revision" >&2
 	exit 1
 fi
-if [[ ! $run_id =~ ^[0-9]+$ || ! $run_attempt =~ ^[0-9]+$ ]]; then
+if [[ ! $run_id =~ ^[1-9][0-9]*$ ||
+	! $run_attempt =~ ^[1-9][0-9]*$ ]]; then
 	printf 'invalid workflow run identity: %s/%s\n' \
 		"$run_id" "$run_attempt" >&2
 	exit 1
@@ -328,5 +329,12 @@ jq -n \
 	--arg image "$candidate_image" \
 	--arg digest "$digest" \
 	--arg ref "$reference" \
-	'{name: $name, image: $image, digest: $digest, ref: $ref}' \
+	--arg candidate "$candidate_tag" \
+	'{
+		name: $name,
+		image: $image,
+		digest: $digest,
+		ref: $ref,
+		candidate: $candidate
+	}' \
 	>"$output_file"
