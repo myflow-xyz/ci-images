@@ -215,6 +215,14 @@ group. Install the host's `acl` package and drain every affected runner before
 changing an existing work tree.
 
 The independent
+[runner bootstrap helper](../scripts/docs/setup-runner-from-scratch.md) creates
+the standard host directory skeleton for a new repository runner and delegates
+the writable paths to the permission helper. It creates the canonical
+`mfci:2001` identity only when both its name and GID are available, and enrolls
+the runner owner when needed. It does not download, register, or manage the
+runner service.
+
+The independent
 [runner permission helper](../scripts/docs/setup-runner-permissions.md)
 documents host provisioning, supported layouts, safety boundaries, and its
 test contract. It manages only `workspace/<repository>/_work` trees and

@@ -11,21 +11,29 @@ spec_helper_precheck() {
 		abort 'shfmt is required'
 
 	bash -n \
+		setup-runner-from-scratch.sh \
 		setup-runner-permissions.sh \
+		tests/setup-runner-from-scratch_integration.sh \
+		tests/setup-runner-from-scratch_spec.sh \
 		tests/setup-runner-permissions_integration.sh \
 		tests/setup-runner-permissions_spec.sh \
 		tests/spec_helper.sh ||
 		abort 'bash syntax check failed'
 
 	shellcheck --severity=style \
+		setup-runner-from-scratch.sh \
 		setup-runner-permissions.sh \
+		tests/setup-runner-from-scratch_integration.sh \
+		tests/setup-runner-from-scratch_spec.sh \
 		tests/setup-runner-permissions_integration.sh \
 		tests/setup-runner-permissions_spec.sh \
 		tests/spec_helper.sh ||
 		abort 'ShellCheck failed'
 
 	shfmt -d \
+		setup-runner-from-scratch.sh \
 		setup-runner-permissions.sh \
+		tests/setup-runner-from-scratch_integration.sh \
 		tests/setup-runner-permissions_integration.sh \
 		tests/spec_helper.sh ||
 		abort 'shfmt failed'

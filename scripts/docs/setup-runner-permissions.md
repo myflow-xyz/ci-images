@@ -67,6 +67,10 @@ runner service after changing its supplementary groups.
 
 ## Usage
 
+For a new runner directory skeleton, use the
+[runner bootstrap helper](setup-runner-from-scratch.md), which invokes this
+helper after creating its explicit targets.
+
 Preview the resolved identities and targets without changing the host:
 
 ```bash

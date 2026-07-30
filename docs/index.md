@@ -30,7 +30,9 @@ overview.
   the build, smoke-test, scan, and promotion policy.
 - [Release promotion](../.github/workflows/release.yml) defines stable suite
   releases.
+- [Runner directory bootstrap](../scripts/docs/setup-runner-from-scratch.md)
+  documents creation of the independent self-hosted runner skeleton.
 - [Runner permission setup](../scripts/docs/setup-runner-permissions.md)
   documents the independent self-hosted helper.
-- [`scripts/tests/`](../scripts/tests) verifies the runner helper independently
+- [`scripts/tests/`](../scripts/tests) verifies the runner helpers independently
   from the image contracts in [`tests/`](../tests).

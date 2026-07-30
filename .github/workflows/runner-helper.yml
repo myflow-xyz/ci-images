@@ -70,3 +70,6 @@ jobs:
 
       - name: Verify isolated Linux permission behavior
         run: sudo scripts/tests/setup-runner-permissions_integration.sh
+
+      - name: Verify isolated Linux bootstrap behavior
+        run: sudo scripts/tests/setup-runner-from-scratch_integration.sh
