@@ -198,6 +198,72 @@ check_output=$(
 [[ $check_output == *'configured-membership=present effective-membership=present'* ]] ||
 	fail 'configured and effective memberships were not reported separately'
 
+chmod o+w "$runner_root"
+assert_fails_with \
+	'other-writable runner root' \
+	"unmanaged parent grants non-owner write access: ${runner_root}" \
+	setpriv \
+	--reuid "$owner_uid" \
+	--regid "$owner_gid" \
+	--init-groups \
+	"$helper" \
+	--runner-root "$runner_root" \
+	--owner "$owner_name" \
+	--group "$group_name" \
+	--check
+chmod 0755 "$runner_root"
+
+chmod 0600 "$work_file"
+parent_failure_before=$(stat --format '%u:%g:%a' "$work_file")
+chmod g+w "${runner_root}/shared"
+assert_fails_with \
+	'group-writable shared parent' \
+	"unmanaged parent grants non-owner write access: ${runner_root}/shared" \
+	"$helper" \
+	--runner-root "$runner_root" \
+	--owner "$owner_name" \
+	--group "$group_name"
+parent_failure_after=$(stat --format '%u:%g:%a' "$work_file")
+[[ $parent_failure_after == "$parent_failure_before" ]] ||
+	fail 'unsafe shared parent detection did not precede mutation'
+chmod 0755 "${runner_root}/shared"
+chmod 0660 "$work_file"
+
+chmod 0600 "$work_file"
+parent_failure_before=$(stat --format '%u:%g:%a' "$work_file")
+setfacl \
+	--modify \
+	"user:${acl_probe_uid}:rwx" \
+	"${runner_root}/repository-a"
+assert_fails_with \
+	'named-ACL-writable runner directory' \
+	"unmanaged parent grants non-owner write access: ${runner_root}/repository-a" \
+	"$helper" \
+	--runner-root "$runner_root" \
+	--owner "$owner_name" \
+	--group "$group_name"
+parent_failure_after=$(stat --format '%u:%g:%a' "$work_file")
+[[ $parent_failure_after == "$parent_failure_before" ]] ||
+	fail 'unsafe runner parent detection did not precede mutation'
+setfacl --remove-all "${runner_root}/repository-a"
+chmod 0755 "${runner_root}/repository-a"
+chmod 0660 "$work_file"
+
+setfacl \
+	--modify \
+	"user:${acl_probe_uid}:rwx,mask::r-x" \
+	"${runner_root}/repository-a"
+if ! "$helper" \
+	--runner-root "$runner_root" \
+	--owner "$owner_name" \
+	--group "$group_name" \
+	--dry-run \
+	>/dev/null; then
+	fail 'a masked non-writable parent ACL was rejected'
+fi
+setfacl --remove-all "${runner_root}/repository-a"
+chmod 0755 "${runner_root}/repository-a"
+
 assert_fails_with \
 	'stale effective group membership' \
 	'resolved group is not effective for the current runner process; restart the runner service' \

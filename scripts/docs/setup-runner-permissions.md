@@ -13,10 +13,13 @@ The helper manages only these paths below the selected runner root:
 ```
 
 It leaves the runner root, `shared`, and each runner installation directory
-outside the writable group boundary. Symbolic links are not followed. Existing
-named ACL entries below managed paths are removed so only each entry's owner,
-the shared group, and a no-access `other` entry remain. FIFOs, sockets, and device
-nodes are rejected before any permission changes.
+outside the writable group boundary. Before reporting success or changing a
+managed path, it rejects effective group, other, or named-ACL write access on
+those unmanaged parents. It never repairs them; the runner operator retains
+their ownership and policy. Symbolic links are not followed. Existing named ACL
+entries below managed paths are removed so only each entry's owner, the shared
+group, and a no-access `other` entry remain. FIFOs, sockets, and device nodes are
+rejected before any permission changes.
 
 When `shared` is absent, the helper creates it as mode `0755`, owned by the
 resolved runner owner and that account's primary group. The shared CI group
@@ -106,7 +109,9 @@ The apply run:
 - replaces existing ACLs and configures setgid inheritance on directories;
 - preserves creator-requested read-only, writable, and executable file modes;
 - verifies managed-root ownership, descendant group ownership, modes, ACLs, and
-  group membership.
+  group membership;
+- rejects unsafe write access on unmanaged parent directories without changing
+  them.
 
 If the result reports `restart-required=yes`, restart the runner service before
 accepting another job.

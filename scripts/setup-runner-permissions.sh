@@ -253,6 +253,51 @@ for workdir in "${workdir_candidates[@]}"; do
 	workdirs+=("$workdir")
 done
 
+reject_writable_unmanaged_parent() {
+	local parent=$1
+	local parent_acl
+
+	parent_acl=$(getfacl -cnpe -- "$parent") ||
+		fail "cannot read unmanaged parent ACL: ${parent}"
+	if awk '
+		{
+			entry = $1
+			split(entry, fields, ":")
+			entry_type = fields[1]
+			qualifier = fields[2]
+			permissions = fields[3]
+
+			for (field_number = 2;
+			     field_number <= NF;
+			     field_number++) {
+				if ($field_number ~ /^#effective:/) {
+					permissions = substr($field_number, 12)
+				}
+			}
+
+			if ((entry_type == "group" ||
+			     entry_type == "other" ||
+			     (entry_type == "user" && qualifier != "")) &&
+			    permissions ~ /w/) {
+				writable = 1
+			}
+		}
+		END {
+			exit(writable ? 0 : 1)
+		}
+	' <<<"$parent_acl"; then
+		fail "unmanaged parent grants non-owner write access: ${parent}"
+	fi
+}
+
+reject_writable_unmanaged_parent "$runner_root"
+if [[ $shared_state == existing ]]; then
+	reject_writable_unmanaged_parent "$shared_root"
+fi
+for workdir in "${workdirs[@]}"; do
+	reject_writable_unmanaged_parent "${workdir%/_work}"
+done
+
 reject_unsupported_entries() {
 	local target=$1
 	local unsupported_entry
@@ -532,9 +577,11 @@ if [[ $shared_state == create ]]; then
 		--mode 0755 \
 		-- \
 		"$shared_root"
+	reject_writable_unmanaged_parent "$shared_root"
 fi
 
 if [[ $cache_state == create ]]; then
+	reject_writable_unmanaged_parent "$shared_root"
 	install \
 		--directory \
 		--owner "$owner_uid" \
