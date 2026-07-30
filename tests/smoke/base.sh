@@ -3,6 +3,7 @@
 set -euo pipefail
 
 expected_uid=${EXPECTED_CI_UID:?EXPECTED_CI_UID is not set}
+expected_gid=${EXPECTED_CI_GID:?EXPECTED_CI_GID is not set}
 expected_go=${EXPECTED_TOOLCHAIN_GO_VERSION:?EXPECTED_TOOLCHAIN_GO_VERSION is not set}
 : "${EXPECTED_ACTIONLINT_VERSION:?EXPECTED_ACTIONLINT_VERSION is not set}"
 : "${EXPECTED_GITLEAKS_X_CRYPTO_VERSION:?EXPECTED_GITLEAKS_X_CRYPTO_VERSION is not set}"
@@ -13,6 +14,7 @@ expected_go=${EXPECTED_TOOLCHAIN_GO_VERSION:?EXPECTED_TOOLCHAIN_GO_VERSION is no
 : "${EXPECTED_YQ_X_TEXT_VERSION:?EXPECTED_YQ_X_TEXT_VERSION is not set}"
 
 [[ $(id -u) == "$expected_uid" ]]
+[[ $(id -g) == "$expected_gid" ]]
 [[ $HOME == /home/ci ]]
 [[ $LANG == en_US.utf8 ]]
 [[ $LC_ALL == en_US.utf8 ]]
@@ -35,6 +37,7 @@ for command in \
 	gitleaks \
 	jq \
 	make \
+	python3 \
 	rg \
 	shellcheck \
 	shellspec \
@@ -42,6 +45,17 @@ for command in \
 	yq; do
 	command -v "$command" >/dev/null
 done
+
+python3 -c '
+import json
+import socket
+import urllib.parse
+import urllib.request
+
+assert json.loads("{\"ok\": true}")["ok"]
+assert socket.gethostname()
+assert urllib.parse.urlsplit("https://ci.example/path").hostname == "ci.example"
+'
 
 actionlint --version 2>&1 |
 	grep --fixed-strings "$EXPECTED_ACTIONLINT_VERSION" >/dev/null
@@ -90,6 +104,13 @@ done
 for command in go markdownlint-cli2 node npm npx yarn yarnpkg; do
 	if command -v "$command" >/dev/null 2>&1; then
 		printf 'runtime command is present in ci-base: %s\n' "$command" >&2
+		exit 1
+	fi
+done
+
+for command in pip pip3; do
+	if command -v "$command" >/dev/null 2>&1; then
+		printf 'Python package manager is present in ci-base: %s\n' "$command" >&2
 		exit 1
 	fi
 done

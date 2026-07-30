@@ -121,7 +121,7 @@ USER root
 ARG ACTIONLINT_VERSION
 ARG BUILD_CREATED=unknown
 ARG BUILD_REVISION=unknown
-ARG CI_GID=1001
+ARG CI_GID=2001
 ARG CI_UID=1001
 ARG DEBIAN_SNAPSHOT
 ARG GITLEAKS_VERSION
@@ -170,6 +170,7 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
       make \
       openssl \
       procps \
+      python3 \
       ripgrep \
       sed \
       shellcheck \

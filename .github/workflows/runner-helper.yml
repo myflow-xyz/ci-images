@@ -1,0 +1,71 @@
+name: Runner helper
+
+on:
+  pull_request:
+  push:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: runner-helper-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  SHELLSPEC_SHA256: >-
+    400d835466429a5fe6c77a62775a9173729d61dd43e05dfa893e8cf6cb511783
+  SHELLSPEC_VERSION: 0.28.1
+
+jobs:
+  contract:
+    name: Contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Install test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install \
+            --yes \
+            --no-install-recommends \
+            acl \
+            shfmt
+
+          shellspec_archive="$RUNNER_TEMP/shellspec.tar.gz"
+          shellspec_root="$RUNNER_TEMP/shellspec"
+          curl \
+            --fail \
+            --location \
+            --proto '=https' \
+            --retry 5 \
+            --retry-all-errors \
+            --show-error \
+            --silent \
+            --tlsv1.2 \
+            --output "$shellspec_archive" \
+            "https://github.com/shellspec/shellspec/archive/refs/tags/${SHELLSPEC_VERSION}.tar.gz"
+          printf '%s  %s\n' \
+            "$SHELLSPEC_SHA256" \
+            "$shellspec_archive" |
+            sha256sum --check --status --strict
+          mkdir -p "$shellspec_root"
+          tar -xzf "$shellspec_archive" \
+            --strip-components=1 \
+            --directory "$shellspec_root"
+
+      - name: Verify CLI contract
+        run: |
+          cd scripts
+          "$RUNNER_TEMP/shellspec/shellspec"
+
+      - name: Verify isolated Linux permission behavior
+        run: sudo scripts/tests/setup-runner-permissions_integration.sh

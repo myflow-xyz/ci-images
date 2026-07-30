@@ -7,7 +7,7 @@
   "ci_user": {
     "name": "ci",
     "uid": 1001,
-    "gid": 1001
+    "gid": 2001
   },
   "debian_snapshot": "20260727T000000Z",
   "upstream_images": {
@@ -141,12 +141,16 @@
     "node": {
       "runtime": "24.18.0",
       "npm": {
-        "version": "12.0.1",
+        "version": "12.0.2",
+        "asset": {
+          "url": "https://registry.npmjs.org/npm/-/npm-12.0.2.tgz",
+          "sha256": "5dbb86c71d07a1957f2e90734092dd6a58bdcd9ebc2d8d41ca1c6e6a21d364e1"
+        },
         "lockfile": "images/node/npm-runtime/package-lock.json",
-        "lockfile_sha256": "57c98364420a0212ed671b6390a514a72441ee17256d486b84dc32a40dd15428",
+        "lockfile_sha256": "dcc8d4a090bd578df4228185a71a3e713ba82ba431db06cc84ae2082a7328f8c",
         "dependency_replacements": {
           "brace-expansion": "5.0.8",
-          "tar": "7.5.21"
+          "tar": "7.5.22"
         }
       },
       "markdownlint_cli2": {
@@ -156,8 +160,8 @@
       },
       "bundle_version": "2",
       "lockfile": "images/node/npm/package-lock.json",
-      "lockfile_sha256": "7e2964cb59e5592079c712c3ca3f9b939c848a8eb4a61bfbb08dfdd1c9fb8053",
-      "pnpm": "11.17.0",
+      "lockfile_sha256": "7c5962c2994c19b6c9699cc424b3949748d1559f4ccec3190f9a5ea56689957d",
+      "pnpm": "11.18.0",
       "redocly": "2.41.1"
     },
     "vite": {
