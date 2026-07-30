@@ -2,9 +2,10 @@ name: CI images
 
 on:
   pull_request:
+    branches:
+      - main
   push:
     branches:
-      - develop
       - main
   workflow_dispatch:
 
@@ -67,6 +68,23 @@ jobs:
             README.md \
             "docs/**/*.md"
 
+      - name: Verify workflows
+        env:
+          GOBIN: ${{ runner.temp }}/ci-tools
+        run: |
+          actionlint_module=$(
+            jq --exit-status --raw-output \
+              '.tools.base.actionlint.module' \
+              manifests/versions.json
+          )
+          actionlint_version=$(
+            jq --exit-status --raw-output \
+              '.tools.base.actionlint.version' \
+              manifests/versions.json
+          )
+          go install "${actionlint_module}@v${actionlint_version}"
+          "$GOBIN/actionlint"
+
       - name: Classify changes
         id: changes
         env:
@@ -118,7 +136,9 @@ jobs:
 
   smoke:
     name: Smoke (${{ matrix.platform }})
-    if: needs.contract.outputs.smoke_changed == 'true'
+    if: >-
+      github.event_name != 'pull_request' &&
+      needs.contract.outputs.smoke_changed == 'true'
     needs: contract
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60

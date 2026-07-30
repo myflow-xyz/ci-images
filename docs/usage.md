@@ -54,8 +54,9 @@ docker pull ghcr.io/myflow-xyz/ci-go:v0.1.0@sha256:<digest>
 The container runtime selects AMD64 or ARM64 from the index automatically.
 Architecture-specific suffix tags are not required. Use `vX.Y.Z` for stable
 release discovery, `latest` only to inspect the current verified `main` suite,
-and `edge` only for integration testing. Do not consume candidate or
-run-specific tags.
+and `edge` only when optional `develop` publication is enabled for integration
+testing. The default workflow does not update `edge`. Do not consume candidate
+or run-specific tags.
 
 For a private package in GitHub Actions, grant the consumer repository read
 access to each package, set `packages: read`, and authenticate with its
