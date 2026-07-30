@@ -2,9 +2,10 @@ name: CI images
 
 on:
   pull_request:
+    branches:
+      - main
   push:
     branches:
-      - develop
       - main
   workflow_dispatch:
 
@@ -17,12 +18,6 @@ concurrency:
 
 env:
   BUILDX_VERSION: v0.35.0
-  BUILDKIT_IMAGE: >-
-    docker.io/moby/buildkit@sha256:2f5adac4ecd194d9f8c10b7b5d7bceb5186853db1b26e5abd3a657af0b7e26ec
-  BINFMT_IMAGE: >-
-    docker.io/tonistiigi/binfmt@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
-  CI_IMAGES_SBOM_GENERATOR: >-
-    docker.io/docker/buildkit-syft-scanner@sha256:79e7b013cbec16bbb436f312819a49a4a57752b2270c1a9332ae1a10fcc82a68
 
 jobs:
   contract:
@@ -67,6 +62,23 @@ jobs:
             README.md \
             "docs/**/*.md"
 
+      - name: Verify workflows
+        env:
+          GOBIN: ${{ runner.temp }}/ci-tools
+        run: |
+          actionlint_module=$(
+            jq --exit-status --raw-output \
+              '.tools.base.actionlint.module' \
+              manifests/versions.json
+          )
+          actionlint_version=$(
+            jq --exit-status --raw-output \
+              '.tools.base.actionlint.version' \
+              manifests/versions.json
+          )
+          go install "${actionlint_module}@v${actionlint_version}"
+          "$GOBIN/actionlint"
+
       - name: Classify changes
         id: changes
         env:
@@ -99,6 +111,7 @@ jobs:
               .dockerignore \
               .github/scripts \
               .github/workflows/images.yml \
+              .github/workflows/publish-image.yml \
               images \
               manifests; then
               publish_changed=true
@@ -118,7 +131,9 @@ jobs:
 
   smoke:
     name: Smoke (${{ matrix.platform }})
-    if: needs.contract.outputs.smoke_changed == 'true'
+    if: >-
+      github.event_name != 'pull_request' &&
+      needs.contract.outputs.smoke_changed == 'true'
     needs: contract
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
@@ -171,8 +186,8 @@ jobs:
             ci-base:test \
             actionlint
 
-  publish:
-    name: Publish candidates
+  publish-base:
+    name: Publish candidate (base)
     if: >-
       always() &&
       github.event_name != 'pull_request' &&
@@ -182,45 +197,116 @@ jobs:
     needs:
       - contract
       - smoke
-    runs-on: ubuntu-24.04
-    timeout-minutes: 120
     permissions:
       contents: read
       packages: write
+    uses: ./.github/workflows/publish-image.yml
+    with:
+      image: base
+
+  publish-go:
+    name: Publish candidate (go)
+    needs: publish-base
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish-image.yml
+    with:
+      image: go
+      parent_image: ${{ needs.publish-base.outputs.reference }}
+
+  publish-node:
+    name: Publish candidate (node)
+    needs: publish-base
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish-image.yml
+    with:
+      image: node
+      parent_image: ${{ needs.publish-base.outputs.reference }}
+
+  publish-vite:
+    name: Publish candidate (vite)
+    needs: publish-node
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish-image.yml
+    with:
+      image: vite
+      parent_image: ${{ needs.publish-node.outputs.reference }}
+
+  publish-playwright:
+    name: Publish candidate (playwright)
+    needs: publish-vite
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish-image.yml
+    with:
+      image: playwright
+      parent_image: ${{ needs.publish-vite.outputs.reference }}
+
+  publish-postgres:
+    name: Publish candidate (postgres)
+    if: >-
+      always() &&
+      github.event_name != 'pull_request' &&
+      needs.contract.result == 'success' &&
+      needs.contract.outputs.publish_changed == 'true' &&
+      needs.smoke.result == 'success'
+    needs:
+      - contract
+      - smoke
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish-image.yml
+    with:
+      image: postgres
+
+  publish:
+    name: Collect published candidates
+    needs:
+      - publish-base
+      - publish-go
+      - publish-node
+      - publish-vite
+      - publish-playwright
+      - publish-postgres
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
     outputs:
-      base_image: ${{ steps.publish.outputs.base_image }}
-      images: ${{ steps.publish.outputs.images }}
+      base_image: ${{ steps.collect.outputs.base_image }}
+      images: ${{ steps.collect.outputs.images }}
     steps:
       - name: Check out source
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           persist-credentials: false
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
-        with:
-          image: ${{ env.BINFMT_IMAGE }}
-          platforms: arm64
-
-      - name: Set up Buildx
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
-        with:
-          version: ${{ env.BUILDX_VERSION }}
-          driver-opts: image=${{ env.BUILDKIT_IMAGE }}
-
-      - name: Log in to GHCR
-        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4.5.2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and publish candidate indexes
-        id: publish
+      - name: Collect published candidates
+        id: collect
         env:
+          BASE_RECORD: ${{ needs.publish-base.outputs.record }}
+          GO_RECORD: ${{ needs.publish-go.outputs.record }}
+          NODE_RECORD: ${{ needs.publish-node.outputs.record }}
           OUTPUT_FILE: ${{ runner.temp }}/published-images.json
+          PLAYWRIGHT_RECORD: ${{ needs.publish-playwright.outputs.record }}
+          POSTGRES_RECORD: ${{ needs.publish-postgres.outputs.record }}
+          VITE_RECORD: ${{ needs.publish-vite.outputs.record }}
         run: |
-          .github/scripts/publish-images.sh "$OUTPUT_FILE"
+          .github/scripts/collect-published-images.sh \
+            "$OUTPUT_FILE" \
+            "$BASE_RECORD" \
+            "$GO_RECORD" \
+            "$NODE_RECORD" \
+            "$VITE_RECORD" \
+            "$PLAYWRIGHT_RECORD" \
+            "$POSTGRES_RECORD"
           base_image=$(
             jq --exit-status --raw-output '
               map(select(.name == "base")) |

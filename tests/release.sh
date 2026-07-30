@@ -112,7 +112,12 @@ if [[ ${1-} == buildx && ${2-} == imagetools &&
 	tag=${reference##*:}
 	digest=$(digest_for_name "$name")
 
-	if [[ $tag == candidate-* || $tag == sha-* || $tag == latest ]]; then
+	if [[ $tag == candidate-* ]]; then
+		printf 'manifest unknown\n' >&2
+		exit 1
+	fi
+
+	if [[ $tag == sha-* || $tag == latest ]]; then
 		if [[ $tag == latest &&
 			${FAKE_LATEST_MISMATCH_IMAGE:-} == "$name" ]]; then
 			printf 'sha256:%064d\n' 9
@@ -283,6 +288,7 @@ printf '%s\t%s\n' \
 assert_equal 5 "$(create_count)" 'partial release retry promotions'
 assert_release_output
 
+published_images_template="${temporary_directory}/published-images-template.json"
 published_images="${temporary_directory}/published-images.json"
 jq '
 	[
@@ -294,23 +300,58 @@ jq '
 			ref: (.image + "@" + .digest)
 		}
 	]
-' "$output_file" >"$published_images"
+' "$output_file" >"$published_images_template"
+
+create_published_images() {
+	local run_id=$1
+	local attempts=${2:-uniform}
+
+	jq \
+		--arg run_id "$run_id" \
+		--arg attempts "$attempts" \
+		'
+			[
+				.[] |
+				. + {
+					candidate: (
+						.image + ":candidate-" + $run_id + "-" +
+						if (
+							$attempts == "mixed" and
+							(.name == "vite" or .name == "playwright")
+						) then "2"
+						else "1"
+						end
+					)
+				}
+			]
+		' \
+		"$published_images_template" >"$published_images"
+}
+
+seed_candidates() {
+	jq -r '.[] | [.candidate, .digest] | @tsv' \
+		"$published_images" >>"$fake_state"
+}
 
 reset_registry
+create_published_images 123 mixed
+seed_candidates
 GITHUB_EVENT_NAME=workflow_dispatch \
 	GITHUB_REF_NAME=main \
 	GITHUB_REF_TYPE=branch \
-	GITHUB_RUN_ATTEMPT=1 \
+	GITHUB_RUN_ATTEMPT=2 \
 	GITHUB_RUN_ID=123 \
 	"$promote_images" "$published_images"
 assert_equal 6 \
 	"$(grep -c ':run-123$' "$fake_log")" \
-	'manual publication aliases'
+	'mixed-attempt manual publication aliases'
 if grep -Eq ':(edge|latest|v[0-9])' "$fake_log"; then
 	fail 'manual publication created a moving or stable alias'
 fi
 
 reset_registry
+create_published_images 124
+seed_candidates
 GITHUB_EVENT_NAME=push \
 	GITHUB_REF_NAME=main \
 	GITHUB_REF_TYPE=branch \
@@ -322,11 +363,49 @@ assert_equal 6 \
 	'main publication aliases'
 
 reset_registry
+create_published_images 999
+seed_candidates
+if GITHUB_EVENT_NAME=push \
+	GITHUB_REF_NAME=main \
+	GITHUB_REF_TYPE=branch \
+	GITHUB_RUN_ATTEMPT=2 \
+	GITHUB_RUN_ID=125 \
+	"$promote_images" "$published_images" \
+	>"$failure_output" 2>&1; then
+	fail 'candidate from another run was accepted'
+fi
+grep -q 'promotion contract' "$failure_output" ||
+	fail 'candidate run diagnostic'
+assert_equal 0 "$(create_count)" 'foreign-run candidate promotions'
+
+reset_registry
+create_published_images 126 mixed
+seed_candidates
+base_candidate=$(
+	jq -r '.[] | select(.name == "base") | .candidate' "$published_images"
+)
+printf '%s\tsha256:%064d\n' "$base_candidate" 9 >>"$fake_state"
+if GITHUB_EVENT_NAME=push \
+	GITHUB_REF_NAME=main \
+	GITHUB_REF_TYPE=branch \
+	GITHUB_RUN_ATTEMPT=2 \
+	GITHUB_RUN_ID=126 \
+	"$promote_images" "$published_images" \
+	>"$failure_output" 2>&1; then
+	fail 'changed candidate digest was accepted'
+fi
+grep -q 'candidate tag changed before promotion' "$failure_output" ||
+	fail 'changed candidate diagnostic'
+assert_equal 0 "$(create_count)" 'changed candidate promotions'
+
+reset_registry
+create_published_images 127
+seed_candidates
 if GITHUB_EVENT_NAME=push \
 	GITHUB_REF_NAME=v0.1.0 \
 	GITHUB_REF_TYPE=tag \
 	GITHUB_RUN_ATTEMPT=1 \
-	GITHUB_RUN_ID=125 \
+	GITHUB_RUN_ID=127 \
 	"$promote_images" "$published_images" \
 	>"$failure_output" 2>&1; then
 	fail 'tag publication was accepted'

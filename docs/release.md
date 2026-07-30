@@ -56,7 +56,7 @@ completed registry promotion can be retried safely.
 | --- | --- | --- |
 | `candidate-<run>-<attempt>` | image publication | Internal only. |
 | `sha-<full-commit>` | verified publication | Immutable source revision. |
-| `edge` | verified `develop` push | Moving integration pointer. |
+| `edge` | optional `develop` push | Integration pointer; off by default. |
 | `latest` | verified `main` push | Moving stable-branch pointer. |
 | `run-<run>` | manual image publication | Ad hoc verification pointer. |
 | `vX.Y.Z` | manual release | Immutable suite release. |

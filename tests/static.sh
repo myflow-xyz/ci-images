@@ -21,9 +21,12 @@ sha256_file() {
 command -v jq >/dev/null 2>&1 || fail 'jq is required'
 
 required_files=(
+	.github/scripts/collect-published-images.sh
 	.github/scripts/next-version.sh
+	.github/scripts/publish-image.sh
 	.github/scripts/release-images.sh
 	.github/workflows/images.yml
+	.github/workflows/publish-image.yml
 	.github/workflows/release.yml
 	README.md
 	docs/index.md
@@ -46,6 +49,7 @@ required_files=(
 	images/playwright/Dockerfile
 	images/postgres/Dockerfile
 	manifests/versions.json
+	tests/publish.sh
 	tests/release.sh
 )
 
@@ -223,5 +227,6 @@ if git -C "$repository_root" grep -nE \
 fi
 
 "${repository_root}/tests/release.sh"
+"${repository_root}/tests/publish.sh"
 
 printf 'static verification passed\n'

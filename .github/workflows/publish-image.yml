@@ -1,0 +1,83 @@
+name: Publish image
+
+on:
+  workflow_call:
+    inputs:
+      image:
+        description: Image name from the suite manifest.
+        required: true
+        type: string
+      parent_image:
+        default: ""
+        description: Digest-pinned parent published by an upstream suite job.
+        required: false
+        type: string
+    outputs:
+      record:
+        description: Validated JSON record for the published candidate.
+        value: ${{ jobs.publish.outputs.record }}
+      reference:
+        description: Digest-pinned candidate image reference.
+        value: ${{ jobs.publish.outputs.reference }}
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  BUILDX_VERSION: v0.35.0
+  BUILDKIT_IMAGE: >-
+    docker.io/moby/buildkit@sha256:2f5adac4ecd194d9f8c10b7b5d7bceb5186853db1b26e5abd3a657af0b7e26ec
+  BINFMT_IMAGE: >-
+    docker.io/tonistiigi/binfmt@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
+  CI_IMAGES_SBOM_GENERATOR: >-
+    docker.io/docker/buildkit-syft-scanner@sha256:79e7b013cbec16bbb436f312819a49a4a57752b2270c1a9332ae1a10fcc82a68
+
+jobs:
+  publish:
+    name: Publish candidate (${{ inputs.image }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    outputs:
+      record: ${{ steps.publish.outputs.record }}
+      reference: ${{ steps.publish.outputs.reference }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
+        with:
+          image: ${{ env.BINFMT_IMAGE }}
+          platforms: arm64
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        with:
+          version: ${{ env.BUILDX_VERSION }}
+          driver-opts: image=${{ env.BUILDKIT_IMAGE }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4.5.2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Build and publish candidate index
+        id: publish
+        env:
+          IMAGE: ${{ inputs.image }}
+          OUTPUT_FILE: ${{ runner.temp }}/published-image.json
+          PARENT_IMAGE: ${{ inputs.parent_image }}
+        run: |
+          .github/scripts/publish-image.sh \
+            "$IMAGE" \
+            "$OUTPUT_FILE" \
+            "$PARENT_IMAGE"
+          record=$(jq --compact-output . "$OUTPUT_FILE")
+          reference=$(jq --exit-status --raw-output '.ref' "$OUTPUT_FILE")
+          printf 'record=%s\n' "$record" >>"$GITHUB_OUTPUT"
+          printf 'reference=%s\n' "$reference" >>"$GITHUB_OUTPUT"

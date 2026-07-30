@@ -13,9 +13,14 @@ event_name=${GITHUB_EVENT_NAME:?GITHUB_EVENT_NAME is not set}
 ref_name=${GITHUB_REF_NAME:?GITHUB_REF_NAME is not set}
 ref_type=${GITHUB_REF_TYPE:?GITHUB_REF_TYPE is not set}
 run_id=${GITHUB_RUN_ID:?GITHUB_RUN_ID is not set}
-run_attempt=${GITHUB_RUN_ATTEMPT:?GITHUB_RUN_ATTEMPT is not set}
 
-jq --exit-status '
+if [[ ! $revision =~ ^[0-9a-f]{40}$ ||
+	! $run_id =~ ^[1-9][0-9]*$ ]]; then
+	printf 'invalid workflow identity\n' >&2
+	exit 1
+fi
+
+if ! jq --exit-status --arg run_id "$run_id" '
 	type == "array" and
 	length == 6 and
 	([.[].name] | sort) == [
@@ -28,16 +33,22 @@ jq --exit-status '
 	] and
 	([
 		.[] |
-		(.image | test("^ghcr.io/myflow-xyz/ci-[a-z]+$")) and
+		.image == ("ghcr.io/myflow-xyz/ci-" + .name) and
 		(.digest | test("^sha256:[0-9a-f]{64}$")) and
-		(.ref == (.image + "@" + .digest))
+		.ref == (.image + "@" + .digest) and
+		(try (
+			(.image + ":candidate-" + $run_id + "-") as
+				$candidate_prefix |
+			(.candidate | startswith($candidate_prefix)) and
+			(
+				.candidate |
+				ltrimstr($candidate_prefix) |
+				test("^[1-9][0-9]*$")
+			)
+		) catch false)
 	] | all)
-' "$published_images" >/dev/null
-
-if [[ ! $revision =~ ^[0-9a-f]{40}$ ||
-	! $run_id =~ ^[0-9]+$ ||
-	! $run_attempt =~ ^[0-9]+$ ]]; then
-	printf 'invalid workflow identity\n' >&2
+' "$published_images" >/dev/null; then
+	printf 'published image records violate the promotion contract\n' >&2
 	exit 1
 fi
 
@@ -54,8 +65,7 @@ else
 	exit 1
 fi
 
-while IFS=$'\t' read -r image digest reference; do
-	candidate_tag="${image}:candidate-${run_id}-${run_attempt}"
+while IFS=$'\t' read -r image digest reference candidate_tag; do
 	candidate_digest=$(
 		docker buildx imagetools inspect \
 			"$candidate_tag" \
@@ -122,5 +132,7 @@ while IFS=$'\t' read -r image digest reference; do
 		fi
 	done
 done < <(
-	jq -r '.[] | [.image, .digest, .ref] | @tsv' "$published_images"
+	jq -r \
+		'.[] | [.image, .digest, .ref, .candidate] | @tsv' \
+		"$published_images"
 )

@@ -1,8 +1,9 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 
 ARG BASE_IMAGE
-FROM ${BASE_IMAGE} AS tsgolint-builder
+FROM --platform=${BUILDPLATFORM} ${BASE_IMAGE} AS tsgolint-builder
 
+ARG BUILDARCH
 ARG GO_SHA256_AMD64
 ARG GO_SHA256_ARM64
 ARG GO_VERSION
@@ -15,16 +16,16 @@ ARG TYPESCRIPT_GO_COMMIT
 USER root
 
 RUN set -eu; \
-    case "${TARGETARCH}" in \
+    case "${BUILDARCH}" in \
       amd64) go_sha256="${GO_SHA256_AMD64}" ;; \
       arm64) go_sha256="${GO_SHA256_ARM64}" ;; \
       *) \
-        printf 'unsupported target architecture: %s\n' "${TARGETARCH}" >&2; \
+        printf 'unsupported build architecture: %s\n' "${BUILDARCH}" >&2; \
         exit 1 \
         ;; \
     esac; \
     /usr/local/libexec/ci/fetch-verified \
-      "https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz" \
+      "https://go.dev/dl/go${GO_VERSION}.linux-${BUILDARCH}.tar.gz" \
       "${go_sha256}" \
       /var/tmp/go.tar.gz; \
     tar -xzf /var/tmp/go.tar.gz -C /usr/local; \
@@ -64,7 +65,8 @@ RUN --mount=type=cache,target=/var/cache/go/mod \
       GOTOOLCHAIN=local; \
     /usr/local/go/bin/go get \
       "golang.org/x/text@${OXLINT_TSGOLINT_X_TEXT_VERSION}"; \
-    CGO_ENABLED=0 /usr/local/go/bin/go build \
+    CGO_ENABLED=0 GOARCH="${TARGETARCH}" GOOS=linux \
+      /usr/local/go/bin/go build \
       -buildvcs=false \
       -trimpath \
       -o /out/tsgolint \
