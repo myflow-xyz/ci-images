@@ -29,6 +29,7 @@ usage() {
 		'  --dry-run          Resolve and report without changing the host' \
 		'  -h, --help         Show this help' \
 		'' \
+		'Owner group membership is verified but never changed.' \
 		'Apply mode (default) and --dry-run require root.'
 }
 
@@ -41,6 +42,10 @@ usage_error() {
 fail() {
 	printf '%s: %s\n' "$program_name" "$*" >&2
 	exit 1
+}
+
+warn() {
+	printf '%s: warning: %s\n' "$program_name" "$*" >&2
 }
 
 require_value() {
@@ -130,7 +135,6 @@ if ! $check_only; then
 		chown
 		install
 		setfacl
-		usermod
 	)
 fi
 
@@ -201,8 +205,10 @@ current_process_has_group() {
 if $check_only; then
 	((EUID == owner_uid)) ||
 		fail "--check must run as resolved owner: ${owner_name}(${owner_uid})"
-	owner_has_configured_group ||
+	if ! owner_has_configured_group; then
+		warn "owner ${owner_name} is not a member of ${group_name}(${group_gid}); add the owner, restart its runner service, and rerun"
 		fail "owner is not configured for resolved group: ${owner_name}/${group_name}"
+	fi
 	current_process_has_group ||
 		fail "resolved group is not effective for the current runner process; restart the runner service: ${owner_name}/${group_name}"
 fi
@@ -329,7 +335,7 @@ done
 if owner_has_configured_group; then
 	membership_plan=present
 else
-	membership_plan=add
+	membership_plan=missing
 fi
 
 mode=apply
@@ -568,10 +574,9 @@ if $check_only; then
 	exit 0
 fi
 
-membership_result=present
 if ! owner_has_configured_group; then
-	usermod --append --groups "$group_name" "$owner_name"
-	membership_result=added
+	warn "owner ${owner_name} is not a member of ${group_name}(${group_gid}); add the owner, restart its runner service, and rerun"
+	fail 'operator-managed group membership is required'
 fi
 
 if [[ $shared_state == create ]]; then
@@ -604,14 +609,7 @@ for target in "${targets[@]}"; do
 	verify_permissions "$target"
 done
 
-if [[ $membership_result == added ]]; then
-	printf \
-		'%s: verified status=ok targets=%s membership=added restart-required=yes\n' \
-		"$program_name" \
-		"$target_count"
-else
-	printf \
-		'%s: verified status=ok targets=%s membership=present\n' \
-		"$program_name" \
-		"$target_count"
-fi
+printf \
+	'%s: verified status=ok targets=%s membership=present\n' \
+	"$program_name" \
+	"$target_count"

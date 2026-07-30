@@ -109,7 +109,8 @@ sudo scripts/setup-runner-permissions.sh \
 
 The apply run:
 
-- adds the owner to the shared group when needed;
+- requires the owner to already belong to the shared group and never changes
+  account membership;
 - creates a non-group-writable `shared` parent and `shared/cache` when absent;
 - initially assigns the resolved owner and group recursively;
 - enforces exact directory access and mirrors each file's owner permissions to
@@ -121,8 +122,9 @@ The apply run:
 - rejects unsafe write access on unmanaged parent directories without changing
   them.
 
-If the result reports `restart-required=yes`, restart the runner service before
-accepting another job.
+If membership is missing, the helper stops before changing filesystem state.
+The runner operator must enroll the owner, restart its runner service, and
+rerun the helper.
 
 Pre-create every exact cache bind source before Docker starts a job, then run
 the helper so the new leaves are normalized. Docker may otherwise create a

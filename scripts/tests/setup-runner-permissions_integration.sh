@@ -40,11 +40,14 @@ group_record=$(getent group "$owner_gid")
 [[ -n $group_record ]] || fail "test group is unavailable: ${owner_gid}"
 IFS=: read -r group_name _ group_gid _ <<<"$group_record"
 
+owner_group_ids=" $(id -G "$owner_name") "
+stale_group_name=
 stale_gid=
-while IFS=: read -r _ _ candidate_gid _; do
+while IFS=: read -r candidate_name _ candidate_gid _; do
 	[[ $candidate_gid =~ ^[0-9]+$ ]] || continue
 	((candidate_gid != 0)) || continue
-	[[ $candidate_gid != "$group_gid" ]] || continue
+	[[ $owner_group_ids != *" ${candidate_gid} "* ]] || continue
+	stale_group_name=$candidate_name
 	stale_gid=$candidate_gid
 	break
 done < <(getent group)
@@ -157,6 +160,18 @@ after_dry_run=$(stat --format '%u:%g:%a' "$work_file")
 	fail 'dry-run discovered the wrong work-tree count'
 [[ $dry_run_output == *'targets=3'* ]] ||
 	fail 'dry-run reported the wrong target count'
+
+missing_membership_before=$(stat --format '%u:%g:%a' "$work_file")
+assert_fails_with \
+	'missing configured membership' \
+	"warning: owner ${owner_name} is not a member of ${stale_group_name}(${stale_gid}); add the owner, restart its runner service, and rerun" \
+	"$helper" \
+	--runner-root "$runner_root" \
+	--owner "$owner_name" \
+	--group "$stale_gid"
+missing_membership_after=$(stat --format '%u:%g:%a' "$work_file")
+[[ $missing_membership_after == "$missing_membership_before" ]] ||
+	fail 'missing membership detection did not precede mutation'
 
 outside_before=$(
 	stat \

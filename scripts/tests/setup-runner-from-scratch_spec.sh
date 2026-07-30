@@ -12,6 +12,7 @@ Describe 'setup-runner-from-scratch.sh CLI'
 		The output should include '--repository NAME'
 		The output should include '/opt, /var, /home, or /Users'
 		The output should include 'Missing mfci is created with GID 2001'
+		The output should include 'membership is verified but never changed'
 		The error should be blank
 	End
 

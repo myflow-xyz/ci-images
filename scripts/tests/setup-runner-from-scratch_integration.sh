@@ -22,6 +22,7 @@ required_commands=(
 	stat
 	useradd
 	userdel
+	usermod
 )
 
 for command_name in "${required_commands[@]}"; do
@@ -68,7 +69,6 @@ if mfci_record=$(getent group mfci); then
 	[[ $group_name == mfci && $group_gid == 2001 ]] ||
 		fail "existing mfci group does not use GID 2001: ${mfci_record}"
 	expected_group_state=existing
-	expected_group_result=present
 else
 	[[ -z $(getent group 2001 || true) ]] ||
 		fail 'GID 2001 is already assigned to another group'
@@ -76,7 +76,6 @@ else
 	group_gid=2001
 	mfci_created=true
 	expected_group_state=create
-	expected_group_result=created
 fi
 
 if getent passwd "$owner_name" >/dev/null; then
@@ -179,7 +178,7 @@ dry_run_output=$(
 	fail 'dry-run mode was not reported'
 [[ $dry_run_output == *'root-state=create'* ]] ||
 	fail 'dry-run reported the wrong runner-root state'
-[[ $dry_run_output == *"group-state=${expected_group_state} configured-membership=add"* ]] ||
+[[ $dry_run_output == *"group-state=${expected_group_state} configured-membership=missing"* ]] ||
 	fail 'dry-run reported the wrong identity plan'
 [[ $dry_run_output == *'create=8 existing=0'* ]] ||
 	fail 'dry-run reported the wrong directory plan'
@@ -194,6 +193,31 @@ fi
 owner_has_group &&
 	fail 'dry-run changed owner group membership'
 
+membership_warning="warning: owner ${owner_name} is not a member of mfci(2001); add the owner, restart its runner service, and rerun"
+if [[ $expected_group_state == create ]]; then
+	membership_warning="warning: created mfci(2001), but owner ${owner_name} was not enrolled; add the owner, restart its runner service, and rerun"
+fi
+assert_fails_with \
+	'missing owner membership' \
+	"$membership_warning" \
+	"$helper" \
+	--runner-root "$runner_root" \
+	--owner "$owner_name" \
+	--repository "$repository"
+[[ ! -e $runner_root ]] ||
+	fail 'missing membership created the runner root'
+
+mfci_record=$(getent group mfci)
+IFS=: read -r group_name _ group_gid _ <<<"$mfci_record"
+[[ $group_name == mfci && $group_gid == 2001 ]] ||
+	fail "default group has the wrong identity: ${mfci_record}"
+owner_has_group &&
+	fail 'bootstrap changed owner group membership'
+
+usermod --append --groups "$group_name" "$owner_name"
+owner_has_group ||
+	fail 'operator setup did not add the owner to the shared group'
+
 apply_output=$(
 	"$helper" \
 		--runner-root "$runner_root" \
@@ -202,19 +226,13 @@ apply_output=$(
 )
 [[ $apply_output == *'setup-runner-permissions.sh: verified status=ok'* ]] ||
 	fail 'permission-helper success was not reported'
-[[ $apply_output == *"setup-runner-from-scratch.sh: verified status=ok directories=8 permission-helper=ok group=${expected_group_result} membership=added restart-required=yes"* ]] ||
+[[ $apply_output == *'setup-runner-from-scratch.sh: verified status=ok directories=8 permission-helper=ok group=present membership=present'* ]] ||
 	fail 'bootstrap verification was not reported'
 runner_marker="${runner_root}/.mfci-runner-root"
 [[ -f $runner_marker && ! -L $runner_marker ]] ||
 	fail 'bootstrap did not create the runner-root marker'
 [[ $(stat --format '%u:%g:%a' "$runner_marker") == 0:0:444 ]] ||
 	fail 'runner-root marker identity is wrong'
-mfci_record=$(getent group mfci)
-IFS=: read -r group_name _ group_gid _ <<<"$mfci_record"
-[[ $group_name == mfci && $group_gid == 2001 ]] ||
-	fail "default group has the wrong identity: ${mfci_record}"
-owner_has_group ||
-	fail 'bootstrap did not add the owner to the shared group'
 
 repository_root="${runner_root}/workspace/${repository}"
 work_root="${repository_root}/_work"

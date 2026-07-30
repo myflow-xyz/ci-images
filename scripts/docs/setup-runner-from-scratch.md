@@ -83,19 +83,21 @@ alternatives must already resolve through the host account database. The owner
 may be a name or numeric ID. The repository value is a single directory name,
 not a path.
 
-The bootstrap adds the owner to the resolved shared group when needed. If its
-output reports `restart-required=yes`, restart the runner service before
-accepting a job. Dry-run reports planned group creation and membership changes
-without applying them.
+The bootstrap never changes account group membership. If the owner is not in
+the resolved shared group, apply mode stops before creating or normalizing the
+runner root and reports the required operator action. When it first creates
+`mfci`, it then stops at the same membership boundary. Enroll the owner, restart
+its runner service, and rerun the helper. Dry-run reports missing membership
+without changing the host.
 
 ## Tests
 
 - `tests/setup-runner-from-scratch_spec.sh` checks required inputs and the CLI
   contract through ShellSpec.
 - `tests/setup-runner-from-scratch_integration.sh` verifies dry-run behavior,
-  canonical group creation, owner enrollment, the complete directory structure,
-  ownership and mode boundaries, permission delegation, reruns, and unsafe
-  target rejection in a disposable Linux tree.
+  canonical group creation, operator-managed membership, the complete directory
+  structure, ownership and mode boundaries, permission delegation, reruns, and
+  unsafe target rejection in a disposable Linux tree.
 
 The independent `Runner helper / Contract` workflow runs both suites without
 accessing real runner host paths.

@@ -36,6 +36,7 @@ usage() {
 		'  --dry-run          Resolve and report without changing the host' \
 		'  -h, --help         Show this help' \
 		'' \
+		'Owner group membership is verified but never changed.' \
 		'Run as root, for example with sudo.'
 }
 
@@ -48,6 +49,10 @@ usage_error() {
 fail() {
 	printf '%s: %s\n' "$program_name" "$*" >&2
 	exit 1
+}
+
+warn() {
+	printf '%s: warning: %s\n' "$program_name" "$*" >&2
 }
 
 require_value() {
@@ -144,7 +149,6 @@ required_commands=(
 	rmdir
 	setfacl
 	stat
-	usermod
 )
 
 for command_name in "${required_commands[@]}"; do
@@ -185,8 +189,10 @@ mapfile -t group_records < <(getent group "$group_spec" || true)
 if [[ $group_spec == "$default_group_name" && ${#group_records[@]} == 0 ]]; then
 	declare -a gid_records=()
 	mapfile -t gid_records < <(getent group "$default_group_gid" || true)
-	((${#gid_records[@]} == 0)) ||
+	if ((${#gid_records[@]} != 0)); then
+		warn "GID ${default_group_gid} is already assigned; no group changes were made"
 		fail "cannot create ${default_group_name}: GID ${default_group_gid} is already in use"
+	fi
 	group_state=create
 	group_name=$default_group_name
 	group_gid=$default_group_gid
@@ -201,12 +207,13 @@ fi
 ((group_gid != 0)) ||
 	fail "group must not be root: ${group_name}"
 if [[ $group_name == "$default_group_name" && $group_gid != "$default_group_gid" ]]; then
+	warn "${default_group_name} has an unexpected GID; no group changes were made"
 	fail "${default_group_name} must use GID ${default_group_gid}, found ${group_gid}"
 fi
 
 owner_groups=$(id -G "$owner_name") ||
 	fail "cannot resolve owner groups: ${owner_name}"
-membership_plan=add
+membership_plan=missing
 for current_gid in $owner_groups; do
 	if [[ $current_gid == "$group_gid" ]]; then
 		membership_plan=present
@@ -319,21 +326,6 @@ if $dry_run; then
 	exit 0
 fi
 
-if [[ $runner_root_state == create ]]; then
-	mkdir --mode 0755 -- "$runner_root" ||
-		fail "cannot create runner root: ${runner_root}"
-	if ! install \
-		--owner 0 \
-		--group 0 \
-		--mode 0444 \
-		-- \
-		/dev/null \
-		"$runner_marker"; then
-		rmdir -- "$runner_root" >/dev/null 2>&1 || true
-		fail "cannot create runner root marker: ${runner_marker}"
-	fi
-fi
-
 group_result=present
 if [[ $group_state == create ]]; then
 	groupadd --gid "$default_group_gid" "$default_group_name" ||
@@ -351,11 +343,13 @@ if [[ $group_state == create ]]; then
 		fail "created group has unexpected identity: ${created_group_records[0]}"
 fi
 
-membership_result=present
-if [[ $membership_plan == add ]]; then
-	usermod --append --groups "$group_name" "$owner_name" ||
-		fail "cannot add owner to group: ${owner_name}/${group_name}"
-	membership_result=added
+if [[ $membership_plan == missing ]]; then
+	if [[ $group_result == created ]]; then
+		warn "created ${group_name}(${group_gid}), but owner ${owner_name} was not enrolled; add the owner, restart its runner service, and rerun"
+	else
+		warn "owner ${owner_name} is not a member of ${group_name}(${group_gid}); add the owner, restart its runner service, and rerun"
+	fi
+	fail 'operator-managed group membership is required'
 fi
 
 owner_groups=$(id -G "$owner_name") ||
@@ -369,6 +363,21 @@ for current_gid in $owner_groups; do
 done
 $membership_verified ||
 	fail "owner is not configured for group: ${owner_name}/${group_name}"
+
+if [[ $runner_root_state == create ]]; then
+	mkdir --mode 0755 -- "$runner_root" ||
+		fail "cannot create runner root: ${runner_root}"
+	if ! install \
+		--owner 0 \
+		--group 0 \
+		--mode 0444 \
+		-- \
+		/dev/null \
+		"$runner_marker"; then
+		rmdir -- "$runner_root" >/dev/null 2>&1 || true
+		fail "cannot create runner root marker: ${runner_marker}"
+	fi
+fi
 
 install \
 	--directory \
@@ -426,16 +435,8 @@ for directory in "$work_root" "$shared_cache"; do
 		"${owner_uid}:${group_gid}:2770"
 done
 
-if [[ $membership_result == added ]]; then
-	printf \
-		'%s: verified status=ok directories=%s permission-helper=ok group=%s membership=added restart-required=yes\n' \
-		"$program_name" \
-		"${#directories[@]}" \
-		"$group_result"
-else
-	printf \
-		'%s: verified status=ok directories=%s permission-helper=ok group=%s membership=present\n' \
-		"$program_name" \
-		"${#directories[@]}" \
-		"$group_result"
-fi
+printf \
+	'%s: verified status=ok directories=%s permission-helper=ok group=%s membership=present\n' \
+	"$program_name" \
+	"${#directories[@]}" \
+	"$group_result"

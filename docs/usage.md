@@ -218,9 +218,9 @@ The independent
 [runner bootstrap helper](../scripts/docs/setup-runner-from-scratch.md) creates
 the standard host directory skeleton for a new repository runner and delegates
 the writable paths to the permission helper. It creates the canonical
-`mfci:2001` identity only when both its name and GID are available, and enrolls
-the runner owner when needed. It does not download, register, or manage the
-runner service.
+`mfci:2001` identity only when both its name and GID are available. It verifies
+runner-owner membership but leaves enrollment and service restart to the host
+operator. It does not download, register, or manage the runner service.
 
 The independent
 [runner permission helper](../scripts/docs/setup-runner-permissions.md)
