@@ -217,6 +217,10 @@ An opt-in host preflight may run the helper with `--check`. It only verifies
 existing state and must fail the job rather than repair a runner. The runner
 operator applies changes separately before the workflow is rerun.
 
+The runner account owns each managed `_work` or `shared/cache` root. Files and
+directories created below those roots may retain the container UID; the shared
+GID and inherited permissions provide cross-UID access.
+
 Pre-create every exact cache bind source before Docker starts a job. Docker may
 otherwise create a missing source with unsuitable ownership.
 

@@ -77,6 +77,8 @@ printf 'workspace\n' > \
 	"${runner_root}/repository-a/_work/project/nested/data"
 printf '#!/usr/bin/env bash\n' > \
 	"${runner_root}/repository-a/_work/project/tool"
+printf 'runner-owned\n' > \
+	"${runner_root}/repository-b/_work/_temp/runner-owned"
 printf 'protected\n' >"${runner_root}/repository-a/config"
 printf 'outside\n' >"${runner_root}/repository-c/outside"
 ln -s \
@@ -90,8 +92,8 @@ chmod 0700 \
 	"${runner_root}/repository-a/_work" \
 	"${runner_root}/repository-a/_work/project" \
 	"${runner_root}/repository-a/_work/project/nested" \
-	"${runner_root}/repository-b/_work" \
-	"${runner_root}/repository-b/_work/_temp"
+	"${runner_root}/repository-b/_work"
+chmod 1777 "${runner_root}/repository-b/_work/_temp"
 chmod 0600 \
 	"${runner_root}/shared/cache/go/nested/data" \
 	"${runner_root}/repository-a/_work/project/nested/data"
@@ -234,15 +236,19 @@ expected_file_acl=$(
 )
 
 for target in "${targets[@]}"; do
+	[[ $(stat --format '%u:%g' "$target") == "${owner_uid}:${group_gid}" ]] ||
+		fail "managed-root ownership was not normalized: ${target}"
+
 	if find "$target" \
-		\( ! -uid "$owner_uid" -o ! -gid "$group_gid" \) \
+		-mindepth 1 \
+		! -gid "$group_gid" \
 		-print \
 		-quit |
 		grep -q .; then
-		fail "ownership was not normalized below ${target}"
+		fail "descendant group ownership was not normalized below ${target}"
 	fi
 
-	if find "$target" -type d ! -perm -2770 -print -quit |
+	if find "$target" -type d ! -perm 2770 -print -quit |
 		grep -q .; then
 		fail "directory permissions were not normalized below ${target}"
 	fi
@@ -346,6 +352,48 @@ setpriv \
 	fail 'a new file did not inherit the shared group'
 [[ $(stat --format %A "${group_probe}/file") == -rw-rw---- ]] ||
 	fail 'a new file did not inherit writable group access'
+[[ $(stat --format %u "$group_probe") == "$probe_uid" ]] ||
+	fail 'the cross-UID probe was not owned by its creator'
+
+post_container_check_output=$(
+	setpriv \
+		--reuid "$owner_uid" \
+		--regid "$owner_gid" \
+		--init-groups \
+		"$helper" \
+		--runner-root "$runner_root" \
+		--owner "$owner_name" \
+		--group "$group_name" \
+		--check
+)
+[[ $post_container_check_output == *'verified status=ok mode=check targets=3'* ]] ||
+	fail 'verification rejected a valid cross-UID descendant'
+
+chmod +t "$group_probe"
+assert_fails_with \
+	'sticky directory check' \
+	"directory mode verification failed: ${group_probe}" \
+	setpriv \
+	--reuid "$owner_uid" \
+	--regid "$owner_gid" \
+	--init-groups \
+	"$helper" \
+	--runner-root "$runner_root" \
+	--owner "$owner_name" \
+	--group "$group_name" \
+	--check
+chmod 2770 "$group_probe"
+
+runner_owned_file="${runner_root}/repository-b/_work/_temp/runner-owned"
+[[ $(stat --format %u "$runner_owned_file") == "$owner_uid" ]] ||
+	fail 'the deletion probe was not owned by the runner'
+setpriv \
+	--reuid "$probe_uid" \
+	--regid "$group_gid" \
+	--clear-groups \
+	rm -- "$runner_owned_file"
+[[ ! -e $runner_owned_file ]] ||
+	fail 'a shared-group identity could not remove a runner-owned entry'
 
 empty_root="${temporary_directory}/empty-root"
 mkdir -p "$empty_root"

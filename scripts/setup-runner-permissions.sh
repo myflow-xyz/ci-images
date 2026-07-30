@@ -304,7 +304,7 @@ apply_permissions() {
 		-exec chown --no-dereference "${owner_uid}:${group_gid}" -- {} +
 	find "$target" \
 		-type d \
-		-exec chmod u+rwx,g+rwx,g+s,o-rwx -- {} +
+		-exec chmod 2770 -- {} +
 	find "$target" \
 		-type d \
 		-exec setfacl \
@@ -315,7 +315,7 @@ apply_permissions() {
 	find "$target" \
 		-type f \
 		-perm /111 \
-		-exec chmod u+rwx,g+rwx,o-rwx -- {} +
+		-exec chmod 0770 -- {} +
 	find "$target" \
 		-type f \
 		-perm /111 \
@@ -326,7 +326,7 @@ apply_permissions() {
 	find "$target" \
 		-type f \
 		! -perm /111 \
-		-exec chmod u+rw,g+rw,o-rwx -- {} +
+		-exec chmod 0660 -- {} +
 	find "$target" \
 		-type f \
 		! -perm /111 \
@@ -405,17 +405,28 @@ verify_permissions() {
 
 	mismatch=$(
 		find "$target" \
+			-maxdepth 0 \
 			\( ! -uid "$owner_uid" -o ! -gid "$group_gid" \) \
 			-print \
 			-quit
 	)
 	[[ -z $mismatch ]] ||
-		fail "ownership verification failed: ${mismatch}"
+		fail "managed-root ownership verification failed: ${mismatch}"
+
+	mismatch=$(
+		find "$target" \
+			-mindepth 1 \
+			! -gid "$group_gid" \
+			-print \
+			-quit
+	)
+	[[ -z $mismatch ]] ||
+		fail "descendant group verification failed: ${mismatch}"
 
 	mismatch=$(
 		find "$target" \
 			-type d \
-			! -perm -2770 \
+			! -perm 2770 \
 			-print \
 			-quit
 	)
@@ -424,19 +435,9 @@ verify_permissions() {
 
 	mismatch=$(
 		find "$target" \
-			-type d \
-			-perm /0007 \
-			-print \
-			-quit
-	)
-	[[ -z $mismatch ]] ||
-		fail "directory other-access verification failed: ${mismatch}"
-
-	mismatch=$(
-		find "$target" \
 			-type f \
 			-perm /111 \
-			! -perm -0770 \
+			! -perm 0770 \
 			-print \
 			-quit
 	)
@@ -446,18 +447,8 @@ verify_permissions() {
 	mismatch=$(
 		find "$target" \
 			-type f \
-			-perm /0007 \
-			-print \
-			-quit
-	)
-	[[ -z $mismatch ]] ||
-		fail "file other-access verification failed: ${mismatch}"
-
-	mismatch=$(
-		find "$target" \
-			-type f \
 			! -perm /111 \
-			! -perm -0660 \
+			! -perm 0660 \
 			-print \
 			-quit
 	)
