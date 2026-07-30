@@ -337,26 +337,10 @@ apply_permissions() {
 		{} +
 	find "$target" \
 		-type f \
-		-perm /111 \
-		-exec chmod 0770 -- {} +
+		-exec setfacl --remove-all -- {} +
 	find "$target" \
 		-type f \
-		-perm /111 \
-		-exec setfacl \
-		--set user::rwx,group::rwx,other::--- \
-		-- \
-		{} +
-	find "$target" \
-		-type f \
-		! -perm /111 \
-		-exec chmod 0660 -- {} +
-	find "$target" \
-		-type f \
-		! -perm /111 \
-		-exec setfacl \
-		--set user::rw,group::rw,other::--- \
-		-- \
-		{} +
+		-exec chmod u-s,g-s,o-t,g=u,o= -- {} +
 }
 
 acl_records_match() {
@@ -420,6 +404,49 @@ acl_records_match() {
 	'
 }
 
+file_acl_records_match() {
+	awk '
+		BEGIN {
+			RS = ""
+		}
+		{
+			owner_permissions = ""
+			group_permissions = ""
+			owner_count = 0
+			group_count = 0
+			other_count = 0
+			entry_count = 0
+
+			line_count = split($0, lines, "\n")
+			for (line_number = 1; line_number <= line_count; line_number++) {
+				if (lines[line_number] == "") {
+					continue
+				}
+				entry_count++
+				if (lines[line_number] ~ /^user::[r-][w-][x-]$/) {
+					owner_permissions = substr(lines[line_number], 7)
+					owner_count++
+				} else if (lines[line_number] ~ /^group::[r-][w-][x-]$/) {
+					group_permissions = substr(lines[line_number], 8)
+					group_count++
+				} else if (lines[line_number] == "other::---") {
+					other_count++
+				} else {
+					exit 1
+				}
+			}
+
+			if (entry_count != 3 ||
+			    owner_count != 1 ||
+			    group_count != 1 ||
+			    other_count != 1 ||
+			    owner_permissions != group_permissions) {
+				exit 1
+			}
+		}
+	'
+}
+
 verify_permissions() {
 	local target=$1
 	local mismatch
@@ -459,19 +486,7 @@ verify_permissions() {
 	mismatch=$(
 		find "$target" \
 			-type f \
-			-perm /111 \
-			! -perm 0770 \
-			-print \
-			-quit
-	)
-	[[ -z $mismatch ]] ||
-		fail "executable mode verification failed: ${mismatch}"
-
-	mismatch=$(
-		find "$target" \
-			-type f \
-			! -perm /111 \
-			! -perm 0660 \
+			-perm /7007 \
 			-print \
 			-quit
 	)
@@ -486,16 +501,8 @@ verify_permissions() {
 
 	find "$target" \
 		-type f \
-		-perm /111 \
 		-exec getfacl -cp -- {} + |
-		acl_records_match rwx rwx false ||
-		fail "executable ACL verification failed below: ${target}"
-
-	find "$target" \
-		-type f \
-		! -perm /111 \
-		-exec getfacl -cp -- {} + |
-		acl_records_match rw- rw- false ||
+		file_acl_records_match ||
 		fail "file ACL verification failed below: ${target}"
 }
 

@@ -24,7 +24,10 @@ receives write access only from `shared/cache` downward.
 
 Each managed `_work` or `shared/cache` root remains owned by the resolved runner
 owner. Descendants created later by a job container may retain the container
-UID; the shared GID, exact modes, and ACLs are the persistent access contract.
+UID. Directories remain `2770`; each regular file's group permissions mirror
+its owner permissions. This preserves intentional read-only files such as Git
+objects while the shared GID and inherited ACLs provide equivalent access to
+both identities.
 
 ## Requirements
 
@@ -98,10 +101,10 @@ The apply run:
 - adds the owner to the shared group when needed;
 - creates a non-group-writable `shared` parent and `shared/cache` when absent;
 - initially assigns the resolved owner and group recursively;
-- enforces exact owner and group access while removing other and unexpected
-  special-mode bits;
+- enforces exact directory access and mirrors each file's owner permissions to
+  the shared group while removing other and unexpected special-mode bits;
 - replaces existing ACLs and configures setgid inheritance on directories;
-- preserves whether regular files are executable;
+- preserves creator-requested read-only, writable, and executable file modes;
 - verifies managed-root ownership, descendant group ownership, modes, ACLs, and
   group membership.
 
@@ -125,8 +128,8 @@ ShellCheck, and shfmt before the ShellSpec examples.
 - `tests/setup-runner-permissions_spec.sh` checks the CLI contract through
   ShellSpec.
 - `tests/setup-runner-permissions_integration.sh` checks recursive ownership,
-  modes, ACL inheritance, group writes, dry-run behavior, and safety boundaries
-  in disposable directories.
+  modes, ACL inheritance, group writes, Git read-only objects, dry-run behavior,
+  and safety boundaries in disposable directories.
 
 Run ShellSpec from the script project directory:
 

@@ -15,6 +15,7 @@ fail() {
 required_commands=(
 	getent
 	getfacl
+	git
 	setfacl
 	setpriv
 	stat
@@ -85,6 +86,8 @@ mkdir -p \
 printf 'cache\n' >"${runner_root}/shared/cache/go/nested/data"
 printf 'workspace\n' > \
 	"${runner_root}/repository-a/_work/project/nested/data"
+printf 'read-only\n' > \
+	"${runner_root}/repository-a/_work/project/nested/read-only"
 printf '#!/usr/bin/env bash\n' > \
 	"${runner_root}/repository-a/_work/project/tool"
 printf 'runner-owned\n' > \
@@ -107,6 +110,8 @@ chmod 1777 "${runner_root}/repository-b/_work/_temp"
 chmod 0600 \
 	"${runner_root}/shared/cache/go/nested/data" \
 	"${runner_root}/repository-a/_work/project/nested/data"
+chmod 0400 \
+	"${runner_root}/repository-a/_work/project/nested/read-only"
 chmod 0700 "${runner_root}/repository-a/_work/project/tool"
 chmod 0755 \
 	"${runner_root}" \
@@ -223,7 +228,7 @@ chmod 0600 "$work_file"
 check_failure_before=$(stat --format '%u:%g:%a' "$work_file")
 assert_fails_with \
 	'verification-only mode mismatch' \
-	"file mode verification failed: ${work_file}" \
+	"file ACL verification failed below: ${runner_root}/repository-a/_work" \
 	setpriv \
 	--reuid "$owner_uid" \
 	--regid "$owner_gid" \
@@ -245,6 +250,9 @@ tool_mode=$(
 )
 [[ $tool_mode == -rwxrwx--- ]] ||
 	fail 'an existing executable did not retain executable access'
+read_only_file="${runner_root}/repository-a/_work/project/nested/read-only"
+[[ $(stat --format %A "$read_only_file") == -r--r----- ]] ||
+	fail 'an existing read-only file did not retain read-only access'
 
 declare -a targets=(
 	"${runner_root}/repository-a/_work"
@@ -260,18 +268,47 @@ expected_directory_acl=$(
 		'default:group::rwx' \
 		'default:other::---'
 )
-expected_executable_acl=$(
+expected_read_only_acl=$(
 	printf '%s\n' \
-		'user::rwx' \
-		'group::rwx' \
+		'user::r--' \
+		'group::r--' \
 		'other::---'
 )
-expected_file_acl=$(
-	printf '%s\n' \
-		'user::rw-' \
-		'group::rw-' \
-		'other::---'
-)
+
+assert_mirrored_file_permissions() {
+	local regular_file=$1
+	local mode
+	local owner_permissions
+	local group_permissions
+	local file_acl
+	local expected_file_acl
+
+	mode=$(stat --format %a "$regular_file")
+	[[ $mode =~ ^[0-7]{3}$ ]] ||
+		fail "file has special permission bits: ${regular_file}"
+	[[ ${mode:0:1} == "${mode:1:1}" && ${mode:2:1} == 0 ]] ||
+		fail "file owner and group permissions differ: ${regular_file}"
+
+	file_acl=$(getfacl -cp "$regular_file")
+	owner_permissions=$(
+		printf '%s\n' "$file_acl" |
+			awk -F: '$1 == "user" && $2 == "" { print $3 }'
+	)
+	group_permissions=$(
+		printf '%s\n' "$file_acl" |
+			awk -F: '$1 == "group" && $2 == "" { print $3 }'
+	)
+	[[ -n $owner_permissions && $owner_permissions == "$group_permissions" ]] ||
+		fail "file ACL owner and group permissions differ: ${regular_file}"
+	expected_file_acl=$(
+		printf '%s\n' \
+			"user::${owner_permissions}" \
+			"group::${group_permissions}" \
+			'other::---'
+	)
+	[[ $file_acl == "$expected_file_acl" ]] ||
+		fail "file ACL has unexpected entries: ${regular_file}"
+}
 
 for target in "${targets[@]}"; do
 	[[ $(stat --format '%u:%g' "$target") == "${owner_uid}:${group_gid}" ]] ||
@@ -296,16 +333,13 @@ for target in "${targets[@]}"; do
 			fail "directory ACL was not replaced exactly: ${directory}"
 	done < <(find "$target" -type d)
 
-	while IFS= read -r executable; do
-		[[ $(getfacl -cp "$executable") == "$expected_executable_acl" ]] ||
-			fail "executable ACL was not replaced exactly: ${executable}"
-	done < <(find "$target" -type f -perm /111)
-
 	while IFS= read -r regular_file; do
-		[[ $(getfacl -cp "$regular_file") == "$expected_file_acl" ]] ||
-			fail "file ACL was not replaced exactly: ${regular_file}"
-	done < <(find "$target" -type f ! -perm /111)
+		assert_mirrored_file_permissions "$regular_file"
+	done < <(find "$target" -type f)
 done
+
+[[ $(getfacl -cp "$read_only_file") == "$expected_read_only_acl" ]] ||
+	fail 'the read-only file ACL was not normalized exactly'
 
 outside_after=$(
 	stat --format '%u:%g:%a' "${runner_root}/repository-c/outside"
@@ -392,6 +426,48 @@ setpriv \
 	fail 'a new file did not inherit writable group access'
 [[ $(stat --format %u "$group_probe") == "$probe_uid" ]] ||
 	fail 'the cross-UID probe was not owned by its creator'
+
+git_home="${temporary_directory}/git-home"
+git_repository="${runner_root}/repository-a/_work/git-probe"
+install \
+	--directory \
+	--owner "$probe_uid" \
+	--group "$group_gid" \
+	--mode 0700 \
+	"$git_home"
+# shellcheck disable=SC2016
+setpriv \
+	--reuid "$probe_uid" \
+	--regid "$group_gid" \
+	--clear-groups \
+	env HOME="$git_home" \
+	bash -c '
+		set -euo pipefail
+		repository=$1
+		git init --quiet --initial-branch=main "$repository"
+		git -C "$repository" config user.email ci@example.invalid
+		git -C "$repository" config user.name CI
+		printf "tracked\n" >"${repository}/tracked"
+		git -C "$repository" add tracked
+		git -C "$repository" commit --quiet --message initial
+	' \
+	_ \
+	"$git_repository"
+
+git_object=$(
+	find "${git_repository}/.git/objects" \
+		-mindepth 2 \
+		-maxdepth 2 \
+		-type f \
+		-print \
+		-quit
+)
+[[ -n $git_object ]] ||
+	fail 'Git did not create a loose object'
+[[ $(stat --format %a "$git_object") == 440 ]] ||
+	fail 'a Git loose object did not inherit read-only group access'
+[[ $(getfacl -cp "$git_object") == "$expected_read_only_acl" ]] ||
+	fail 'a Git loose object did not inherit the read-only ACL'
 
 post_container_check_output=$(
 	setpriv \
