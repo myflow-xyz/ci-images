@@ -18,7 +18,7 @@ usage() {
 		"Usage: ${program_name} [options]" \
 		'' \
 		'Configure writable GitHub Actions runner data under:' \
-		'  <runner-root>/*/_work' \
+		'  <runner-root>/workspace/*/_work' \
 		'  <runner-root>/shared/cache' \
 		'' \
 		'Options:' \
@@ -218,8 +218,12 @@ runner_root=$(readlink -f -- "$runner_root")
 [[ $runner_root != / ]] ||
 	fail 'resolved runner root must not be /'
 
+workspace_root="${runner_root}/workspace"
 shared_root="${runner_root}/shared"
 cache_root="${shared_root}/cache"
+
+[[ -d $workspace_root && ! -L $workspace_root ]] ||
+	fail "workspace root must be a real directory: ${workspace_root}"
 
 shared_state=existing
 if [[ -e $shared_root || -L $shared_root ]]; then
@@ -239,7 +243,7 @@ fi
 
 declare -a workdirs=()
 shopt -s nullglob
-declare -a workdir_candidates=("${runner_root}"/*/_work)
+declare -a workdir_candidates=("${workspace_root}"/*/_work)
 shopt -u nullglob
 
 for workdir in "${workdir_candidates[@]}"; do
@@ -291,6 +295,7 @@ reject_writable_unmanaged_parent() {
 }
 
 reject_writable_unmanaged_parent "$runner_root"
+reject_writable_unmanaged_parent "$workspace_root"
 if [[ $shared_state == existing ]]; then
 	reject_writable_unmanaged_parent "$shared_root"
 fi

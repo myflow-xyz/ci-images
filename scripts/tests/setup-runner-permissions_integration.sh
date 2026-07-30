@@ -79,63 +79,64 @@ assert_fails_with() {
 runner_root="${temporary_directory}/runner root"
 mkdir -p \
 	"${runner_root}/shared/cache/go/nested" \
-	"${runner_root}/repository-a/_work/project/nested" \
-	"${runner_root}/repository-b/_work/_temp" \
-	"${runner_root}/repository-c"
+	"${runner_root}/workspace/repository-a/_work/project/nested" \
+	"${runner_root}/workspace/repository-b/_work/_temp" \
+	"${runner_root}/workspace/repository-c"
 
 printf 'cache\n' >"${runner_root}/shared/cache/go/nested/data"
 printf 'workspace\n' > \
-	"${runner_root}/repository-a/_work/project/nested/data"
+	"${runner_root}/workspace/repository-a/_work/project/nested/data"
 printf 'read-only\n' > \
-	"${runner_root}/repository-a/_work/project/nested/read-only"
+	"${runner_root}/workspace/repository-a/_work/project/nested/read-only"
 printf '#!/usr/bin/env bash\n' > \
-	"${runner_root}/repository-a/_work/project/tool"
+	"${runner_root}/workspace/repository-a/_work/project/tool"
 printf 'runner-owned\n' > \
-	"${runner_root}/repository-b/_work/_temp/runner-owned"
-printf 'protected\n' >"${runner_root}/repository-a/config"
-printf 'outside\n' >"${runner_root}/repository-c/outside"
+	"${runner_root}/workspace/repository-b/_work/_temp/runner-owned"
+printf 'protected\n' >"${runner_root}/workspace/repository-a/config"
+printf 'outside\n' >"${runner_root}/workspace/repository-c/outside"
 ln -s \
-	"${runner_root}/repository-c/outside" \
-	"${runner_root}/repository-a/_work/outside-link"
+	"${runner_root}/workspace/repository-c/outside" \
+	"${runner_root}/workspace/repository-a/_work/outside-link"
 
 chmod 0700 \
 	"${runner_root}/shared/cache" \
 	"${runner_root}/shared/cache/go" \
 	"${runner_root}/shared/cache/go/nested" \
-	"${runner_root}/repository-a/_work" \
-	"${runner_root}/repository-a/_work/project" \
-	"${runner_root}/repository-a/_work/project/nested" \
-	"${runner_root}/repository-b/_work"
-chmod 1777 "${runner_root}/repository-b/_work/_temp"
+	"${runner_root}/workspace/repository-a/_work" \
+	"${runner_root}/workspace/repository-a/_work/project" \
+	"${runner_root}/workspace/repository-a/_work/project/nested" \
+	"${runner_root}/workspace/repository-b/_work"
+chmod 1777 "${runner_root}/workspace/repository-b/_work/_temp"
 chmod 0600 \
 	"${runner_root}/shared/cache/go/nested/data" \
-	"${runner_root}/repository-a/_work/project/nested/data"
+	"${runner_root}/workspace/repository-a/_work/project/nested/data"
 chmod 0400 \
-	"${runner_root}/repository-a/_work/project/nested/read-only"
-chmod 0700 "${runner_root}/repository-a/_work/project/tool"
+	"${runner_root}/workspace/repository-a/_work/project/nested/read-only"
+chmod 0700 "${runner_root}/workspace/repository-a/_work/project/tool"
 chmod 0755 \
 	"${runner_root}" \
 	"${runner_root}/shared" \
-	"${runner_root}/repository-a" \
-	"${runner_root}/repository-b" \
-	"${runner_root}/repository-c"
+	"${runner_root}/workspace" \
+	"${runner_root}/workspace/repository-a" \
+	"${runner_root}/workspace/repository-b" \
+	"${runner_root}/workspace/repository-c"
 chmod 0640 \
-	"${runner_root}/repository-a/config" \
-	"${runner_root}/repository-c/outside"
+	"${runner_root}/workspace/repository-a/config" \
+	"${runner_root}/workspace/repository-c/outside"
 setfacl \
 	--modify \
 	default:user::rwx,default:group::---,default:mask::---,default:other::rwx \
-	"${runner_root}/repository-a/_work"
+	"${runner_root}/workspace/repository-a/_work"
 setfacl \
 	--modify \
 	"user:${acl_probe_uid}:rwx,default:user:${acl_probe_uid}:rwx" \
-	"${runner_root}/repository-a/_work"
+	"${runner_root}/workspace/repository-a/_work"
 setfacl \
 	--modify \
 	"user:${acl_probe_uid}:rw" \
-	"${runner_root}/repository-a/_work/project/nested/data"
+	"${runner_root}/workspace/repository-a/_work/project/nested/data"
 
-work_file="${runner_root}/repository-a/_work/project/nested/data"
+work_file="${runner_root}/workspace/repository-a/_work/project/nested/data"
 before_dry_run=$(stat --format '%u:%g:%a' "$work_file")
 dry_run_output=$(
 	"$helper" \
@@ -160,12 +161,12 @@ after_dry_run=$(stat --format '%u:%g:%a' "$work_file")
 outside_before=$(
 	stat \
 		--format '%u:%g:%a' \
-		"${runner_root}/repository-c/outside"
+		"${runner_root}/workspace/repository-c/outside"
 )
 parent_before=$(
 	stat \
 		--format '%u:%g:%a' \
-		"${runner_root}/repository-a"
+		"${runner_root}/workspace/repository-a"
 )
 
 apply_output=$(
@@ -213,6 +214,21 @@ assert_fails_with \
 	--check
 chmod 0755 "$runner_root"
 
+chmod g+w "${runner_root}/workspace"
+assert_fails_with \
+	'group-writable workspace root' \
+	"unmanaged parent grants non-owner write access: ${runner_root}/workspace" \
+	setpriv \
+	--reuid "$owner_uid" \
+	--regid "$owner_gid" \
+	--init-groups \
+	"$helper" \
+	--runner-root "$runner_root" \
+	--owner "$owner_name" \
+	--group "$group_name" \
+	--check
+chmod 0755 "${runner_root}/workspace"
+
 chmod 0600 "$work_file"
 parent_failure_before=$(stat --format '%u:%g:%a' "$work_file")
 chmod g+w "${runner_root}/shared"
@@ -234,10 +250,10 @@ parent_failure_before=$(stat --format '%u:%g:%a' "$work_file")
 setfacl \
 	--modify \
 	"user:${acl_probe_uid}:rwx" \
-	"${runner_root}/repository-a"
+	"${runner_root}/workspace/repository-a"
 assert_fails_with \
 	'named-ACL-writable runner directory' \
-	"unmanaged parent grants non-owner write access: ${runner_root}/repository-a" \
+	"unmanaged parent grants non-owner write access: ${runner_root}/workspace/repository-a" \
 	"$helper" \
 	--runner-root "$runner_root" \
 	--owner "$owner_name" \
@@ -245,14 +261,14 @@ assert_fails_with \
 parent_failure_after=$(stat --format '%u:%g:%a' "$work_file")
 [[ $parent_failure_after == "$parent_failure_before" ]] ||
 	fail 'unsafe runner parent detection did not precede mutation'
-setfacl --remove-all "${runner_root}/repository-a"
-chmod 0755 "${runner_root}/repository-a"
+setfacl --remove-all "${runner_root}/workspace/repository-a"
+chmod 0755 "${runner_root}/workspace/repository-a"
 chmod 0660 "$work_file"
 
 setfacl \
 	--modify \
 	"user:${acl_probe_uid}:rwx,mask::r-x" \
-	"${runner_root}/repository-a"
+	"${runner_root}/workspace/repository-a"
 if ! "$helper" \
 	--runner-root "$runner_root" \
 	--owner "$owner_name" \
@@ -261,8 +277,8 @@ if ! "$helper" \
 	>/dev/null; then
 	fail 'a masked non-writable parent ACL was rejected'
 fi
-setfacl --remove-all "${runner_root}/repository-a"
-chmod 0755 "${runner_root}/repository-a"
+setfacl --remove-all "${runner_root}/workspace/repository-a"
+chmod 0755 "${runner_root}/workspace/repository-a"
 
 assert_fails_with \
 	'stale effective group membership' \
@@ -294,7 +310,7 @@ chmod 0600 "$work_file"
 check_failure_before=$(stat --format '%u:%g:%a' "$work_file")
 assert_fails_with \
 	'verification-only mode mismatch' \
-	"file ACL verification failed below: ${runner_root}/repository-a/_work" \
+	"file ACL verification failed below: ${runner_root}/workspace/repository-a/_work" \
 	setpriv \
 	--reuid "$owner_uid" \
 	--regid "$owner_gid" \
@@ -312,17 +328,17 @@ chmod 0660 "$work_file"
 [[ $(stat --format %A "$work_file") == -rw-rw---- ]] ||
 	fail 'an existing regular file did not receive owner and group write access'
 tool_mode=$(
-	stat --format %A "${runner_root}/repository-a/_work/project/tool"
+	stat --format %A "${runner_root}/workspace/repository-a/_work/project/tool"
 )
 [[ $tool_mode == -rwxrwx--- ]] ||
 	fail 'an existing executable did not retain executable access'
-read_only_file="${runner_root}/repository-a/_work/project/nested/read-only"
+read_only_file="${runner_root}/workspace/repository-a/_work/project/nested/read-only"
 [[ $(stat --format %A "$read_only_file") == -r--r----- ]] ||
 	fail 'an existing read-only file did not retain read-only access'
 
 declare -a targets=(
-	"${runner_root}/repository-a/_work"
-	"${runner_root}/repository-b/_work"
+	"${runner_root}/workspace/repository-a/_work"
+	"${runner_root}/workspace/repository-b/_work"
 	"${runner_root}/shared/cache"
 )
 expected_directory_acl=$(
@@ -408,18 +424,18 @@ done
 	fail 'the read-only file ACL was not normalized exactly'
 
 outside_after=$(
-	stat --format '%u:%g:%a' "${runner_root}/repository-c/outside"
+	stat --format '%u:%g:%a' "${runner_root}/workspace/repository-c/outside"
 )
 [[ $outside_after == "$outside_before" ]] ||
 	fail 'a symlink target outside the writable trees changed'
 parent_after=$(
-	stat --format '%u:%g:%a' "${runner_root}/repository-a"
+	stat --format '%u:%g:%a' "${runner_root}/workspace/repository-a"
 )
 [[ $parent_after == "$parent_before" ]] ||
 	fail 'a runner installation directory changed'
 
 linked_runner_target="${temporary_directory}/linked-runner-target"
-linked_runner="${runner_root}/linked-runner"
+linked_runner="${runner_root}/workspace/linked-runner"
 mkdir -p "${linked_runner_target}/_work"
 ln -s "$linked_runner_target" "$linked_runner"
 assert_fails_with \
@@ -431,6 +447,30 @@ assert_fails_with \
 	--group "$group_name" \
 	--dry-run
 rm -- "$linked_runner"
+
+missing_workspace_root="${temporary_directory}/missing-workspace-root"
+mkdir -p "$missing_workspace_root"
+assert_fails_with \
+	'missing workspace root' \
+	"workspace root must be a real directory: ${missing_workspace_root}/workspace" \
+	"$helper" \
+	--runner-root "$missing_workspace_root" \
+	--owner "$owner_name" \
+	--group "$group_name" \
+	--dry-run
+
+linked_workspace_root="${temporary_directory}/linked-workspace-root"
+linked_workspace_target="${temporary_directory}/linked-workspace-target"
+mkdir -p "$linked_workspace_root" "$linked_workspace_target"
+ln -s "$linked_workspace_target" "${linked_workspace_root}/workspace"
+assert_fails_with \
+	'linked workspace root' \
+	"workspace root must be a real directory: ${linked_workspace_root}/workspace" \
+	"$helper" \
+	--runner-root "$linked_workspace_root" \
+	--owner "$owner_name" \
+	--group "$group_name" \
+	--dry-run
 
 assert_fails_with \
 	'root owner' \
@@ -453,15 +493,15 @@ assert_fails_with \
 special_root="${temporary_directory}/special-root"
 mkdir -p \
 	"${special_root}/shared/cache" \
-	"${special_root}/repository/_work"
-special_file="${special_root}/repository/_work/data"
+	"${special_root}/workspace/repository/_work"
+special_file="${special_root}/workspace/repository/_work/data"
 printf 'unchanged\n' >"$special_file"
 chmod 0604 "$special_file"
-mkfifo "${special_root}/repository/_work/job.fifo"
+mkfifo "${special_root}/workspace/repository/_work/job.fifo"
 special_before=$(stat --format '%u:%g:%a' "$special_file")
 assert_fails_with \
 	'unsupported file type' \
-	"unsupported file type: ${special_root}/repository/_work/job.fifo" \
+	"unsupported file type: ${special_root}/workspace/repository/_work/job.fifo" \
 	"$helper" \
 	--runner-root "$special_root" \
 	--owner "$owner_name" \
@@ -470,7 +510,7 @@ special_after=$(stat --format '%u:%g:%a' "$special_file")
 [[ $special_after == "$special_before" ]] ||
 	fail 'unsupported entry detection did not precede mutation'
 
-group_probe="${runner_root}/repository-a/_work/group-probe"
+group_probe="${runner_root}/workspace/repository-a/_work/group-probe"
 # shellcheck disable=SC2016
 setpriv \
 	--reuid "$probe_uid" \
@@ -494,7 +534,7 @@ setpriv \
 	fail 'the cross-UID probe was not owned by its creator'
 
 git_home="${temporary_directory}/git-home"
-git_repository="${runner_root}/repository-a/_work/git-probe"
+git_repository="${runner_root}/workspace/repository-a/_work/git-probe"
 install \
 	--directory \
 	--owner "$probe_uid" \
@@ -564,7 +604,7 @@ assert_fails_with \
 	--check
 chmod 2770 "$group_probe"
 
-runner_owned_file="${runner_root}/repository-b/_work/_temp/runner-owned"
+runner_owned_file="${runner_root}/workspace/repository-b/_work/_temp/runner-owned"
 [[ $(stat --format %u "$runner_owned_file") == "$owner_uid" ]] ||
 	fail 'the deletion probe was not owned by the runner'
 setpriv \
@@ -576,8 +616,8 @@ setpriv \
 	fail 'a shared-group identity could not remove a runner-owned entry'
 
 empty_root="${temporary_directory}/empty-root"
-mkdir -p "$empty_root"
-chmod 0755 "$empty_root"
+mkdir -p "${empty_root}/workspace"
+chmod 0755 "$empty_root" "${empty_root}/workspace"
 
 empty_dry_run_output=$(
 	"$helper" \

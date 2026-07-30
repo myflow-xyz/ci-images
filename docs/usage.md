@@ -217,9 +217,10 @@ changing an existing work tree.
 The independent
 [runner permission helper](../scripts/docs/setup-runner-permissions.md)
 documents host provisioning, supported layouts, safety boundaries, and its
-test contract. It manages only repository `_work` trees and `shared/cache`; it
-does not make runner installation directories group-writable. Unsafe write
-access on their unmanaged parents is rejected for the runner operator to fix.
+test contract. It manages only `workspace/<repository>/_work` trees and
+`shared/cache`; it does not create runner installations or make their parent
+directories group-writable. Unsafe write access on unmanaged parents is
+rejected for the runner operator to fix.
 
 An opt-in host preflight may run the helper with `--check` directly from a
 host-side step inherited from the runner service. It verifies the invoking

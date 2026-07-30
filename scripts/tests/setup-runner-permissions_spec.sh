@@ -6,7 +6,7 @@ Describe 'setup-runner-permissions.sh CLI'
 	It 'documents the runner-root interface'
 		When run "$helper" --help
 		The status should be success
-		The output should include '<runner-root>/*/_work'
+		The output should include '<runner-root>/workspace/*/_work'
 		The output should include '--runner-root PATH'
 		The output should include '--check'
 		The output should not include 'runner-home'
