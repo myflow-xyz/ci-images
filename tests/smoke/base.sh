@@ -103,7 +103,7 @@ for command in \
 	[[ $(command -v "$command") == "/opt/ci-tools/bin/${command}" ]]
 done
 
-for command in go markdownlint-cli2 node npm npx yarn yarnpkg; do
+for command in go hurl hurlfmt markdownlint-cli2 node npm npx yarn yarnpkg; do
 	if command -v "$command" >/dev/null 2>&1; then
 		printf 'runtime command is present in ci-base: %s\n' "$command" >&2
 		exit 1

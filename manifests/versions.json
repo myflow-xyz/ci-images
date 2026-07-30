@@ -113,6 +113,20 @@
           "sha256": "fe4789e92b1f33358680864bbe8704289e7bb5fc207d80623c308935bd696d49"
         }
       },
+      "hurl": {
+        "version": "8.0.1",
+        "source": "https://github.com/Orange-OpenSource/hurl",
+        "assets": {
+          "amd64": {
+            "url": "https://github.com/Orange-OpenSource/hurl/releases/download/8.0.1/hurl-8.0.1-x86_64-unknown-linux-gnu.tar.gz",
+            "sha256": "cac7c4670d69444db120edb21fe06c97ba8c80dcc52279957c8dd18f05fb0c06"
+          },
+          "arm64": {
+            "url": "https://github.com/Orange-OpenSource/hurl/releases/download/8.0.1/hurl-8.0.1-aarch64-unknown-linux-gnu.tar.gz",
+            "sha256": "bc4732df4754748e9bf296aa3832ec019f798afb399f1279b72ed37b6e04525c"
+          }
+        }
+      },
       "sqlc": {
         "module": "github.com/sqlc-dev/sqlc/cmd/sqlc",
         "version": "v1.31.1",

@@ -83,6 +83,7 @@ if [[ $target == all || $target == go ]]; then
 		"EXPECTED_GOIMPORTS_VERSION=$(json '.tools.go.goimports.version')" \
 		--env \
 		"EXPECTED_GOVULNCHECK_VERSION=$(json '.tools.go.govulncheck.version')" \
+		--env "EXPECTED_HURL_VERSION=$(json '.tools.go.hurl.version')" \
 		--env \
 		"EXPECTED_SQLC_X_NET_VERSION=$(json '.tools.go.sqlc.dependency_overrides["golang.org/x/net"]')" \
 		--env \

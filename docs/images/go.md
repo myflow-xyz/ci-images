@@ -13,6 +13,8 @@ The initial image contract includes:
 - a C compiler, libc development headers, and native build prerequisites for
   race-enabled tests;
 - Go's standard build, format, vet, test, and coverage commands;
+- HTTP/API end-to-end testing with Hurl 8.0.1 and request formatting with
+  `hurlfmt`;
 - sqlc 1.31.1;
 - Goose 3.27.3;
 - golangci-lint 2.12.2;
@@ -20,7 +22,8 @@ The initial image contract includes:
 
 External Go executables are built from exact module versions into immutable
 versioned directories. Stable links are exposed through
-`/opt/ci-tools/bin`.
+`/opt/ci-tools/bin`. Hurl executables are installed from checksum-pinned
+upstream Linux archives for both supported architectures.
 
 The manifest records narrow dependency overrides used to rebuild a tool when
 its released dependency graph contains a fixed HIGH or CRITICAL vulnerability.

@@ -99,6 +99,15 @@ jq --exit-status '
     $git.asset.url ==
       ("https://www.kernel.org/pub/software/scm/git/git-" +
        $git.version + ".tar.xz")) and
+  (.tools.go.hurl as $hurl |
+    $hurl.assets.amd64.url ==
+      ("https://github.com/Orange-OpenSource/hurl/releases/download/" +
+       $hurl.version + "/hurl-" + $hurl.version +
+       "-x86_64-unknown-linux-gnu.tar.gz") and
+    $hurl.assets.arm64.url ==
+      ("https://github.com/Orange-OpenSource/hurl/releases/download/" +
+       $hurl.version + "/hurl-" + $hurl.version +
+       "-aarch64-unknown-linux-gnu.tar.gz")) and
   (.tools.node.npm as $npm |
     $npm.asset.url ==
       ("https://registry.npmjs.org/npm/-/npm-" +
