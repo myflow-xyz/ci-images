@@ -160,8 +160,8 @@
       },
       "bundle_version": "2",
       "lockfile": "images/node/npm/package-lock.json",
-      "lockfile_sha256": "7e2964cb59e5592079c712c3ca3f9b939c848a8eb4a61bfbb08dfdd1c9fb8053",
-      "pnpm": "11.17.0",
+      "lockfile_sha256": "7c5962c2994c19b6c9699cc424b3949748d1559f4ccec3190f9a5ea56689957d",
+      "pnpm": "11.18.0",
       "redocly": "2.41.1"
     },
     "vite": {
