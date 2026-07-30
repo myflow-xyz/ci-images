@@ -188,6 +188,10 @@ publish_image base \
 	--build-arg \
 	"ACTIONLINT_VERSION=$(json '.tools.base.actionlint.version')" \
 	--build-arg \
+	"GIT_VERSION=$(json '.tools.base.git.version')" \
+	--build-arg \
+	"GIT_SHA256=$(json '.tools.base.git.asset.sha256')" \
+	--build-arg \
 	"GITLEAKS_VERSION=$(json '.tools.base.gitleaks.version')" \
 	--build-arg \
 	"GITLEAKS_X_CRYPTO_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["golang.org/x/crypto"]')" \

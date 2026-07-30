@@ -189,6 +189,12 @@ This setup is needed only when a job intentionally bind-mounts host workspaces
 or caches. Jobs without those mounts do not need the host group or permission
 helper.
 
+A bind mount retains its host ownership, modes, ACLs, and mount flags; the image
+does not grant automatic access. The image defines its runtime identity and
+container-side tool configuration. The runner operator enrolls only selected
+bind sources in the shared-group contract, while workflows and host policy
+remain responsible for every other mount.
+
 Job images retain the fixed unprivileged `ci` identity with UID `1001` and
 primary GID `2001`. A self-hosted runner grants access to bind-mounted
 workspaces and caches through the dedicated host group `mfci` with GID `2001`.
@@ -211,7 +217,8 @@ The independent
 [runner permission helper](../scripts/docs/setup-runner-permissions.md)
 documents host provisioning, supported layouts, safety boundaries, and its
 test contract. It manages only repository `_work` trees and `shared/cache`; it
-does not make runner installation directories group-writable.
+does not make runner installation directories group-writable. Unsafe write
+access on their unmanaged parents is rejected for the runner operator to fix.
 
 An opt-in host preflight may run the helper with `--check` directly from a
 host-side step inherited from the runner service. It verifies the invoking

@@ -91,6 +91,10 @@ jq --exit-status '
   (.tools.vite.oxlint_tsgolint_source.typescript_go_commit |
     test("^[0-9a-f]{40}$")) and
   (.tools.postgres.gosu.commit | test("^[0-9a-f]{40}$")) and
+  (.tools.base.git as $git |
+    $git.asset.url ==
+      ("https://www.kernel.org/pub/software/scm/git/git-" +
+       $git.version + ".tar.xz")) and
   (.tools.node.npm as $npm |
     $npm.asset.url ==
       ("https://registry.npmjs.org/npm/-/npm-" +

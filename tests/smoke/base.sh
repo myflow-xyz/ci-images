@@ -6,6 +6,7 @@ expected_uid=${EXPECTED_CI_UID:?EXPECTED_CI_UID is not set}
 expected_gid=${EXPECTED_CI_GID:?EXPECTED_CI_GID is not set}
 expected_go=${EXPECTED_TOOLCHAIN_GO_VERSION:?EXPECTED_TOOLCHAIN_GO_VERSION is not set}
 : "${EXPECTED_ACTIONLINT_VERSION:?EXPECTED_ACTIONLINT_VERSION is not set}"
+: "${EXPECTED_GIT_VERSION:?EXPECTED_GIT_VERSION is not set}"
 : "${EXPECTED_GITLEAKS_X_CRYPTO_VERSION:?EXPECTED_GITLEAKS_X_CRYPTO_VERSION is not set}"
 : "${EXPECTED_GITLEAKS_XZ_VERSION:?EXPECTED_GITLEAKS_XZ_VERSION is not set}"
 : "${EXPECTED_GITLEAKS_VERSION:?EXPECTED_GITLEAKS_VERSION is not set}"
@@ -59,6 +60,7 @@ assert urllib.parse.urlsplit("https://ci.example/path").hostname == "ci.example"
 
 actionlint --version 2>&1 |
 	grep --fixed-strings "$EXPECTED_ACTIONLINT_VERSION" >/dev/null
+[[ $(git version) == "git version ${EXPECTED_GIT_VERSION}" ]]
 [[ $(gitleaks version) == "$EXPECTED_GITLEAKS_VERSION" ]]
 grep \
 	--binary-files=text \

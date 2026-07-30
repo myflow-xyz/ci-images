@@ -38,6 +38,7 @@ jobs:
             --yes \
             --no-install-recommends \
             acl \
+            git \
             shfmt
 
           shellspec_archive="$RUNNER_TEMP/shellspec.tar.gz"
