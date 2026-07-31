@@ -207,9 +207,9 @@
       "oxfmt": "0.56.0"
     },
     "playwright": {
-      "version": "1.62.0",
+      "version": "1.62.1",
       "lockfile": "images/playwright/npm/package-lock.json",
-      "lockfile_sha256": "8d35ef9c5f1d3ac654d01461c19c3a453845e749ad0df1c47a573af97d900bd6"
+      "lockfile_sha256": "b5b1f61c279057ff4d42b8125092a8506c921e12c46636012c2e8e160f9408f7"
     },
     "postgres": {
       "postgres": "18",
