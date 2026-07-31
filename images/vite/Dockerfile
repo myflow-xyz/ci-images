@@ -48,10 +48,8 @@ RUN --mount=type=cache,target=/var/cache/go/mod \
       = "${OXLINT_TSGOLINT_COMMIT}"; \
     test "$(git -C /var/tmp/tsgolint/typescript-go rev-parse HEAD)" \
       = "${TYPESCRIPT_GO_COMMIT}"; \
-    ( \
-      cd /var/tmp/tsgolint/typescript-go; \
-      git apply ../patches/*.patch \
-    ); \
+    git -C /var/tmp/tsgolint/typescript-go apply \
+      /var/tmp/tsgolint/patches/*.patch; \
     install -d /var/tmp/tsgolint/internal/collections /out; \
     find /var/tmp/tsgolint/typescript-go/internal/collections \
       -type f \
@@ -81,6 +79,8 @@ ARG OXFMT_VERSION
 ARG OXLINT_TSGOLINT_VERSION
 ARG OXLINT_VERSION
 ARG TARGETARCH
+ARG TYPESCRIPT_LEGACY_COMPAT_PACKAGE_VERSION
+ARG TYPESCRIPT_LEGACY_COMPILER_VERSION
 ARG TYPESCRIPT_VERSION
 ARG VITE_TOOLS_BUNDLE_VERSION
 ARG VITE_VERSION
@@ -97,11 +97,12 @@ RUN --mount=type=cache,target=/var/cache/npm \
     node --input-type=commonjs --eval "\
       const dependencies = require('/var/tmp/vite-tools/package.json').dependencies;\
       const expected = {\
+        '@typescript/native': 'npm:typescript@${TYPESCRIPT_VERSION}',\
         '@vitest/coverage-v8': '${VITEST_VERSION}',\
         'oxfmt': '${OXFMT_VERSION}',\
         'oxlint': '${OXLINT_VERSION}',\
         'oxlint-tsgolint': '${OXLINT_TSGOLINT_VERSION}',\
-        'typescript': '${TYPESCRIPT_VERSION}',\
+        'typescript': 'npm:@typescript/typescript6@${TYPESCRIPT_LEGACY_COMPAT_PACKAGE_VERSION}',\
         'vite': '${VITE_VERSION}',\
         'vitest': '${VITEST_VERSION}'\
       };\
@@ -113,6 +114,20 @@ RUN --mount=type=cache,target=/var/cache/npm \
       --no-audit \
       --omit=dev \
       --prefix /var/tmp/vite-tools; \
+    test "$(node --print \
+      "require('/var/tmp/vite-tools/node_modules/@typescript/native/package.json').version")" \
+      = "${TYPESCRIPT_VERSION}"; \
+    test "$(node --print \
+      "require('/var/tmp/vite-tools/node_modules/typescript/package.json').version")" \
+      = "${TYPESCRIPT_LEGACY_COMPAT_PACKAGE_VERSION}"; \
+    test "$(node --print \
+      "require('/var/tmp/vite-tools/node_modules/@typescript/old/package.json').version")" \
+      = "${TYPESCRIPT_LEGACY_COMPILER_VERSION}"; \
+    test "$(/var/tmp/vite-tools/node_modules/.bin/tsc --version)" \
+      = "Version ${TYPESCRIPT_VERSION}"; \
+    test "$(/var/tmp/vite-tools/node_modules/.bin/tsc6 --version)" \
+      = "Version ${TYPESCRIPT_LEGACY_COMPILER_VERSION}"; \
+    test -x /var/tmp/vite-tools/node_modules/@typescript/old/bin/tsserver; \
     case "${TARGETARCH}" in \
       amd64) tsgolint_package=linux-x64 ;; \
       arm64) tsgolint_package=linux-arm64 ;; \
@@ -133,8 +148,8 @@ RUN --mount=type=cache,target=/var/cache/npm \
       oxfmt \
       oxlint \
       tsc \
+      tsc6 \
       tsgolint \
-      tsserver \
       vite \
       vitest; do \
       test -x \
@@ -142,7 +157,10 @@ RUN --mount=type=cache,target=/var/cache/npm \
       ln -s \
         "../vite/${VITE_TOOLS_BUNDLE_VERSION}/node_modules/.bin/${command}" \
         "/opt/ci-tools/bin/${command}"; \
-    done
+    done; \
+    ln -s \
+      "../vite/${VITE_TOOLS_BUNDLE_VERSION}/node_modules/@typescript/old/bin/tsserver" \
+      /opt/ci-tools/bin/tsserver
 
 LABEL org.opencontainers.image.created="${BUILD_CREATED}" \
       org.opencontainers.image.description="MyFlow Vite CI job environment" \

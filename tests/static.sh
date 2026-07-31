@@ -187,8 +187,16 @@ assert_package_version \
 	"$(jq -r '.tools.node.redocly' "$manifest")"
 assert_package_version \
 	images/vite/npm/package-lock.json \
-	typescript \
+	@typescript/native \
 	"$(jq -r '.tools.vite.typescript' "$manifest")"
+assert_package_version \
+	images/vite/npm/package-lock.json \
+	typescript \
+	"$(jq -r '.tools.vite.typescript_legacy.compat_package' "$manifest")"
+assert_package_version \
+	images/vite/npm/package-lock.json \
+	@typescript/old \
+	"$(jq -r '.tools.vite.typescript_legacy.compiler' "$manifest")"
 assert_package_version \
 	images/vite/npm/package-lock.json \
 	vite \

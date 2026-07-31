@@ -278,6 +278,10 @@ vite)
 		"VITE_TOOLS_BUNDLE_VERSION=$(json '.tools.vite.bundle_version')" \
 		--build-arg \
 		"TYPESCRIPT_VERSION=$(json '.tools.vite.typescript')" \
+		--build-arg \
+		"TYPESCRIPT_LEGACY_COMPAT_PACKAGE_VERSION=$(json '.tools.vite.typescript_legacy.compat_package')" \
+		--build-arg \
+		"TYPESCRIPT_LEGACY_COMPILER_VERSION=$(json '.tools.vite.typescript_legacy.compiler')" \
 		--build-arg "VITE_VERSION=$(json '.tools.vite.vite')" \
 		--build-arg "VITEST_VERSION=$(json '.tools.vite.vitest')" \
 		--build-arg "OXLINT_VERSION=$(json '.tools.vite.oxlint')" \
