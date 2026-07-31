@@ -18,8 +18,14 @@ assert_package_version() {
 }
 
 assert_package_version \
-	typescript \
+	@typescript/native \
 	"${EXPECTED_TYPESCRIPT_VERSION:?EXPECTED_TYPESCRIPT_VERSION is not set}"
+assert_package_version \
+	typescript \
+	"${EXPECTED_TYPESCRIPT_LEGACY_COMPAT_PACKAGE_VERSION:?EXPECTED_TYPESCRIPT_LEGACY_COMPAT_PACKAGE_VERSION is not set}"
+assert_package_version \
+	@typescript/old \
+	"${EXPECTED_TYPESCRIPT_LEGACY_COMPILER_VERSION:?EXPECTED_TYPESCRIPT_LEGACY_COMPILER_VERSION is not set}"
 assert_package_version \
 	vite \
 	"${EXPECTED_VITE_VERSION:?EXPECTED_VITE_VERSION is not set}"
@@ -39,9 +45,12 @@ assert_package_version \
 	oxfmt \
 	"${EXPECTED_OXFMT_VERSION:?EXPECTED_OXFMT_VERSION is not set}"
 
-for command in oxfmt oxlint tsc tsgolint tsserver vite vitest; do
+for command in oxfmt oxlint tsc tsc6 tsgolint tsserver vite vitest; do
 	[[ $(command -v "$command") == "/opt/ci-tools/bin/${command}" ]]
 done
+
+[[ $(tsc --version) == "Version ${EXPECTED_TYPESCRIPT_VERSION}" ]]
+[[ $(tsc6 --version) == "Version ${EXPECTED_TYPESCRIPT_LEGACY_COMPILER_VERSION}" ]]
 
 tsgolint_binary=$(find \
 	"${bundle_root}/@oxlint-tsgolint" \

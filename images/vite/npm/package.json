@@ -5,12 +5,13 @@
   "description": "Locked Vite ecosystem tools for MyFlow CI images",
   "license": "AGPL-3.0-only",
   "dependencies": {
+    "@typescript/native": "npm:typescript@7.0.2",
     "@vitest/coverage-v8": "4.1.10",
-    "oxfmt": "0.56.0",
-    "oxlint": "1.72.0",
-    "oxlint-tsgolint": "0.23.0",
-    "typescript": "6.0.3",
-    "vite": "8.1.5",
+    "oxfmt": "0.61.0",
+    "oxlint": "1.76.0",
+    "oxlint-tsgolint": "7.0.2001",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
+    "vite": "8.2.0",
     "vitest": "4.1.10"
   }
 }

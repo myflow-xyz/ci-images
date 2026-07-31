@@ -117,6 +117,10 @@ if [[ $target == all || $target == vite ]]; then
 		"EXPECTED_VITE_BUNDLE_VERSION=$(json '.tools.vite.bundle_version')" \
 		--env \
 		"EXPECTED_TYPESCRIPT_VERSION=$(json '.tools.vite.typescript')" \
+		--env \
+		"EXPECTED_TYPESCRIPT_LEGACY_COMPAT_PACKAGE_VERSION=$(json '.tools.vite.typescript_legacy.compat_package')" \
+		--env \
+		"EXPECTED_TYPESCRIPT_LEGACY_COMPILER_VERSION=$(json '.tools.vite.typescript_legacy.compiler')" \
 		--env "EXPECTED_VITE_VERSION=$(json '.tools.vite.vite')" \
 		--env "EXPECTED_VITEST_VERSION=$(json '.tools.vite.vitest')" \
 		--env \

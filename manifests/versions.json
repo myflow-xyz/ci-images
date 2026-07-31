@@ -187,29 +187,33 @@
       "redocly": "2.41.1"
     },
     "vite": {
-      "bundle_version": "2",
+      "bundle_version": "3",
       "lockfile": "images/vite/npm/package-lock.json",
-      "lockfile_sha256": "e48e833d1b662a3cfd23898ace4c68b6cd38f9116e2045bfd6e7e95b249cb60e",
-      "typescript": "6.0.3",
-      "vite": "8.1.5",
+      "lockfile_sha256": "7a03700179a5b39dc0556060437fb1b66e2ed642b32f559a1190d687c0d9f3fe",
+      "typescript": "7.0.2",
+      "typescript_legacy": {
+        "compat_package": "6.0.2",
+        "compiler": "6.0.3"
+      },
+      "vite": "8.2.0",
       "vitest": "4.1.10",
       "coverage_v8": "4.1.10",
-      "oxlint": "1.72.0",
-      "oxlint_tsgolint": "0.23.0",
+      "oxlint": "1.76.0",
+      "oxlint_tsgolint": "7.0.2001",
       "oxlint_tsgolint_source": {
         "repository": "https://github.com/oxc-project/tsgolint",
-        "commit": "0e575fae8407227601f66c1d8d8927a535aea58b",
-        "typescript_go_commit": "c282336ea94f8a2e63187afd0f8d4bfb3b3f4d3b",
+        "commit": "482dcf70bffce7ea56f63128c74beb67dec658a2",
+        "typescript_go_commit": "2bd066d87f5bafd315be9f40889d0a60b9e58e0b",
         "dependency_overrides": {
-          "golang.org/x/text": "v0.39.0"
+          "golang.org/x/text": "v0.40.0"
         }
       },
-      "oxfmt": "0.56.0"
+      "oxfmt": "0.61.0"
     },
     "playwright": {
-      "version": "1.62.0",
+      "version": "1.62.1",
       "lockfile": "images/playwright/npm/package-lock.json",
-      "lockfile_sha256": "8d35ef9c5f1d3ac654d01461c19c3a453845e749ad0df1c47a573af97d900bd6"
+      "lockfile_sha256": "b5b1f61c279057ff4d42b8125092a8506c921e12c46636012c2e8e160f9408f7"
     },
     "postgres": {
       "postgres": "18",

@@ -5,6 +5,6 @@
   "description": "Locked Playwright browser installer for MyFlow CI images",
   "license": "AGPL-3.0-only",
   "dependencies": {
-    "@playwright/test": "1.62.0"
+    "@playwright/test": "1.62.1"
   }
 }

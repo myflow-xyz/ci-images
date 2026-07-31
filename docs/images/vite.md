@@ -7,13 +7,14 @@ Vite quality, test, coverage, and production build jobs.
 
 The compatibility bundle includes:
 
-- TypeScript 6.0.3;
-- Vite 8.1.5;
+- TypeScript 7.0.2 (`tsc`), with TypeScript 6.0.3 available as `tsc6` for
+  tools that still require its API;
+- Vite 8.2.0;
 - Vitest 4.1.10;
 - `@vitest/coverage-v8` 4.1.10;
-- Oxlint 1.72.0;
-- `oxlint-tsgolint` 0.23.0;
-- Oxfmt 0.56.0.
+- Oxlint 1.76.0;
+- `oxlint-tsgolint` 7.0.2001;
+- Oxfmt 0.61.0.
 
 The bundle and its transitive dependencies are installed from a committed npm
 lockfile into an immutable versioned directory. The platform-specific
