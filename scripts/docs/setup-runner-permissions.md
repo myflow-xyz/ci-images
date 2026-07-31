@@ -8,18 +8,20 @@ GitHub Actions runners and MyFlow job containers.
 The helper manages only these paths below the selected runner root:
 
 ```text
-<runner-root>/*/_work
+<runner-root>/workspace/*/_work
 <runner-root>/shared/cache
 ```
 
-It leaves the runner root, `shared`, and each runner installation directory
-outside the writable group boundary. Before reporting success or changing a
-managed path, it rejects effective group, other, or named-ACL write access on
-those unmanaged parents. It never repairs them; the runner operator retains
-their ownership and policy. Symbolic links are not followed. Existing named ACL
-entries below managed paths are removed so only each entry's owner, the shared
-group, and a no-access `other` entry remain. FIFOs, sockets, and device nodes are
-rejected before any permission changes.
+The `workspace` directory must already exist as a real directory. The helper
+does not create or move runner installations. It leaves the runner root,
+`workspace`, `shared`, and each runner installation directory outside the
+writable group boundary. Before reporting success or changing a managed path,
+it rejects effective group, other, or named-ACL write access on those unmanaged
+parents. It never repairs them; the runner operator retains their ownership and
+policy. Symbolic links are not followed. Existing named ACL entries below
+managed paths are removed so only each entry's owner, the shared group, and a
+no-access `other` entry remain. FIFOs, sockets, and device nodes are rejected
+before any permission changes.
 
 When `shared` is absent, the helper creates it as mode `0755`, owned by the
 resolved runner owner and that account's primary group. The shared CI group
@@ -37,6 +39,8 @@ both identities.
 - Linux with Bash, GNU account utilities, and POSIX ACL tools;
 - execution through `sudo` for planning or applying changes;
 - an existing non-root runner owner and shared group;
+- an existing `<runner-root>/workspace` directory containing runner
+  installations;
 - drained runners while existing trees are normalized.
 
 The defaults are runner root `/opt/actions-runner`, owner `github-runner`, and
@@ -62,6 +66,10 @@ The first lookup must return no group. The post-creation lookup must report GID
 runner service after changing its supplementary groups.
 
 ## Usage
+
+For a new runner directory skeleton, use the
+[runner bootstrap helper](setup-runner-from-scratch.md), which invokes this
+helper after creating its explicit targets.
 
 Preview the resolved identities and targets without changing the host:
 
@@ -101,7 +109,8 @@ sudo scripts/setup-runner-permissions.sh \
 
 The apply run:
 
-- adds the owner to the shared group when needed;
+- requires the owner to already belong to the shared group and never changes
+  account membership;
 - creates a non-group-writable `shared` parent and `shared/cache` when absent;
 - initially assigns the resolved owner and group recursively;
 - enforces exact directory access and mirrors each file's owner permissions to
@@ -113,8 +122,9 @@ The apply run:
 - rejects unsafe write access on unmanaged parent directories without changing
   them.
 
-If the result reports `restart-required=yes`, restart the runner service before
-accepting another job.
+If membership is missing, the helper stops before changing filesystem state.
+The runner operator must enroll the owner, restart its runner service, and
+rerun the helper.
 
 Pre-create every exact cache bind source before Docker starts a job, then run
 the helper so the new leaves are normalized. Docker may otherwise create a

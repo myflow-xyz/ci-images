@@ -111,6 +111,11 @@ build_go() {
 		"GO_SHA256_AMD64=$(json '.tools.go.assets.amd64.sha256')" \
 		--build-arg \
 		"GO_SHA256_ARM64=$(json '.tools.go.assets.arm64.sha256')" \
+		--build-arg "HURL_VERSION=$(json '.tools.go.hurl.version')" \
+		--build-arg \
+		"HURL_SHA256_AMD64=$(json '.tools.go.hurl.assets.amd64.sha256')" \
+		--build-arg \
+		"HURL_SHA256_ARM64=$(json '.tools.go.hurl.assets.arm64.sha256')" \
 		--build-arg "SQLC_VERSION=$(json '.tools.go.sqlc.version')" \
 		--build-arg \
 		"SQLC_X_NET_VERSION=$(json '.tools.go.sqlc.dependency_overrides["golang.org/x/net"]')" \

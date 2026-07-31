@@ -215,11 +215,20 @@ group. Install the host's `acl` package and drain every affected runner before
 changing an existing work tree.
 
 The independent
+[runner bootstrap helper](../scripts/docs/setup-runner-from-scratch.md) creates
+the standard host directory skeleton for a new repository runner and delegates
+the writable paths to the permission helper. It creates the canonical
+`mfci:2001` identity only when both its name and GID are available. It verifies
+runner-owner membership but leaves enrollment and service restart to the host
+operator. It does not download, register, or manage the runner service.
+
+The independent
 [runner permission helper](../scripts/docs/setup-runner-permissions.md)
 documents host provisioning, supported layouts, safety boundaries, and its
-test contract. It manages only repository `_work` trees and `shared/cache`; it
-does not make runner installation directories group-writable. Unsafe write
-access on their unmanaged parents is rejected for the runner operator to fix.
+test contract. It manages only `workspace/<repository>/_work` trees and
+`shared/cache`; it does not create runner installations or make their parent
+directories group-writable. Unsafe write access on unmanaged parents is
+rejected for the runner operator to fix.
 
 An opt-in host preflight may run the helper with `--check` directly from a
 host-side step inherited from the runner service. It verifies the invoking

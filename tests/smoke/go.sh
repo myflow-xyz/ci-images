@@ -12,6 +12,7 @@ expected_goose=${EXPECTED_GOOSE_VERSION:?EXPECTED_GOOSE_VERSION is not set}
 : "${EXPECTED_GOLANGCI_LINT_X_TEXT_VERSION:?EXPECTED_GOLANGCI_LINT_X_TEXT_VERSION is not set}"
 : "${EXPECTED_GOIMPORTS_VERSION:?EXPECTED_GOIMPORTS_VERSION is not set}"
 : "${EXPECTED_GOVULNCHECK_VERSION:?EXPECTED_GOVULNCHECK_VERSION is not set}"
+: "${EXPECTED_HURL_VERSION:?EXPECTED_HURL_VERSION is not set}"
 expected_golangci=$EXPECTED_GOLANGCI_LINT_VERSION
 expected_goimports=$EXPECTED_GOIMPORTS_VERSION
 expected_govulncheck=$EXPECTED_GOVULNCHECK_VERSION
@@ -48,9 +49,16 @@ for command in \
 	golangci-lint \
 	goose \
 	govulncheck \
+	hurl \
+	hurlfmt \
 	sqlc; do
 	[[ $(command -v "$command") == "/opt/ci-tools/bin/${command}" ]]
 done
+
+hurl --version |
+	grep --fixed-strings "hurl ${EXPECTED_HURL_VERSION}" >/dev/null
+hurlfmt --version |
+	grep --fixed-strings "hurlfmt ${EXPECTED_HURL_VERSION}" >/dev/null
 
 assert_module_version() {
 	local command=$1
@@ -113,6 +121,50 @@ assert_dependency_version \
 	golangci-lint \
 	golang.org/x/text \
 	"$EXPECTED_GOLANGCI_LINT_X_TEXT_VERSION"
+
+hurl_smoke_directory=$(mktemp -d /var/tmp/hurl-smoke.XXXXXX)
+hurl_request="${hurl_smoke_directory}/request.hurl"
+hurl_server_pid=
+cleanup_hurl_smoke() {
+	if [[ -n $hurl_server_pid ]]; then
+		kill "$hurl_server_pid" >/dev/null 2>&1 || true
+		wait "$hurl_server_pid" 2>/dev/null || true
+	fi
+	rm -f "${hurl_smoke_directory}/health.json" "$hurl_request"
+	rmdir "$hurl_smoke_directory"
+}
+trap cleanup_hurl_smoke EXIT
+
+printf '{"ok":true}\n' >"${hurl_smoke_directory}/health.json"
+printf '%s\n' \
+	'GET http://127.0.0.1:18080/health.json' \
+	'HTTP 200' \
+	'[Asserts]' \
+	'header "Content-Type" startsWith "application/json"' \
+	'jsonpath "$.ok" == true' \
+	>"$hurl_request"
+
+python3 -m http.server \
+	18080 \
+	--bind 127.0.0.1 \
+	--directory "$hurl_smoke_directory" \
+	>/dev/null 2>&1 &
+hurl_server_pid=$!
+
+hurl_server_ready=false
+for _ in {1..50}; do
+	if curl --fail --silent http://127.0.0.1:18080/health.json \
+		>/dev/null 2>&1; then
+		hurl_server_ready=true
+		break
+	fi
+	sleep 0.1
+done
+$hurl_server_ready
+hurl --test "$hurl_request"
+
+cleanup_hurl_smoke
+trap - EXIT
 
 smoke_directory=$(mktemp -d "${GOTMPDIR}/go-race-smoke.XXXXXX")
 trap 'rm -rf "$smoke_directory"' EXIT

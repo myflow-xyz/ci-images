@@ -16,6 +16,9 @@ ARG GOVULNCHECK_VERSION
 ARG GO_SHA256_AMD64
 ARG GO_SHA256_ARM64
 ARG GO_VERSION
+ARG HURL_SHA256_AMD64
+ARG HURL_SHA256_ARM64
+ARG HURL_VERSION
 ARG MANIFEST_SHA=unknown
 ARG SQLC_VERSION
 ARG SQLC_GRPC_VERSION
@@ -29,6 +32,7 @@ RUN apt-get update \
       gcc \
       g++ \
       libc6-dev \
+      libxml2 \
       pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
@@ -49,6 +53,42 @@ RUN set -eu; \
     rm -f /var/tmp/go.tar.gz; \
     test "$(/usr/local/go/bin/go version | awk '{print $3}')" \
       = "go${GO_VERSION}"
+
+RUN set -eu; \
+    case "${TARGETARCH}" in \
+      amd64) \
+        hurl_arch=x86_64; \
+        hurl_sha256="${HURL_SHA256_AMD64}" \
+        ;; \
+      arm64) \
+        hurl_arch=aarch64; \
+        hurl_sha256="${HURL_SHA256_ARM64}" \
+        ;; \
+      *) \
+        printf 'unsupported target architecture: %s\n' "${TARGETARCH}" >&2; \
+        exit 1 \
+        ;; \
+    esac; \
+    hurl_distribution="hurl-${HURL_VERSION}-${hurl_arch}-unknown-linux-gnu"; \
+    install -d "/opt/ci-tools/hurl/${HURL_VERSION}"; \
+    /usr/local/libexec/ci/fetch-verified \
+      "https://github.com/Orange-OpenSource/hurl/releases/download/${HURL_VERSION}/${hurl_distribution}.tar.gz" \
+      "${hurl_sha256}" \
+      /var/tmp/hurl.tar.gz; \
+    tar -xzf /var/tmp/hurl.tar.gz \
+      --strip-components=2 \
+      -C "/opt/ci-tools/hurl/${HURL_VERSION}" \
+      "${hurl_distribution}/bin/hurl" \
+      "${hurl_distribution}/bin/hurlfmt"; \
+    ln -s \
+      "../hurl/${HURL_VERSION}/hurl" \
+      /opt/ci-tools/bin/hurl; \
+    ln -s \
+      "../hurl/${HURL_VERSION}/hurlfmt" \
+      /opt/ci-tools/bin/hurlfmt; \
+    hurl --version | grep --fixed-strings "hurl ${HURL_VERSION}" >/dev/null; \
+    hurlfmt --version | grep --fixed-strings "hurlfmt ${HURL_VERSION}" >/dev/null; \
+    rm -f /var/tmp/hurl.tar.gz
 
 RUN --mount=type=cache,target=/var/cache/go/mod \
     --mount=type=cache,target=/var/cache/go/build \
