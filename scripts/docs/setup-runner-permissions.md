@@ -36,7 +36,8 @@ both identities.
 
 ## Requirements
 
-- Linux with Bash, GNU account utilities, and POSIX ACL tools;
+- Debian- or RHEL-family Linux with Bash and GNU account utilities;
+- the distribution's `acl` package, which provides `getfacl` and `setfacl`;
 - execution through `sudo` for planning or applying changes;
 - an existing non-root runner owner and shared group;
 - an existing `<runner-root>/workspace` directory containing runner
@@ -47,6 +48,20 @@ The defaults are runner root `/opt/actions-runner`, owner `github-runner`, and
 group `mfci`. `--runner-root`, `--owner`, and `--group` override them. Owner and
 group values may be names or numeric IDs, but must resolve through the host
 account database.
+
+Install the ACL tools before invoking the helper:
+
+```bash
+# Debian
+sudo apt-get update
+sudo apt-get install --yes acl
+
+# RHEL
+sudo dnf install --assumeyes acl
+```
+
+The helper reports the missing package when either ACL command is unavailable;
+it does not invoke a package manager itself.
 
 ## Default host identity
 

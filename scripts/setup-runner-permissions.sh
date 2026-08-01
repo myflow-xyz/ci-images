@@ -29,6 +29,7 @@ usage() {
 		'  --dry-run          Resolve and report without changing the host' \
 		'  -h, --help         Show this help' \
 		'' \
+		'Host dependency: install the acl package on Debian or RHEL.' \
 		'Owner group membership is verified but never changed.' \
 		'Apply mode (default) and --dry-run require root.'
 }
@@ -139,8 +140,14 @@ if ! $check_only; then
 fi
 
 for command_name in "${required_commands[@]}"; do
-	command -v "$command_name" >/dev/null 2>&1 ||
+	if ! command -v "$command_name" >/dev/null 2>&1; then
+		case "$command_name" in
+		getfacl | setfacl)
+			fail "required POSIX ACL command is unavailable: ${command_name}; install the acl package"
+			;;
+		esac
 		fail "required command is unavailable: ${command_name}"
+	fi
 done
 
 declare -a owner_records=()

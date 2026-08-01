@@ -36,7 +36,8 @@ are rejected before the skeleton is changed.
 
 ## Requirements and boundary
 
-- Linux with Bash, GNU account utilities, and POSIX ACL tools;
+- Debian- or RHEL-family Linux with Bash and GNU account utilities;
+- the distribution's `acl` package, which provides `getfacl` and `setfacl`;
 - execution through `sudo`, including dry-run mode;
 - an existing non-root runner owner;
 - an existing real parent directory for a runner root that has not yet been
@@ -53,6 +54,20 @@ not create accounts or arbitrary groups, install system packages, download or
 extract a GitHub Actions runner, register it with GitHub, configure credentials,
 or manage its service. Those operations remain the runner operator's
 responsibility.
+
+Install the ACL tools before invoking the helper:
+
+```bash
+# Debian
+sudo apt-get update
+sudo apt-get install --yes acl
+
+# RHEL
+sudo dnf install --assumeyes acl
+```
+
+The helper reports the missing package when either ACL command is unavailable;
+it does not invoke a package manager itself.
 
 ## Usage
 
