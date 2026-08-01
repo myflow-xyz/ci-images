@@ -6,6 +6,7 @@ set -euo pipefail
 expected_bundle=$EXPECTED_VITE_BUNDLE_VERSION
 expected_go=${EXPECTED_TOOLCHAIN_GO_VERSION:?EXPECTED_TOOLCHAIN_GO_VERSION is not set}
 : "${EXPECTED_OXLINT_TSGOLINT_X_TEXT_VERSION:?EXPECTED_OXLINT_TSGOLINT_X_TEXT_VERSION is not set}"
+: "${EXPECTED_TYPESCRIPT_X_TEXT_VERSION:?EXPECTED_TYPESCRIPT_X_TEXT_VERSION is not set}"
 bundle_root="/opt/ci-tools/vite/${expected_bundle}/node_modules"
 
 assert_package_version() {
@@ -51,6 +52,27 @@ done
 
 [[ $(tsc --version) == "Version ${EXPECTED_TYPESCRIPT_VERSION}" ]]
 [[ $(tsc6 --version) == "Version ${EXPECTED_TYPESCRIPT_LEGACY_COMPILER_VERSION}" ]]
+
+case "$(uname -m)" in
+x86_64) go_package=linux-x64 ;;
+aarch64) go_package=linux-arm64 ;;
+*) exit 1 ;;
+esac
+
+typescript_binary="${bundle_root}/@typescript/typescript-${go_package}/lib/tsc"
+[[ -x $typescript_binary ]]
+grep \
+	--binary-files=text \
+	--fixed-strings \
+	"go${expected_go}" \
+	"$typescript_binary" \
+	>/dev/null
+grep \
+	--binary-files=text \
+	--fixed-strings \
+	$'dep\tgolang.org/x/text\t'"${EXPECTED_TYPESCRIPT_X_TEXT_VERSION}" \
+	"$typescript_binary" \
+	>/dev/null
 
 tsgolint_binary=$(find \
 	"${bundle_root}/@oxlint-tsgolint" \

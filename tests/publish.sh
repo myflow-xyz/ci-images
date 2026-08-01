@@ -4,6 +4,7 @@ set -euo pipefail
 
 repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 collector="${repository_root}/.github/scripts/collect-published-images.sh"
+manifest="${repository_root}/manifests/versions.json"
 publisher="${repository_root}/.github/scripts/publish-image.sh"
 temporary_directory=$(mktemp -d)
 trap 'rm -rf "$temporary_directory"' EXIT
@@ -245,6 +246,15 @@ for name in "${names[@]}"; do
 	if [[ -n $parent ]]; then
 		grep -Fq -- "BASE_IMAGE=${parent}" "$fake_log" ||
 			fail "missing ${name} parent reference"
+	fi
+	if [[ $name == vite ]]; then
+		for build_arg in \
+			"TYPESCRIPT_GO_SOURCE=$(jq -r '.tools.vite.typescript_source.repository' "$manifest")" \
+			"TYPESCRIPT_GO_COMMIT=$(jq -r '.tools.vite.typescript_source.commit' "$manifest")" \
+			"TYPESCRIPT_X_TEXT_VERSION=$(jq -r '.tools.vite.typescript_source.dependency_overrides["golang.org/x/text"]' "$manifest")"; do
+			grep -Fq -- "--build-arg ${build_arg}" "$fake_log" ||
+				fail "missing vite build argument: ${build_arg%%=*}"
+		done
 	fi
 done
 
