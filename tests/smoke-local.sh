@@ -118,6 +118,8 @@ if [[ $target == all || $target == vite ]]; then
 		--env \
 		"EXPECTED_TYPESCRIPT_VERSION=$(json '.tools.vite.typescript')" \
 		--env \
+		"EXPECTED_TYPESCRIPT_X_TEXT_VERSION=$(json '.tools.vite.typescript_source.dependency_overrides["golang.org/x/text"]')" \
+		--env \
 		"EXPECTED_TYPESCRIPT_LEGACY_COMPAT_PACKAGE_VERSION=$(json '.tools.vite.typescript_legacy.compat_package')" \
 		--env \
 		"EXPECTED_TYPESCRIPT_LEGACY_COMPILER_VERSION=$(json '.tools.vite.typescript_legacy.compiler')" \

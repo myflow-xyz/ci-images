@@ -182,6 +182,12 @@ build_vite() {
 		--build-arg \
 		"TYPESCRIPT_VERSION=$(json '.tools.vite.typescript')" \
 		--build-arg \
+		"TYPESCRIPT_GO_SOURCE=$(json '.tools.vite.typescript_source.repository')" \
+		--build-arg \
+		"TYPESCRIPT_GO_COMMIT=$(json '.tools.vite.typescript_source.commit')" \
+		--build-arg \
+		"TYPESCRIPT_X_TEXT_VERSION=$(json '.tools.vite.typescript_source.dependency_overrides["golang.org/x/text"]')" \
+		--build-arg \
 		"TYPESCRIPT_LEGACY_COMPAT_PACKAGE_VERSION=$(json '.tools.vite.typescript_legacy.compat_package')" \
 		--build-arg \
 		"TYPESCRIPT_LEGACY_COMPILER_VERSION=$(json '.tools.vite.typescript_legacy.compiler')" \
@@ -196,8 +202,6 @@ build_vite() {
 		"OXLINT_TSGOLINT_COMMIT=$(json '.tools.vite.oxlint_tsgolint_source.commit')" \
 		--build-arg \
 		"OXLINT_TSGOLINT_X_TEXT_VERSION=$(json '.tools.vite.oxlint_tsgolint_source.dependency_overrides["golang.org/x/text"]')" \
-		--build-arg \
-		"TYPESCRIPT_GO_COMMIT=$(json '.tools.vite.oxlint_tsgolint_source.typescript_go_commit')" \
 		--build-arg "OXFMT_VERSION=$(json '.tools.vite.oxfmt')" \
 		"$repository_root"
 }

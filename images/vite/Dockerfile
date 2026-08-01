@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 
 ARG BASE_IMAGE
-FROM --platform=${BUILDPLATFORM} ${BASE_IMAGE} AS tsgolint-builder
+FROM --platform=${BUILDPLATFORM} ${BASE_IMAGE} AS go-tools-builder
 
 ARG BUILDARCH
 ARG GO_SHA256_AMD64
@@ -12,6 +12,8 @@ ARG OXLINT_TSGOLINT_SOURCE
 ARG OXLINT_TSGOLINT_X_TEXT_VERSION
 ARG TARGETARCH
 ARG TYPESCRIPT_GO_COMMIT
+ARG TYPESCRIPT_GO_SOURCE
+ARG TYPESCRIPT_X_TEXT_VERSION
 
 USER root
 
@@ -36,6 +38,32 @@ RUN set -eu; \
 RUN --mount=type=cache,target=/var/cache/go/mod \
     --mount=type=cache,target=/var/cache/go/build \
     set -eu; \
+    install -d /out; \
+    git init /var/tmp/typescript-go; \
+    git -C /var/tmp/typescript-go remote add origin \
+      "${TYPESCRIPT_GO_SOURCE}"; \
+    git -C /var/tmp/typescript-go fetch \
+      --depth 1 \
+      origin \
+      "${TYPESCRIPT_GO_COMMIT}"; \
+    git -C /var/tmp/typescript-go checkout --detach FETCH_HEAD; \
+    test "$(git -C /var/tmp/typescript-go rev-parse HEAD)" \
+      = "${TYPESCRIPT_GO_COMMIT}"; \
+    cd /var/tmp/typescript-go; \
+    export \
+      GOCACHE=/var/cache/go/build \
+      GOMODCACHE=/var/cache/go/mod \
+      GOPATH=/var/lib/go \
+      GOTOOLCHAIN=local; \
+    /usr/local/go/bin/go get \
+      "golang.org/x/text@${TYPESCRIPT_X_TEXT_VERSION}"; \
+    CGO_ENABLED=0 GOARCH="${TARGETARCH}" GOOS=linux \
+      /usr/local/go/bin/go build \
+      -buildvcs=false \
+      -trimpath \
+      -o /out/tsc \
+      ./cmd/tsgo; \
+    cd /; \
     git init /var/tmp/tsgolint; \
     git -C /var/tmp/tsgolint remote add origin "${OXLINT_TSGOLINT_SOURCE}"; \
     git -C /var/tmp/tsgolint fetch \
@@ -50,7 +78,7 @@ RUN --mount=type=cache,target=/var/cache/go/mod \
       = "${TYPESCRIPT_GO_COMMIT}"; \
     git -C /var/tmp/tsgolint/typescript-go apply \
       /var/tmp/tsgolint/patches/*.patch; \
-    install -d /var/tmp/tsgolint/internal/collections /out; \
+    install -d /var/tmp/tsgolint/internal/collections; \
     find /var/tmp/tsgolint/typescript-go/internal/collections \
       -type f \
       ! -name '*_test.go' \
@@ -90,7 +118,8 @@ USER root
 
 COPY images/vite/npm/package.json images/vite/npm/package-lock.json \
   /var/tmp/vite-tools/
-COPY --from=tsgolint-builder /out/tsgolint /var/tmp/tsgolint
+COPY --from=go-tools-builder /out/tsc /var/tmp/tsc
+COPY --from=go-tools-builder /out/tsgolint /var/tmp/tsgolint
 
 RUN --mount=type=cache,target=/var/cache/npm \
     set -eu; \
@@ -123,22 +152,28 @@ RUN --mount=type=cache,target=/var/cache/npm \
     test "$(node --print \
       "require('/var/tmp/vite-tools/node_modules/@typescript/old/package.json').version")" \
       = "${TYPESCRIPT_LEGACY_COMPILER_VERSION}"; \
-    test "$(/var/tmp/vite-tools/node_modules/.bin/tsc --version)" \
-      = "Version ${TYPESCRIPT_VERSION}"; \
     test "$(/var/tmp/vite-tools/node_modules/.bin/tsc6 --version)" \
       = "Version ${TYPESCRIPT_LEGACY_COMPILER_VERSION}"; \
     test -x /var/tmp/vite-tools/node_modules/@typescript/old/bin/tsserver; \
     case "${TARGETARCH}" in \
-      amd64) tsgolint_package=linux-x64 ;; \
-      arm64) tsgolint_package=linux-arm64 ;; \
+      amd64) go_package=linux-x64 ;; \
+      arm64) go_package=linux-arm64 ;; \
       *) \
         printf 'unsupported target architecture: %s\n' "${TARGETARCH}" >&2; \
         exit 1 \
         ;; \
     esac; \
     install -m 0755 \
+      /var/tmp/tsc \
+      "/var/tmp/vite-tools/node_modules/@typescript/typescript-${go_package}/lib/tsc"; \
+    rm -f \
+      /var/tmp/tsc \
+      "/var/tmp/vite-tools/node_modules/@typescript/typescript-${go_package}/lib/tsc.sig"; \
+    test "$(/var/tmp/vite-tools/node_modules/.bin/tsc --version)" \
+      = "Version ${TYPESCRIPT_VERSION}"; \
+    install -m 0755 \
       /var/tmp/tsgolint \
-      "/var/tmp/vite-tools/node_modules/@oxlint-tsgolint/${tsgolint_package}/tsgolint"; \
+      "/var/tmp/vite-tools/node_modules/@oxlint-tsgolint/${go_package}/tsgolint"; \
     rm -f /var/tmp/tsgolint; \
     install -d /opt/ci-tools/vite; \
     mv \

@@ -92,7 +92,7 @@ jq --exit-status '
   .images.postgres.parent == "upstream_images.pgvector" and
   (.tools.vite.oxlint_tsgolint_source.commit |
     test("^[0-9a-f]{40}$")) and
-  (.tools.vite.oxlint_tsgolint_source.typescript_go_commit |
+  (.tools.vite.typescript_source.commit |
     test("^[0-9a-f]{40}$")) and
   (.tools.postgres.gosu.commit | test("^[0-9a-f]{40}$")) and
   (.tools.base.git as $git |
@@ -117,6 +117,7 @@ jq --exit-status '
     .tools.go.golangci_lint.dependency_overrides[],
     .tools.go.sqlc.dependency_overrides[],
     .tools.go.goose.dependency_overrides[],
+    .tools.vite.typescript_source.dependency_overrides[],
     .tools.vite.oxlint_tsgolint_source.dependency_overrides[]] |
     map(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$")) |
     all) and
