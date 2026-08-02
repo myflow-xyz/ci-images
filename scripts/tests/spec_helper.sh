@@ -13,28 +13,36 @@ spec_helper_precheck() {
 	bash -n \
 		setup-runner-from-scratch.sh \
 		setup-runner-permissions.sh \
+		setup-runner-user.sh \
 		tests/setup-runner-from-scratch_integration.sh \
 		tests/setup-runner-from-scratch_spec.sh \
 		tests/setup-runner-permissions_integration.sh \
 		tests/setup-runner-permissions_spec.sh \
+		tests/setup-runner-user_integration.sh \
+		tests/setup-runner-user_spec.sh \
 		tests/spec_helper.sh ||
 		abort 'bash syntax check failed'
 
 	shellcheck --severity=style \
 		setup-runner-from-scratch.sh \
 		setup-runner-permissions.sh \
+		setup-runner-user.sh \
 		tests/setup-runner-from-scratch_integration.sh \
 		tests/setup-runner-from-scratch_spec.sh \
 		tests/setup-runner-permissions_integration.sh \
 		tests/setup-runner-permissions_spec.sh \
+		tests/setup-runner-user_integration.sh \
+		tests/setup-runner-user_spec.sh \
 		tests/spec_helper.sh ||
 		abort 'ShellCheck failed'
 
 	shfmt -d \
 		setup-runner-from-scratch.sh \
 		setup-runner-permissions.sh \
+		setup-runner-user.sh \
 		tests/setup-runner-from-scratch_integration.sh \
 		tests/setup-runner-permissions_integration.sh \
+		tests/setup-runner-user_integration.sh \
 		tests/spec_helper.sh ||
 		abort 'shfmt failed'
 }

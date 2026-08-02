@@ -1,8 +1,8 @@
 # Runner directory bootstrap
 
 `setup-runner-from-scratch.sh` creates the host directory skeleton for one
-self-hosted GitHub Actions runner and then delegates writable mount policy to
-`setup-runner-permissions.sh`.
+self-hosted GitHub Actions runner. Identity provisioning and recursive
+permission policy are separate stages.
 
 ## Created structure
 
@@ -21,53 +21,38 @@ For repository name `repo-example`, the helper creates:
 ```
 
 The runner root, `workspace`, repository directory, `shared`, `shared/bin`, and
-`shared/downloads` are owner-managed mode `0755` directories. Only `_work` and
-`shared/cache` enter the shared-group permission contract; the permission
-helper normalizes them to group-owned mode `2770` trees with inherited ACLs.
+`shared/downloads` are owner-managed mode `0755` directories. `_work` and
+`shared/cache` are initially group-owned mode `2770` directories. The separate
+permission helper recursively normalizes those two managed trees and applies
+their inherited ACLs.
 
 The root-owned, read-only `.mfci-runner-root` marker records that this helper
 created the runner root. Existing roots are accepted only with that marker,
 making the helper safe to rerun without adopting arbitrary host directories.
-Directory modes and owners at the explicit skeleton paths are normalized, but
-contents below `shared/bin` and `shared/downloads` are not modified. Existing
-`_work` and `shared/cache` contents are normalized recursively by the delegated
-permission helper. Symbolic links and non-directory entries at any target path
-are rejected before the skeleton is changed.
+Directory modes and owners at the eight explicit skeleton paths are normalized,
+but their existing contents are not modified recursively. Symbolic links and
+non-directory entries at any target path are rejected before the skeleton is
+changed.
 
 ## Requirements and boundary
 
 - Debian- or RHEL-family Linux with Bash and GNU account utilities;
-- the distribution's `acl` package, which provides `getfacl` and `setfacl`;
 - execution through `sudo`, including dry-run mode;
-- an existing non-root runner owner;
+- an existing non-root runner owner and shared group;
+- runner-owner membership in the shared group;
 - an existing real parent directory for a runner root that has not yet been
-  created;
-- the adjacent executable `setup-runner-permissions.sh`.
+  created.
 
 The resolved runner root must be below `/opt`, `/var`, `/home`, or `/Users`.
 The prefix allowlist applies after canonicalization, and an existing root must
 carry the helper-owned marker. Broad, unapproved, or unmarked targets are
-rejected before identity or filesystem changes.
+rejected before filesystem changes.
 
-The helper may create only the canonical `mfci` group with GID `2001`. It does
-not create accounts or arbitrary groups, install system packages, download or
-extract a GitHub Actions runner, register it with GitHub, configure credentials,
-or manage its service. Those operations remain the runner operator's
-responsibility.
-
-Install the ACL tools before invoking the helper:
-
-```bash
-# Debian
-sudo apt-get update
-sudo apt-get install --yes acl
-
-# RHEL
-sudo dnf install --assumeyes acl
-```
-
-The helper reports the missing package when either ACL command is unavailable;
-it does not invoke a package manager itself.
+The helper does not create users or groups, change group membership, recurse
+through existing contents, apply ACL policy, install system packages, download
+or extract a GitHub Actions runner, register it with GitHub, configure
+credentials, or manage its service. Run the
+[identity helper](setup-runner-user.md) first for the standard host identity.
 
 ## Usage
 
@@ -91,28 +76,31 @@ sudo scripts/setup-runner-from-scratch.sh \
   --repository repo-example
 ```
 
-When `mfci` is absent, the helper creates it only if GID `2001` is unused. It
-fails instead of repurposing another group at that GID or accepting `mfci` with
-a different GID. Use `--group GROUP|GID` for a different shared group; explicit
-alternatives must already resolve through the host account database. The owner
-may be a name or numeric ID. The repository value is a single directory name,
-not a path.
+Use `--group GROUP|GID` for a different existing shared group. The canonical
+`mfci` group must use GID `2001`. The owner may be a name or numeric ID. The
+repository value is a single directory name, not a path.
 
-The bootstrap never changes account group membership. If the owner is not in
-the resolved shared group, apply mode stops before creating or normalizing the
-runner root and reports the required operator action. When it first creates
-`mfci`, it then stops at the same membership boundary. Enroll the owner, restart
-its runner service, and rerun the helper. Dry-run reports missing membership
+If the owner is not in the resolved shared group, apply mode stops before
+creating or normalizing the runner root. Dry-run reports the missing membership
 without changing the host.
+
+After creating the structure, apply and verify recursive permissions:
+
+```bash
+sudo scripts/setup-runner-permissions.sh \
+  --runner-root /opt/actions-runner \
+  --owner ci-runner \
+  --group mfci
+```
 
 ## Tests
 
 - `tests/setup-runner-from-scratch_spec.sh` checks required inputs and the CLI
   contract through ShellSpec.
 - `tests/setup-runner-from-scratch_integration.sh` verifies dry-run behavior,
-  canonical group creation, operator-managed membership, the complete directory
-  structure, ownership and mode boundaries, permission delegation, reruns, and
-  unsafe target rejection in a disposable Linux tree.
+  prerequisite membership, the complete directory structure, ownership and
+  mode boundaries, non-recursive reruns, and unsafe target rejection in a
+  disposable Linux tree.
 
 The independent `Runner helper / Contract` workflow runs both suites without
 accessing real runner host paths.

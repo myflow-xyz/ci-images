@@ -11,9 +11,9 @@ Describe 'setup-runner-from-scratch.sh CLI'
 		The output should include '--owner USER|UID'
 		The output should include '--repository NAME'
 		The output should include '/opt, /var, /home, or /Users'
-		The output should include 'Missing mfci is created with GID 2001'
-		The output should include 'install the acl package on Debian or RHEL'
+		The output should include 'owner and group must already exist'
 		The output should include 'membership is verified but never changed'
+		The output should include 'ACL policy is applied separately by setup-runner-permissions.sh'
 		The error should be blank
 	End
 

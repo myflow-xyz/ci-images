@@ -202,33 +202,48 @@ workspaces and caches through the dedicated host group `mfci` with GID `2001`.
 The runner user's UID does not need to match the container UID.
 
 Linux evaluates the numeric GID rather than the group name. The container group
-is named `ci`, while the host group is named `mfci`; both use GID `2001`. Do not
-use the host's `docker` group: it governs Docker daemon access and is outside
-the filesystem-sharing boundary.
+is named `ci`, while the host group is named `mfci`; both use GID `2001`. The
+runner account may require the host's `docker` group to launch job containers.
+That group governs Docker daemon access, is effectively root-equivalent on a
+typical rootful Docker host, and remains outside the filesystem-sharing
+boundary. Never use it as the bind-mount permission group.
 
 ### Host setup
 
 Reserve GID `2001` across the controlled runner fleet. This value is a MyFlow
-convention, not a globally reserved Linux group, so verify that the lookup
-returns no existing group before provisioning it. Do not repurpose an existing
-group. Install the host's `acl` package and drain every affected runner before
-changing an existing work tree.
+convention, not a globally reserved Linux group. The identity helper creates
+`mfci:2001` only when the GID is unused and accepts an existing assignment only
+when it is already canonical. Do not repurpose another group. Install the
+host's `acl` package and drain every affected runner before changing an
+existing work tree.
 
-The independent
-[runner bootstrap helper](../scripts/docs/setup-runner-from-scratch.md) creates
-the standard host directory skeleton for a new repository runner and delegates
-the writable paths to the permission helper. It creates the canonical
-`mfci:2001` identity only when both its name and GID are available. It verifies
-runner-owner membership but leaves enrollment and service restart to the host
-operator. It does not download, register, or manage the runner service.
+Host provisioning is split into three independently verifiable stages:
 
-The independent
-[runner permission helper](../scripts/docs/setup-runner-permissions.md)
-documents host provisioning, supported layouts, safety boundaries, and its
-test contract. It manages only `workspace/<repository>/_work` trees and
-`shared/cache`; it does not create runner installations or make their parent
-directories group-writable. Unsafe write access on unmanaged parents is
-rejected for the runner operator to fix.
+1. The [runner identity helper](../scripts/docs/setup-runner-user.md) creates or
+   verifies `ci-runner`, its `/opt/actions-runner` home metadata, the canonical
+   `mfci:2001` group, and `docker`/`mfci` supplementary memberships. It does not
+   create the home directory.
+2. The [runner directory helper](../scripts/docs/setup-runner-from-scratch.md)
+   creates only the explicit runner skeleton and verifies its ownership and
+   modes. It does not recurse through existing contents or apply ACLs.
+3. The [runner permission helper](../scripts/docs/setup-runner-permissions.md)
+   normalizes only `workspace/<repository>/_work` trees and `shared/cache`, then
+   verifies their recursive group and ACL contract.
+
+For the standard identity and one repository runner:
+
+```bash
+sudo scripts/setup-runner-user.sh
+sudo scripts/setup-runner-from-scratch.sh \
+  --runner-root /opt/actions-runner \
+  --owner ci-runner \
+  --repository repo-example
+sudo scripts/setup-runner-permissions.sh
+```
+
+None of these helpers downloads, registers, or manages the GitHub Actions
+runner service. Unsafe write access on unmanaged parents is rejected for the
+runner operator to fix.
 
 An opt-in host preflight may run the helper with `--check` directly from a
 host-side step inherited from the runner service. It verifies the invoking

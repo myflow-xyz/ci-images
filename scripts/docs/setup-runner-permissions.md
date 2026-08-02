@@ -65,26 +65,24 @@ it does not invoke a package manager itself.
 
 ## Default host identity
 
-GID `2001` is a MyFlow convention rather than a globally reserved value. Verify
-that it is unused before creating `mfci`:
+Provision the standard `ci-runner` account, its `/opt/actions-runner` home
+metadata, the canonical `mfci:2001` group, and `docker`/`mfci` supplementary
+memberships with the independent identity helper:
 
 ```bash
-getent group 2001
-sudo groupadd -g 2001 mfci
-getent group mfci
-sudo usermod -aG mfci ci-runner
-groups ci-runner
+sudo scripts/setup-runner-user.sh --dry-run
+sudo scripts/setup-runner-user.sh
 ```
 
-The first lookup must return no group. The post-creation lookup must report GID
-`2001`, and the runner account must include `mfci`. Restart an already-running
-runner service after changing its supplementary groups.
+GID `2001` is a MyFlow convention rather than a globally reserved value. The
+identity helper refuses to repurpose an existing assignment. Restart an
+already-running runner service after changing its supplementary groups.
 
 ## Usage
 
 For a new runner directory skeleton, use the
-[runner bootstrap helper](setup-runner-from-scratch.md), which invokes this
-helper after creating its explicit targets.
+[runner directory helper](setup-runner-from-scratch.md), then invoke this helper
+as the separate recursive-permission stage.
 
 Preview the resolved identities and targets without changing the host:
 

@@ -68,8 +68,11 @@ jobs:
           cd scripts
           "$RUNNER_TEMP/shellspec/shellspec"
 
-      - name: Verify isolated Linux permission behavior
-        run: sudo scripts/tests/setup-runner-permissions_integration.sh
+      - name: Verify isolated Linux identity behavior
+        run: sudo scripts/tests/setup-runner-user_integration.sh
 
       - name: Verify isolated Linux bootstrap behavior
         run: sudo scripts/tests/setup-runner-from-scratch_integration.sh
+
+      - name: Verify isolated Linux permission behavior
+        run: sudo scripts/tests/setup-runner-permissions_integration.sh
