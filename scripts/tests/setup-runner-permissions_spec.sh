@@ -8,9 +8,11 @@ Describe 'setup-runner-permissions.sh CLI'
 		The status should be success
 		The output should include '<runner-root>/workspace/*/_work'
 		The output should include '--runner-root PATH'
+		The output should include 'default: ci-runner'
 		The output should include '--check'
 		The output should include 'install the acl package on Debian or RHEL'
 		The output should include 'membership is verified but never changed'
+		The output should not include 'github-runner'
 		The output should not include 'runner-home'
 		The error should be blank
 	End

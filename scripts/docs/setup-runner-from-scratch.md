@@ -77,7 +77,7 @@ the host:
 ```bash
 sudo scripts/setup-runner-from-scratch.sh \
   --runner-root /opt/actions-runner \
-  --owner github-runner \
+  --owner ci-runner \
   --repository repo-example \
   --dry-run
 ```
@@ -87,7 +87,7 @@ Create and verify the structure using the default `mfci` shared group:
 ```bash
 sudo scripts/setup-runner-from-scratch.sh \
   --runner-root /opt/actions-runner \
-  --owner github-runner \
+  --owner ci-runner \
   --repository repo-example
 ```
 

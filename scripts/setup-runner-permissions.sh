@@ -8,7 +8,7 @@ export LC_ALL PATH
 
 readonly program_name=${0##*/}
 runner_root=/opt/actions-runner
-owner_spec=github-runner
+owner_spec=ci-runner
 group_spec=mfci
 dry_run=false
 check_only=false
@@ -23,7 +23,7 @@ usage() {
 		'' \
 		'Options:' \
 		'  --runner-root PATH Runner root (default: /opt/actions-runner)' \
-		'  --owner USER|UID   Resolved file owner (default: github-runner)' \
+		'  --owner USER|UID   Resolved file owner (default: ci-runner)' \
 		'  --group GROUP|GID  Resolved shared group (default: mfci)' \
 		'  --check            Verify without changing the host' \
 		'  --dry-run          Resolve and report without changing the host' \

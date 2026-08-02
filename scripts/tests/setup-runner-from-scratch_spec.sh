@@ -32,7 +32,7 @@ Describe 'setup-runner-from-scratch.sh CLI'
 	It 'requires an explicit repository'
 		When run "$helper" \
 			--runner-root /opt/actions-runner \
-			--owner github-runner
+			--owner ci-runner
 		The status should eq 64
 		The error should include '--repository is required'
 	End
@@ -40,7 +40,7 @@ Describe 'setup-runner-from-scratch.sh CLI'
 	It 'rejects repository path traversal'
 		When run "$helper" \
 			--runner-root /opt/actions-runner \
-			--owner github-runner \
+			--owner ci-runner \
 			--repository ../other
 		The status should eq 64
 		The error should include 'invalid repository name'
@@ -56,7 +56,7 @@ Describe 'setup-runner-from-scratch.sh CLI'
 		Skip if 'requires a non-root test process' [ "$(id -u)" -eq 0 ]
 		When run "$helper" \
 			--runner-root=/opt/actions-runner \
-			--owner=github-runner \
+			--owner=ci-runner \
 			--repository=repo-example \
 			--group=mfci \
 			--dry-run

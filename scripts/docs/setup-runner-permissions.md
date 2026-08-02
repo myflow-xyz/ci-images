@@ -44,7 +44,7 @@ both identities.
   installations;
 - drained runners while existing trees are normalized.
 
-The defaults are runner root `/opt/actions-runner`, owner `github-runner`, and
+The defaults are runner root `/opt/actions-runner`, owner `ci-runner`, and
 group `mfci`. `--runner-root`, `--owner`, and `--group` override them. Owner and
 group values may be names or numeric IDs, but must resolve through the host
 account database.
@@ -72,8 +72,8 @@ that it is unused before creating `mfci`:
 getent group 2001
 sudo groupadd -g 2001 mfci
 getent group mfci
-sudo usermod -aG mfci github-runner
-groups github-runner
+sudo usermod -aG mfci ci-runner
+groups ci-runner
 ```
 
 The first lookup must return no group. The post-creation lookup must report GID
@@ -117,7 +117,7 @@ For a different layout or identity:
 
 ```bash
 sudo scripts/setup-runner-permissions.sh \
-  --runner-root /home/github-runner \
+  --runner-root /home/ci-runner \
   --owner ci-user \
   --group ci-group
 ```
