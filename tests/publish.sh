@@ -247,6 +247,14 @@ for name in "${names[@]}"; do
 		grep -Fq -- "BASE_IMAGE=${parent}" "$fake_log" ||
 			fail "missing ${name} parent reference"
 	fi
+	if [[ $name == base ]]; then
+		for build_arg in \
+			"PYTHON_VERSION=$(jq -r '.tools.base.python.version' "$manifest")" \
+			"PYTHON_SHA256=$(jq -r '.tools.base.python.asset.sha256' "$manifest")"; do
+			grep -Fq -- "--build-arg ${build_arg}" "$fake_log" ||
+				fail "missing base build argument: ${build_arg%%=*}"
+		done
+	fi
 	if [[ $name == vite ]]; then
 		for build_arg in \
 			"TYPESCRIPT_GO_SOURCE=$(jq -r '.tools.vite.typescript_source.repository' "$manifest")" \

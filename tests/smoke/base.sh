@@ -5,6 +5,7 @@ set -euo pipefail
 expected_uid=${EXPECTED_CI_UID:?EXPECTED_CI_UID is not set}
 expected_gid=${EXPECTED_CI_GID:?EXPECTED_CI_GID is not set}
 expected_go=${EXPECTED_TOOLCHAIN_GO_VERSION:?EXPECTED_TOOLCHAIN_GO_VERSION is not set}
+expected_python=${EXPECTED_PYTHON_VERSION:?EXPECTED_PYTHON_VERSION is not set}
 : "${EXPECTED_ACTIONLINT_VERSION:?EXPECTED_ACTIONLINT_VERSION is not set}"
 : "${EXPECTED_GIT_VERSION:?EXPECTED_GIT_VERSION is not set}"
 : "${EXPECTED_GITLEAKS_X_CRYPTO_VERSION:?EXPECTED_GITLEAKS_X_CRYPTO_VERSION is not set}"
@@ -47,16 +48,35 @@ for command in \
 	command -v "$command" >/dev/null
 done
 
-python3 -c '
+[[ $(command -v python3) == /usr/local/bin/python3 ]]
+[[ $(python3 --version) == "Python ${expected_python}" ]]
+
+python3 - "$expected_python" <<'PY'
+import bz2
+import compression.zstd
+import ctypes
+import dbm.gnu
 import json
+import lzma
+import mimetypes
+import readline
 import socket
+import sqlite3
+import ssl
+import sys
 import urllib.parse
 import urllib.request
+import uuid
+import zlib
 
 assert json.loads("{\"ok\": true}")["ok"]
+assert mimetypes.guess_type("artifact.geojson") == ("application/geo+json", None)
+assert mimetypes.guess_type("artifact.ics") == ("text/calendar", None)
+assert mimetypes.guess_type("artifact.zst") == ("application/zstd", None)
 assert socket.gethostname()
+assert sys.version.split()[0] == sys.argv[1]
 assert urllib.parse.urlsplit("https://ci.example/path").hostname == "ci.example"
-'
+PY
 
 actionlint --version 2>&1 |
 	grep --fixed-strings "$EXPECTED_ACTIONLINT_VERSION" >/dev/null
@@ -116,6 +136,18 @@ for command in pip pip3; do
 		exit 1
 	fi
 done
+
+for module in ensurepip venv; do
+	if python3 -c "import ${module}" >/dev/null 2>&1; then
+		printf 'Excluded Python module is present in ci-base: %s\n' "$module" >&2
+		exit 1
+	fi
+done
+
+python_series=${expected_python%.*}
+[[ ! -e /usr/local/bin/python3-config ]]
+[[ ! -e /usr/local/bin/python${python_series}-config ]]
+[[ ! -e /usr/local/include/python${python_series} ]]
 
 for path in \
 	/opt/ci-tools/markdownlint-cli2 \

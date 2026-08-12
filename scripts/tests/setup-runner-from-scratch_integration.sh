@@ -4,7 +4,6 @@ set -euo pipefail
 
 scripts_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 bootstrap_source="${scripts_root}/setup-runner-from-scratch.sh"
-permission_helper_source="${scripts_root}/setup-runner-permissions.sh"
 
 fail() {
 	printf 'setup-runner-from-scratch integration failed: %s\n' "$*" >&2
@@ -14,11 +13,10 @@ fail() {
 ((EUID == 0)) || fail 'run this test as root'
 
 required_commands=(
-	groupdel
 	getent
-	getfacl
+	groupadd
+	groupdel
 	install
-	setpriv
 	stat
 	useradd
 	userdel
@@ -57,25 +55,19 @@ chmod 0755 "$temporary_directory"
 helper_directory="${temporary_directory}/helpers"
 mkdir "$helper_directory"
 helper="${helper_directory}/setup-runner-from-scratch.sh"
-permission_helper="${helper_directory}/setup-runner-permissions.sh"
 install --mode 0755 "$bootstrap_source" "$helper"
-install \
-	--mode 0755 \
-	"$permission_helper_source" \
-	"$permission_helper"
 
 if mfci_record=$(getent group mfci); then
 	IFS=: read -r group_name _ group_gid _ <<<"$mfci_record"
 	[[ $group_name == mfci && $group_gid == 2001 ]] ||
 		fail "existing mfci group does not use GID 2001: ${mfci_record}"
-	expected_group_state=existing
 else
 	[[ -z $(getent group 2001 || true) ]] ||
 		fail 'GID 2001 is already assigned to another group'
+	groupadd --gid 2001 mfci
+	mfci_created=true
 	group_name=mfci
 	group_gid=2001
-	mfci_created=true
-	expected_group_state=create
 fi
 
 if getent passwd "$owner_name" >/dev/null; then
@@ -157,10 +149,6 @@ assert_fails_with \
 	--repository repo-example \
 	--dry-run
 
-if [[ $expected_group_state == create ]]; then
-	[[ -z $(getent group mfci || true) ]] ||
-		fail 'unsafe root validation created the default group'
-fi
 owner_has_group &&
 	fail 'unsafe root validation changed owner group membership'
 
@@ -178,25 +166,18 @@ dry_run_output=$(
 	fail 'dry-run mode was not reported'
 [[ $dry_run_output == *'root-state=create'* ]] ||
 	fail 'dry-run reported the wrong runner-root state'
-[[ $dry_run_output == *"group-state=${expected_group_state} configured-membership=missing"* ]] ||
-	fail 'dry-run reported the wrong identity plan'
+[[ $dry_run_output == *'group=mfci(2001) configured-membership=missing'* ]] ||
+	fail 'dry-run reported the wrong identity state'
 [[ $dry_run_output == *'create=8 existing=0'* ]] ||
 	fail 'dry-run reported the wrong directory plan'
 [[ $dry_run_output == *'dry-run status=ok directories=8'* ]] ||
 	fail 'dry-run success was not reported'
 [[ ! -e $runner_root ]] ||
 	fail 'dry-run created the runner root'
-if [[ $expected_group_state == create ]]; then
-	[[ -z $(getent group mfci || true) ]] ||
-		fail 'dry-run created the default group'
-fi
 owner_has_group &&
 	fail 'dry-run changed owner group membership'
 
-membership_warning="warning: owner ${owner_name} is not a member of mfci(2001); add the owner, restart its runner service, and rerun"
-if [[ $expected_group_state == create ]]; then
-	membership_warning="warning: created mfci(2001), but owner ${owner_name} was not enrolled; add the owner, restart its runner service, and rerun"
-fi
+membership_warning="warning: owner ${owner_name} is not a member of mfci(2001); run setup-runner-user.sh or configure membership, restart the runner service when applicable, and rerun"
 assert_fails_with \
 	'missing owner membership' \
 	"$membership_warning" \
@@ -207,16 +188,9 @@ assert_fails_with \
 [[ ! -e $runner_root ]] ||
 	fail 'missing membership created the runner root'
 
-mfci_record=$(getent group mfci)
-IFS=: read -r group_name _ group_gid _ <<<"$mfci_record"
-[[ $group_name == mfci && $group_gid == 2001 ]] ||
-	fail "default group has the wrong identity: ${mfci_record}"
-owner_has_group &&
-	fail 'bootstrap changed owner group membership'
-
 usermod --append --groups "$group_name" "$owner_name"
 owner_has_group ||
-	fail 'operator setup did not add the owner to the shared group'
+	fail 'identity setup did not add the owner to the shared group'
 
 apply_output=$(
 	"$helper" \
@@ -224,9 +198,7 @@ apply_output=$(
 		--owner "$owner_name" \
 		--repository "$repository"
 )
-[[ $apply_output == *'setup-runner-permissions.sh: verified status=ok'* ]] ||
-	fail 'permission-helper success was not reported'
-[[ $apply_output == *'setup-runner-from-scratch.sh: verified status=ok directories=8 permission-helper=ok group=present membership=present'* ]] ||
+[[ $apply_output == *'setup-runner-from-scratch.sh: verified status=ok directories=8 membership=present'* ]] ||
 	fail 'bootstrap verification was not reported'
 runner_marker="${runner_root}/.mfci-runner-root"
 [[ -f $runner_marker && ! -L $runner_marker ]] ||
@@ -238,7 +210,7 @@ repository_root="${runner_root}/workspace/${repository}"
 work_root="${repository_root}/_work"
 shared_root="${runner_root}/shared"
 
-declare -a unmanaged_directories=(
+declare -a owner_directories=(
 	"$runner_root"
 	"${runner_root}/workspace"
 	"$repository_root"
@@ -247,43 +219,32 @@ declare -a unmanaged_directories=(
 	"${shared_root}/downloads"
 )
 
-for directory in "${unmanaged_directories[@]}"; do
+for directory in "${owner_directories[@]}"; do
 	[[ -d $directory && ! -L $directory ]] ||
-		fail "unmanaged directory is missing: ${directory}"
+		fail "owner directory is missing: ${directory}"
 	[[ $(stat --format '%u:%g:%a' "$directory") == "${owner_uid}:${owner_gid}:755" ]] ||
-		fail "unmanaged directory identity is wrong: ${directory}"
+		fail "owner directory identity is wrong: ${directory}"
 done
 
 for directory in "$work_root" "${shared_root}/cache"; do
 	[[ -d $directory && ! -L $directory ]] ||
-		fail "managed directory is missing: ${directory}"
+		fail "shared directory is missing: ${directory}"
 	[[ $(stat --format '%u:%g:%a' "$directory") == "${owner_uid}:${group_gid}:2770" ]] ||
-		fail "managed directory identity is wrong: ${directory}"
+		fail "shared directory identity is wrong: ${directory}"
 done
-
-check_output=$(
-	setpriv \
-		--reuid "$owner_uid" \
-		--regid "$owner_gid" \
-		--init-groups \
-		"$permission_helper" \
-		--runner-root "$runner_root" \
-		--owner "$owner_name" \
-		--group "$group_name" \
-		--check
-)
-[[ $check_output == *'verified status=ok mode=check targets=2'* ]] ||
-	fail 'delegated permission state did not pass check mode'
 
 printf 'bin\n' >"${shared_root}/bin/preserved"
 printf 'download\n' >"${shared_root}/downloads/preserved"
+printf 'work\n' >"${work_root}/preserved"
 chown \
 	"${owner_uid}:${owner_gid}" \
 	"${shared_root}/bin/preserved" \
-	"${shared_root}/downloads/preserved"
+	"${shared_root}/downloads/preserved" \
+	"${work_root}/preserved"
 chmod 0640 \
 	"${shared_root}/bin/preserved" \
-	"${shared_root}/downloads/preserved"
+	"${shared_root}/downloads/preserved" \
+	"${work_root}/preserved"
 
 repeat_output=$(
 	"$helper" \
@@ -295,18 +256,22 @@ repeat_output=$(
 	fail 'repeat run did not recognize the existing structure'
 [[ $repeat_output == *'root-state=existing'* ]] ||
 	fail 'repeat run did not recognize the managed runner root'
-[[ $repeat_output == *'group-state=existing configured-membership=present'* ]] ||
+[[ $repeat_output == *'group=mfci(2001) configured-membership=present'* ]] ||
 	fail 'repeat run did not recognize the existing identity state'
-[[ $repeat_output == *'group=present membership=present'* ]] ||
-	fail 'repeat run did not preserve the existing identity state'
+[[ $repeat_output == *'verified status=ok directories=8 membership=present'* ]] ||
+	fail 'repeat verification was not reported'
 [[ $(cat "${shared_root}/bin/preserved") == bin ]] ||
 	fail 'repeat run changed shared bin content'
 [[ $(cat "${shared_root}/downloads/preserved") == download ]] ||
 	fail 'repeat run changed shared download content'
+[[ $(cat "${work_root}/preserved") == work ]] ||
+	fail 'repeat run changed work-tree content'
 [[ $(stat --format '%u:%g:%a' "${shared_root}/bin/preserved") == "${owner_uid}:${owner_gid}:640" ]] ||
 	fail 'repeat run changed shared bin file policy'
 [[ $(stat --format '%u:%g:%a' "${shared_root}/downloads/preserved") == "${owner_uid}:${owner_gid}:640" ]] ||
 	fail 'repeat run changed shared download file policy'
+[[ $(stat --format '%u:%g:%a' "${work_root}/preserved") == "${owner_uid}:${owner_gid}:640" ]] ||
+	fail 'directory helper changed descendant file policy'
 
 linked_root="${temporary_directory}/linked-root"
 linked_target="${temporary_directory}/linked-target"

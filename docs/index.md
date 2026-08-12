@@ -30,6 +30,8 @@ overview.
   the build, smoke-test, scan, and promotion policy.
 - [Release promotion](../.github/workflows/release.yml) defines stable suite
   releases.
+- [Runner identity setup](../scripts/docs/setup-runner-user.md) documents the
+  independent `ci-runner`, `mfci`, and supplementary-group helper.
 - [Runner directory bootstrap](../scripts/docs/setup-runner-from-scratch.md)
   documents creation of the independent self-hosted runner skeleton.
 - [Runner permission setup](../scripts/docs/setup-runner-permissions.md)

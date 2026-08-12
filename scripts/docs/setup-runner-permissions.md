@@ -36,40 +36,53 @@ both identities.
 
 ## Requirements
 
-- Linux with Bash, GNU account utilities, and POSIX ACL tools;
+- Debian- or RHEL-family Linux with Bash and GNU account utilities;
+- the distribution's `acl` package, which provides `getfacl` and `setfacl`;
 - execution through `sudo` for planning or applying changes;
 - an existing non-root runner owner and shared group;
 - an existing `<runner-root>/workspace` directory containing runner
   installations;
 - drained runners while existing trees are normalized.
 
-The defaults are runner root `/opt/actions-runner`, owner `github-runner`, and
+The defaults are runner root `/opt/actions-runner`, owner `ci-runner`, and
 group `mfci`. `--runner-root`, `--owner`, and `--group` override them. Owner and
 group values may be names or numeric IDs, but must resolve through the host
 account database.
 
-## Default host identity
-
-GID `2001` is a MyFlow convention rather than a globally reserved value. Verify
-that it is unused before creating `mfci`:
+Install the ACL tools before invoking the helper:
 
 ```bash
-getent group 2001
-sudo groupadd -g 2001 mfci
-getent group mfci
-sudo usermod -aG mfci github-runner
-groups github-runner
+# Debian
+sudo apt-get update
+sudo apt-get install --yes acl
+
+# RHEL
+sudo dnf install --assumeyes acl
 ```
 
-The first lookup must return no group. The post-creation lookup must report GID
-`2001`, and the runner account must include `mfci`. Restart an already-running
-runner service after changing its supplementary groups.
+The helper reports the missing package when either ACL command is unavailable;
+it does not invoke a package manager itself.
+
+## Default host identity
+
+Provision the standard `ci-runner` account, its `/opt/actions-runner` home
+metadata, the canonical `mfci:2001` group, and `docker`/`mfci` supplementary
+memberships with the independent identity helper:
+
+```bash
+sudo scripts/setup-runner-user.sh --dry-run
+sudo scripts/setup-runner-user.sh
+```
+
+GID `2001` is a MyFlow convention rather than a globally reserved value. The
+identity helper refuses to repurpose an existing assignment. Restart an
+already-running runner service after changing its supplementary groups.
 
 ## Usage
 
 For a new runner directory skeleton, use the
-[runner bootstrap helper](setup-runner-from-scratch.md), which invokes this
-helper after creating its explicit targets.
+[runner directory helper](setup-runner-from-scratch.md), then invoke this helper
+as the separate recursive-permission stage.
 
 Preview the resolved identities and targets without changing the host:
 
@@ -102,7 +115,7 @@ For a different layout or identity:
 
 ```bash
 sudo scripts/setup-runner-permissions.sh \
-  --runner-root /home/github-runner \
+  --runner-root /home/ci-runner \
   --owner ci-user \
   --group ci-group
 ```

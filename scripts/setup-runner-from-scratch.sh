@@ -32,11 +32,12 @@ usage() {
 		'' \
 		'Options:' \
 		'  --group GROUP|GID  Shared group (default: mfci)' \
-		'                     Missing mfci is created with GID 2001' \
 		'  --dry-run          Resolve and report without changing the host' \
 		'  -h, --help         Show this help' \
 		'' \
+		'The owner and group must already exist.' \
 		'Owner group membership is verified but never changed.' \
+		'ACL policy is applied separately by setup-runner-permissions.sh.' \
 		'Run as root, for example with sudo.'
 }
 
@@ -135,33 +136,20 @@ done
 	fail 'run as root (for example, with sudo)'
 
 required_commands=(
-	awk
-	chmod
-	chown
-	find
 	getent
-	getfacl
-	groupadd
 	id
 	install
 	mkdir
 	readlink
 	rmdir
-	setfacl
 	stat
 )
 
 for command_name in "${required_commands[@]}"; do
-	command -v "$command_name" >/dev/null 2>&1 ||
+	if ! command -v "$command_name" >/dev/null 2>&1; then
 		fail "required command is unavailable: ${command_name}"
+	fi
 done
-
-script_path=$(readlink -f -- "${BASH_SOURCE[0]}") ||
-	fail 'cannot resolve helper path'
-script_directory=${script_path%/*}
-permission_helper="${script_directory}/setup-runner-permissions.sh"
-[[ -f $permission_helper && -x $permission_helper ]] ||
-	fail "permission helper is unavailable: ${permission_helper}"
 
 declare -a owner_records=()
 mapfile -t owner_records < <(getent passwd "$owner_spec" || true)
@@ -183,24 +171,11 @@ IFS=: read -r \
 ((owner_uid != 0)) ||
 	fail "owner must not be root: ${owner_name}"
 
-group_state=existing
 declare -a group_records=()
 mapfile -t group_records < <(getent group "$group_spec" || true)
-if [[ $group_spec == "$default_group_name" && ${#group_records[@]} == 0 ]]; then
-	declare -a gid_records=()
-	mapfile -t gid_records < <(getent group "$default_group_gid" || true)
-	if ((${#gid_records[@]} != 0)); then
-		warn "GID ${default_group_gid} is already assigned; no group changes were made"
-		fail "cannot create ${default_group_name}: GID ${default_group_gid} is already in use"
-	fi
-	group_state=create
-	group_name=$default_group_name
-	group_gid=$default_group_gid
-else
-	((${#group_records[@]} == 1)) ||
-		fail "group does not resolve uniquely: ${group_spec}"
-	IFS=: read -r group_name _ group_gid _ <<<"${group_records[0]}"
-fi
+((${#group_records[@]} == 1)) ||
+	fail "group does not resolve uniquely: ${group_spec}"
+IFS=: read -r group_name _ group_gid _ <<<"${group_records[0]}"
 
 [[ $group_gid =~ ^[0-9]+$ ]] ||
 	fail "group has invalid numeric identity: ${group_spec}"
@@ -304,7 +279,7 @@ done
 mode=apply
 $dry_run && mode=dry-run
 printf \
-	'%s: plan mode=%s root=%s root-state=%s owner=%s(%s) group=%s(%s) group-state=%s configured-membership=%s repository=%s create=%s existing=%s\n' \
+	'%s: plan mode=%s root=%s root-state=%s owner=%s(%s) group=%s(%s) configured-membership=%s repository=%s create=%s existing=%s\n' \
 	"$program_name" \
 	"$mode" \
 	"$runner_root" \
@@ -313,7 +288,6 @@ printf \
 	"$owner_uid" \
 	"$group_name" \
 	"$group_gid" \
-	"$group_state" \
 	"$membership_plan" \
 	"$repository" \
 	"$create_count" \
@@ -326,29 +300,8 @@ if $dry_run; then
 	exit 0
 fi
 
-group_result=present
-if [[ $group_state == create ]]; then
-	groupadd --gid "$default_group_gid" "$default_group_name" ||
-		fail "cannot create group: ${default_group_name}(${default_group_gid})"
-	group_result=created
-
-	declare -a created_group_records=()
-	mapfile -t created_group_records < <(getent group "$default_group_name" || true)
-	((${#created_group_records[@]} == 1)) ||
-		fail "created group does not resolve uniquely: ${default_group_name}"
-	IFS=: read -r created_group_name _ created_group_gid _ \
-		<<<"${created_group_records[0]}"
-	[[ $created_group_name == "$default_group_name" &&
-		$created_group_gid == "$default_group_gid" ]] ||
-		fail "created group has unexpected identity: ${created_group_records[0]}"
-fi
-
 if [[ $membership_plan == missing ]]; then
-	if [[ $group_result == created ]]; then
-		warn "created ${group_name}(${group_gid}), but owner ${owner_name} was not enrolled; add the owner, restart its runner service, and rerun"
-	else
-		warn "owner ${owner_name} is not a member of ${group_name}(${group_gid}); add the owner, restart its runner service, and rerun"
-	fi
+	warn "owner ${owner_name} is not a member of ${group_name}(${group_gid}); run setup-runner-user.sh or configure membership, restart the runner service when applicable, and rerun"
 	fail 'operator-managed group membership is required'
 fi
 
@@ -401,11 +354,6 @@ install \
 	"$work_root" \
 	"$shared_cache"
 
-"$permission_helper" \
-	--runner-root "$runner_root" \
-	--owner "$owner_uid" \
-	--group "$group_gid"
-
 verify_directory() {
 	local directory=$1
 	local expected=$2
@@ -436,7 +384,6 @@ for directory in "$work_root" "$shared_cache"; do
 done
 
 printf \
-	'%s: verified status=ok directories=%s permission-helper=ok group=%s membership=present\n' \
+	'%s: verified status=ok directories=%s membership=present\n' \
 	"$program_name" \
-	"${#directories[@]}" \
-	"$group_result"
+	"${#directories[@]}"

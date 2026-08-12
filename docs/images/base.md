@@ -39,14 +39,16 @@ The base image includes:
   grep, sed, awk, and `procps`;
 - source and transfer utilities: Git, CA certificates, curl, wget, OpenSSL, tar,
   gzip, xz, zip, and unzip;
-- Python 3 and its standard-library modules for repository-owned CI automation;
+- CPython 3.14.7 and its standard-library modules for repository-owned CI
+  automation;
 - structured-data and diagnosis tools: `jq`, `yq`, ripgrep, and GitHub CLI;
 - shared policy tools: gitleaks, actionlint, shfmt, ShellCheck, and ShellSpec;
 - `tini` for descendants that require subprocess reaping.
 
-Python is intentionally limited to the Debian interpreter and standard library.
-The image does not include pip, virtual-environment support, development
-headers, or third-party Python packages.
+Python is built from the checksum-pinned CPython 3.14.7 source release against
+the reviewed Debian snapshot. It is intentionally limited to the interpreter
+and standard library: the image does not include pip, virtual-environment
+support, development headers, or third-party Python packages.
 
 Git is built from a checksum-pinned upstream source release so the protected
 system configuration can scope trust to GitHub's workspace tree. actionlint,
