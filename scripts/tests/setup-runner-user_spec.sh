@@ -11,6 +11,7 @@ Describe 'setup-runner-user.sh CLI'
 		The output should include 'primary group:     ci-runner'
 		The output should include 'shared group:      mfci (GID 2001)'
 		The output should include 'additional groups: docker, mfci'
+		The output should include 'docker group must already exist in /etc/group'
 		The output should include 'Docker group membership grants control of the Docker daemon'
 		The output should include 'home path is configured on the account but created by the directory helper'
 		The error should be blank

@@ -20,7 +20,7 @@ boundary and creates it in the next provisioning stage.
 
 - Debian- or RHEL-family Linux with Bash and GNU account utilities;
 - execution through `sudo`, including dry-run mode;
-- an existing `docker` group;
+- an existing local `docker` group in `/etc/group`;
 - no conflicting `ci-runner` account, private group, `mfci` group, or GID
   `2001` assignment.
 
@@ -28,20 +28,20 @@ The `docker` group grants control of the Docker daemon and is effectively
 root-equivalent on a typical rootful Docker host. Add only the dedicated runner
 account, and do not reuse `docker` as the bind-mount permission group.
 
-When `mfci` is absent, the helper creates it with GID `2001` only if a keyed NSS
-lookup reports that GID unused. When `mfci` exists, keyed name and GID lookups
-must both resolve to `mfci:2001`. The local `/etc/group` database must contain
-at most that canonical assignment; local aliases and any `docker:2001`
+The helper manages supplementary membership through the host's local account
+tools, so `docker` and any existing `mfci` group must be defined in
+`/etc/group`; provider-managed groups are rejected. Keyed NSS lookups must agree
+with those local records so an effective provider mapping cannot silently
+shadow them.
+
+When `mfci` is absent, the helper creates it with GID `2001` only if keyed NSS
+and local lookups report that GID unused. When `mfci` exists, it must be the
+only local GID `2001` assignment. Local aliases and any `docker:2001`
 assignment are rejected. A new `ci-runner` gets a private primary group,
 `/bin/bash`, the fixed home metadata, and supplementary membership in `docker`
 and `mfci`. An existing account is accepted only when those fixed identity
 fields already match; any missing supplementary memberships are appended
 without removing other groups.
-
-Generic NSS cannot prove directory-wide GID uniqueness when a provider does
-not support enumeration. Identity-provider operators must therefore enforce
-unique remote GID assignments. The helper validates effective keyed NSS
-resolution and the local group database; it does not enumerate remote groups.
 
 The helper does not create the home directory, install Docker, create the
 `docker` group, install packages, download or register a runner, configure

@@ -76,7 +76,7 @@ trap cleanup EXIT
 if missing_docker_output=$("$helper" --dry-run 2>&1); then
 	fail 'identity helper accepted a missing docker group'
 fi
-[[ $missing_docker_output == *'required group does not resolve uniquely: docker'* ]] ||
+[[ $missing_docker_output == *'required group must be local and resolve uniquely: docker'* ]] ||
 	fail 'identity helper did not report the missing docker group'
 
 groupadd --gid "$shared_gid" "$docker_group"
