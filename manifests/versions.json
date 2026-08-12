@@ -177,9 +177,9 @@
           "sha256": "5dbb86c71d07a1957f2e90734092dd6a58bdcd9ebc2d8d41ca1c6e6a21d364e1"
         },
         "lockfile": "images/node/npm-runtime/package-lock.json",
-        "lockfile_sha256": "dcc8d4a090bd578df4228185a71a3e713ba82ba431db06cc84ae2082a7328f8c",
+        "lockfile_sha256": "9ef8e7ee84af3fda84ae9c880f8e6446782fb07c6c79014f5af72f395b742263",
         "dependency_replacements": {
-          "brace-expansion": "5.0.8",
+          "brace-expansion": "5.0.9",
           "tar": "7.5.22"
         }
       },
@@ -188,16 +188,16 @@
         "lockfile": "images/node/markdownlint/package-lock.json",
         "lockfile_sha256": "67ac75155d173347711bf06819067cd0a2dd5407c110b0f14730b3e3c9e3c0b3"
       },
-      "bundle_version": "2",
+      "bundle_version": "3",
       "lockfile": "images/node/npm/package-lock.json",
-      "lockfile_sha256": "7c5962c2994c19b6c9699cc424b3949748d1559f4ccec3190f9a5ea56689957d",
-      "pnpm": "11.18.0",
-      "redocly": "2.41.1"
+      "lockfile_sha256": "2e8ac742c8d4b07580b06096994a9b108bfd8aa462b72f7357f2a72760cefa31",
+      "pnpm": "11.21.0",
+      "redocly": "2.46.1"
     },
     "vite": {
-      "bundle_version": "4",
+      "bundle_version": "5",
       "lockfile": "images/vite/npm/package-lock.json",
-      "lockfile_sha256": "7a03700179a5b39dc0556060437fb1b66e2ed642b32f559a1190d687c0d9f3fe",
+      "lockfile_sha256": "3755691abb4dd697b0a737f0e669f46b27123bd2a7b671fb8753f17166069de6",
       "typescript": "7.0.2",
       "typescript_source": {
         "repository": "https://github.com/microsoft/typescript-go",
@@ -210,10 +210,10 @@
         "compat_package": "6.0.2",
         "compiler": "6.0.3"
       },
-      "vite": "8.2.0",
+      "vite": "8.2.1",
       "vitest": "4.1.10",
       "coverage_v8": "4.1.10",
-      "oxlint": "1.76.0",
+      "oxlint": "1.78.0",
       "oxlint_tsgolint": "7.0.2001",
       "oxlint_tsgolint_source": {
         "repository": "https://github.com/oxc-project/tsgolint",
@@ -222,7 +222,7 @@
           "golang.org/x/text": "v0.40.0"
         }
       },
-      "oxfmt": "0.61.0"
+      "oxfmt": "0.63.0"
     },
     "playwright": {
       "version": "1.62.1",
