@@ -58,6 +58,7 @@ import ctypes
 import dbm.gnu
 import json
 import lzma
+import mimetypes
 import readline
 import socket
 import sqlite3
@@ -69,6 +70,9 @@ import uuid
 import zlib
 
 assert json.loads("{\"ok\": true}")["ok"]
+assert mimetypes.guess_type("artifact.geojson") == ("application/geo+json", None)
+assert mimetypes.guess_type("artifact.ics") == ("text/calendar", None)
+assert mimetypes.guess_type("artifact.zst") == ("application/zstd", None)
 assert socket.gethostname()
 assert sys.version.split()[0] == sys.argv[1]
 assert urllib.parse.urlsplit("https://ci.example/path").hostname == "ci.example"

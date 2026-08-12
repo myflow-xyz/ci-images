@@ -365,6 +365,7 @@ RUN --mount=from=base-python-builder,source=/out/python-runtime-packages,target=
       jq \
       locales \
       make \
+      media-types \
       netbase \
       openssl \
       procps \
