@@ -99,6 +99,11 @@ jq --exit-status '
     $git.asset.url ==
       ("https://www.kernel.org/pub/software/scm/git/git-" +
        $git.version + ".tar.xz")) and
+  (.tools.base.python as $python |
+    ($python.version | test("^3\\.14\\.[0-9]+$")) and
+    $python.asset.url ==
+      ("https://www.python.org/ftp/python/" +
+       $python.version + "/Python-" + $python.version + ".tar.xz")) and
   (.tools.go.hurl as $hurl |
     $hurl.assets.amd64.url ==
       ("https://github.com/Orange-OpenSource/hurl/releases/download/" +

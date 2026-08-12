@@ -73,6 +73,129 @@ RUN set -eu; \
     test "$(/out/usr/local/bin/git version)" = "git version ${GIT_VERSION}"; \
     rm -rf /var/tmp/git /var/tmp/git.tar.xz
 
+FROM ${BASE_IMAGE} AS base-python-builder
+
+ARG DEBIAN_SNAPSHOT
+ARG PYTHON_SHA256
+ARG PYTHON_VERSION
+
+USER root
+
+COPY images/common/fetch-verified /usr/local/libexec/ci/fetch-verified
+
+RUN test -n "${DEBIAN_SNAPSHOT}" \
+    && sed -ri \
+      "s|URIs: http://deb.debian.org/debian$|URIs: http://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}/|" \
+      /etc/apt/sources.list.d/debian.sources \
+    && sed -ri \
+      "s|URIs: http://deb.debian.org/debian-security$|URIs: http://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT}/|" \
+      /etc/apt/sources.list.d/debian.sources \
+    && printf '%s\n' \
+      'Acquire::Check-Valid-Until "false";' \
+      'Acquire::Retries "5";' \
+      > /etc/apt/apt.conf.d/99-ci-snapshot \
+    && apt-get update \
+    && apt-get install --yes --no-install-recommends \
+      build-essential \
+      ca-certificates \
+      curl \
+      dpkg-dev \
+      libbluetooth-dev \
+      libbz2-dev \
+      libc6-dev \
+      libdb-dev \
+      libffi-dev \
+      libgdbm-dev \
+      liblzma-dev \
+      libncursesw5-dev \
+      libreadline-dev \
+      libsqlite3-dev \
+      libssl-dev \
+      libzstd-dev \
+      uuid-dev \
+      xz-utils \
+      zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && chmod 0755 /usr/local/libexec/ci/fetch-verified
+
+RUN set -eu; \
+    /usr/local/libexec/ci/fetch-verified \
+      "https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz" \
+      "${PYTHON_SHA256}" \
+      /var/tmp/python.tar.xz; \
+    install -d /var/tmp/python /out; \
+    tar -xJf /var/tmp/python.tar.xz \
+      --strip-components=1 \
+      -C /var/tmp/python; \
+    cd /var/tmp/python; \
+    gnu_arch=$(dpkg-architecture --query DEB_BUILD_GNU_TYPE); \
+    ./configure \
+      --build="${gnu_arch}" \
+      --enable-loadable-sqlite-extensions \
+      --enable-option-checking=fatal \
+      --without-ensurepip; \
+    extra_cflags=$(dpkg-buildflags --get CFLAGS); \
+    ldflags=$(dpkg-buildflags --get LDFLAGS); \
+    make \
+      -j2 \
+      "EXTRA_CFLAGS=${extra_cflags}" \
+      "LDFLAGS=${ldflags} -Wl,--strip-all"; \
+    make \
+      DESTDIR=/out \
+      "EXTRA_CFLAGS=${extra_cflags}" \
+      "LDFLAGS=${ldflags} -Wl,--strip-all" \
+      install; \
+    python_series=${PYTHON_VERSION%.*}; \
+    rm -f \
+      /out/usr/local/bin/idle \
+      /out/usr/local/bin/idle3 \
+      "/out/usr/local/bin/idle${python_series}" \
+      /out/usr/local/bin/python \
+      /out/usr/local/bin/python-config \
+      /out/usr/local/bin/python3-config \
+      "/out/usr/local/bin/python${python_series}-config" \
+      /out/usr/local/lib/libpython*.a; \
+    rm -rf \
+      "/out/usr/local/include/python${python_series}" \
+      "/out/usr/local/lib/python${python_series}/ensurepip" \
+      "/out/usr/local/lib/python${python_series}/idlelib" \
+      "/out/usr/local/lib/python${python_series}/site-packages" \
+      "/out/usr/local/lib/python${python_series}/venv"; \
+    rm -rf "/out/usr/local/lib/python${python_series}"/config-*; \
+    rm -f /out/usr/local/lib/pkgconfig/python*.pc; \
+    install -d \
+      "/out/usr/local/lib/python${python_series}/site-packages" \
+      "/out/usr/local/share/licenses/python-${PYTHON_VERSION}"; \
+    install -m 0644 \
+      LICENSE \
+      "/out/usr/local/share/licenses/python-${PYTHON_VERSION}/LICENSE"; \
+    find /out/usr/local -depth \
+      \( \
+        \( -type d -a \( -name test -o -name tests \) \) \
+        -o \( -type f -a \( -name '*.pyc' -o -name '*.pyo' \) \) \
+      \) \
+      -exec rm -rf '{}' +; \
+    PYTHONDONTWRITEBYTECODE=1 \
+      PYTHONHOME=/out/usr/local \
+      /out/usr/local/bin/python3 \
+      -c 'import bz2, compression.zstd, ctypes, dbm.gnu, lzma, readline, sqlite3, ssl, sys, uuid, zlib; assert sys.version.split()[0] == sys.argv[1]' \
+      "${PYTHON_VERSION}"; \
+    rm -rf /var/tmp/python /var/tmp/python.tar.xz
+
+RUN set -eu; \
+    find /out/usr/local -type f -executable -exec ldd '{}' ';' \
+      | awk '/=>/ { \
+          so = $(NF - 1); \
+          if (index(so, "/out/usr/local/") == 1) next; \
+          gsub("^/(usr/)?", "", so); \
+          printf "*%s\n", so \
+        }' \
+      | sort -u \
+      | xargs -r dpkg-query --search \
+      | awk 'sub(":$", "", $1) { print $1 }' \
+      | sort -u \
+      > /out/python-runtime-packages
+
 FROM ${BASE_IMAGE} AS base-go-tools-builder
 
 ARG ACTIONLINT_VERSION
@@ -198,6 +321,7 @@ ARG CI_UID=1001
 ARG DEBIAN_SNAPSHOT
 ARG GITLEAKS_VERSION
 ARG MANIFEST_SHA=unknown
+ARG PYTHON_VERSION
 ARG SHELLSPEC_SHA256
 ARG SHELLSPEC_VERSION
 ARG SHFMT_VERSION
@@ -212,7 +336,8 @@ ENV CI=true \
 
 COPY images/common/fetch-verified /usr/local/libexec/ci/fetch-verified
 
-RUN test -n "${DEBIAN_SNAPSHOT}" \
+RUN --mount=from=base-python-builder,source=/out/python-runtime-packages,target=/var/tmp/python-runtime-packages,ro \
+    test -n "${DEBIAN_SNAPSHOT}" \
     && sed -ri \
       "s|URIs: http://deb.debian.org/debian$|URIs: http://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}/|" \
       /etc/apt/sources.list.d/debian.sources \
@@ -240,18 +365,22 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
       jq \
       locales \
       make \
+      netbase \
       openssl \
       procps \
-      python3 \
       ripgrep \
       sed \
       shellcheck \
       tar \
       tini \
+      tzdata \
       unzip \
       wget \
       xz-utils \
       zip \
+    && xargs -r \
+      apt-get install --yes --no-install-recommends \
+      < /var/tmp/python-runtime-packages \
     && sed -ri 's/^# (en_US.UTF-8 UTF-8)$/\1/' /etc/locale.gen \
     && locale-gen \
     && rm -rf /var/lib/apt/lists/* \
@@ -262,8 +391,10 @@ ENV LANG=en_US.utf8 \
 
 COPY --from=base-go-tools-builder /out/ /opt/ci-tools/
 COPY --from=base-git-builder /out/ /
+COPY --from=base-python-builder /out/usr/local/ /usr/local/
 
 RUN set -eu; \
+    test "$(python3 --version)" = "Python ${PYTHON_VERSION}"; \
     install -d /opt/ci-tools/bin; \
     ln -s \
       "../actionlint/${ACTIONLINT_VERSION}/actionlint" \
@@ -313,7 +444,8 @@ LABEL org.opencontainers.image.created="${BUILD_CREATED}" \
       org.opencontainers.image.revision="${BUILD_REVISION}" \
       org.opencontainers.image.source="https://github.com/myflow-xyz/ci-images" \
       org.opencontainers.image.title="MyFlow CI base" \
-      org.myflow.ci.manifest-sha="${MANIFEST_SHA}"
+      org.myflow.ci.manifest-sha="${MANIFEST_SHA}" \
+      org.myflow.ci.python-version="${PYTHON_VERSION}"
 
 USER ci
 WORKDIR /workspace
