@@ -5,7 +5,7 @@
   "description": "Locked generic Node tools for MyFlow CI images",
   "license": "AGPL-3.0-only",
   "dependencies": {
-    "@redocly/cli": "2.41.1",
-    "pnpm": "11.18.0"
+    "@redocly/cli": "2.46.1",
+    "pnpm": "11.21.0"
   }
 }
