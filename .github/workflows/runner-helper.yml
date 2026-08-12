@@ -39,6 +39,7 @@ jobs:
             --no-install-recommends \
             acl \
             git \
+            jq \
             shfmt
 
           shellspec_archive="$RUNNER_TEMP/shellspec.tar.gz"
@@ -69,7 +70,18 @@ jobs:
           "$RUNNER_TEMP/shellspec/shellspec"
 
       - name: Verify isolated Linux identity behavior
-        run: sudo scripts/tests/setup-runner-user_integration.sh
+        run: |
+          debian_image=$(
+            jq -r \
+              '.upstream_images.debian | "\(.reference)@\(.digest)"' \
+              manifests/versions.json
+          )
+          docker run --rm \
+            --network none \
+            --user 0:0 \
+            --volume "$GITHUB_WORKSPACE:/workspace:ro" \
+            "$debian_image" \
+            bash /workspace/scripts/tests/setup-runner-user_integration.sh
 
       - name: Verify isolated Linux bootstrap behavior
         run: sudo scripts/tests/setup-runner-from-scratch_integration.sh

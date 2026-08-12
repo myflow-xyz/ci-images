@@ -13,6 +13,7 @@ readonly runner_shell=/bin/bash
 readonly shared_group=mfci
 readonly shared_group_gid=2001
 readonly docker_group=docker
+readonly local_group_database=/etc/group
 dry_run=false
 
 usage() {
@@ -45,6 +46,78 @@ usage_error() {
 fail() {
 	printf '%s: %s\n' "$program_name" "$*" >&2
 	exit 1
+}
+
+declare -a local_shared_gid_records=()
+
+resolve_local_shared_gid_records() {
+	local group_record
+	local record_gid
+
+	[[ -r $local_group_database ]] ||
+		fail "local group database is unreadable: ${local_group_database}"
+	local_shared_gid_records=()
+	while IFS= read -r group_record || [[ -n $group_record ]]; do
+		IFS=: read -r _ _ record_gid _ <<<"$group_record"
+		if [[ $record_gid =~ ^[0-9]+$ ]] &&
+			((10#$record_gid == shared_group_gid)); then
+			local_shared_gid_records+=("$group_record")
+		fi
+	done <"$local_group_database"
+}
+
+resolve_shared_group_identity() {
+	local phase=$1
+	local resolved_gid
+	local resolved_gid_group
+	local resolved_local_gid
+	local resolved_local_group
+	local resolved_shared_gid
+	local resolved_shared_group
+	local -a keyed_gid_records=()
+	local -a shared_group_records=()
+
+	mapfile -t shared_group_records < <(getent group "$shared_group" || true)
+	mapfile -t keyed_gid_records < <(getent group "$shared_group_gid" || true)
+	resolve_local_shared_gid_records
+
+	if ((${#shared_group_records[@]} == 0)); then
+		[[ $phase == plan ]] ||
+			fail "shared group is unavailable: ${shared_group}"
+		((${#keyed_gid_records[@]} == 0 && \
+		${#local_shared_gid_records[@]} == 0)) ||
+			fail "cannot create ${shared_group}: GID ${shared_group_gid} is already in use"
+		shared_group_state=create
+		return
+	fi
+
+	((${#shared_group_records[@]} == 1)) ||
+		fail "shared group does not resolve uniquely: ${shared_group}"
+	IFS=: read -r resolved_shared_group _ resolved_shared_gid _ \
+		<<<"${shared_group_records[0]}"
+	[[ $resolved_shared_group == "$shared_group" &&
+		$resolved_shared_gid == "$shared_group_gid" ]] ||
+		fail "${shared_group} must use GID ${shared_group_gid}, found ${resolved_shared_gid}"
+
+	((${#keyed_gid_records[@]} == 1)) ||
+		fail "shared GID does not resolve uniquely: ${shared_group_gid}"
+	IFS=: read -r resolved_gid_group _ resolved_gid _ \
+		<<<"${keyed_gid_records[0]}"
+	[[ $resolved_gid_group == "$shared_group" &&
+		$resolved_gid == "$shared_group_gid" ]] ||
+		fail "shared GID ${shared_group_gid} resolves to an unexpected group: ${resolved_gid_group}"
+
+	((${#local_shared_gid_records[@]} <= 1)) ||
+		fail "shared GID does not resolve uniquely in ${local_group_database}: ${shared_group_gid}"
+	if ((${#local_shared_gid_records[@]} == 1)); then
+		IFS=: read -r resolved_local_group _ resolved_local_gid _ \
+			<<<"${local_shared_gid_records[0]}"
+		[[ $resolved_local_group == "$shared_group" &&
+			$resolved_local_gid == "$shared_group_gid" ]] ||
+			fail "shared GID ${shared_group_gid} has an unexpected local assignment: ${resolved_local_group}"
+	fi
+
+	shared_group_state=existing
 }
 
 while (($# > 0)); do
@@ -96,25 +169,11 @@ IFS=: read -r resolved_docker_group _ docker_group_gid _ \
 	fail "required group has an invalid identity: ${docker_group}"
 ((docker_group_gid != 0)) ||
 	fail "required group must not be root: ${docker_group}"
+((10#$docker_group_gid != shared_group_gid)) ||
+	fail "required group must not use shared GID ${shared_group_gid}: ${docker_group}"
 
-shared_group_state=existing
-declare -a shared_group_records=()
-mapfile -t shared_group_records < <(getent group "$shared_group" || true)
-if ((${#shared_group_records[@]} == 0)); then
-	declare -a shared_gid_records=()
-	mapfile -t shared_gid_records < <(getent group "$shared_group_gid" || true)
-	((${#shared_gid_records[@]} == 0)) ||
-		fail "cannot create ${shared_group}: GID ${shared_group_gid} is already in use"
-	shared_group_state=create
-else
-	((${#shared_group_records[@]} == 1)) ||
-		fail "shared group does not resolve uniquely: ${shared_group}"
-	IFS=: read -r resolved_shared_group _ resolved_shared_gid _ \
-		<<<"${shared_group_records[0]}"
-	[[ $resolved_shared_group == "$shared_group" &&
-		$resolved_shared_gid == "$shared_group_gid" ]] ||
-		fail "${shared_group} must use GID ${shared_group_gid}, found ${resolved_shared_gid}"
-fi
+shared_group_state=
+resolve_shared_group_identity plan
 
 user_state=existing
 declare -a user_records=()
@@ -248,13 +307,7 @@ IFS=: read -r verified_primary_group _ verified_group_gid _ \
 	$verified_group_gid == "$verified_primary_gid" ]] ||
 	fail "private primary group verification failed: ${runner_user}"
 
-verified_shared_group_record=$(getent group "$shared_group") ||
-	fail "shared group is unavailable: ${shared_group}"
-IFS=: read -r verified_shared_group _ verified_shared_gid _ \
-	<<<"$verified_shared_group_record"
-[[ $verified_shared_group == "$shared_group" &&
-	$verified_shared_gid == "$shared_group_gid" ]] ||
-	fail "shared group verification failed: ${shared_group}(${shared_group_gid})"
+resolve_shared_group_identity verify
 
 verified_groups=$(id -G "$runner_user") ||
 	fail "cannot verify configured groups: ${runner_user}"

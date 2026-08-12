@@ -31,10 +31,12 @@ runner_home=/opt/actions-runner
 shared_group=mfci
 shared_gid=2001
 docker_group=docker
+duplicate_group=mfci-duplicate-test
 runner_created=false
 runner_group_created=false
 shared_group_created=false
 docker_group_created=false
+duplicate_group_created=false
 
 cleanup() {
 	local status=$?
@@ -44,6 +46,9 @@ cleanup() {
 	fi
 	if $runner_group_created && getent group "$runner_user" >/dev/null; then
 		groupdel "$runner_user" >/dev/null 2>&1 || true
+	fi
+	if $duplicate_group_created && getent group "$duplicate_group" >/dev/null; then
+		groupdel "$duplicate_group" >/dev/null 2>&1 || true
 	fi
 	if $shared_group_created && getent group "$shared_group" >/dev/null; then
 		groupdel "$shared_group" >/dev/null 2>&1 || true
@@ -59,36 +64,67 @@ trap cleanup EXIT
 	fail "test user already exists: ${runner_user}"
 [[ -z $(getent group "$runner_user" || true) ]] ||
 	fail "test private group already exists: ${runner_user}"
+[[ -z $(getent group "$duplicate_group" || true) ]] ||
+	fail "test duplicate group already exists: ${duplicate_group}"
+[[ -z $(getent group "$docker_group" || true) ]] ||
+	fail "test Docker group already exists: ${docker_group}"
+[[ -z $(getent group "$shared_group" || true) ]] ||
+	fail "test shared group already exists: ${shared_group}"
+[[ -z $(getent group "$shared_gid" || true) ]] ||
+	fail "test shared GID is already assigned: ${shared_gid}"
 
-if docker_record=$(getent group "$docker_group"); then
-	IFS=: read -r _ _ docker_gid _ <<<"$docker_record"
-	[[ $docker_gid =~ ^[0-9]+$ && $docker_gid != 0 ]] ||
-		fail "docker group has an invalid GID: ${docker_record}"
-else
-	if missing_docker_output=$("$helper" --dry-run 2>&1); then
-		fail 'identity helper accepted a missing docker group'
-	fi
-	[[ $missing_docker_output == *'required group does not resolve uniquely: docker'* ]] ||
-		fail 'identity helper did not report the missing docker group'
-	groupadd "$docker_group"
-	docker_group_created=true
-	docker_record=$(getent group "$docker_group")
-	IFS=: read -r _ _ docker_gid _ <<<"$docker_record"
+if missing_docker_output=$("$helper" --dry-run 2>&1); then
+	fail 'identity helper accepted a missing docker group'
 fi
+[[ $missing_docker_output == *'required group does not resolve uniquely: docker'* ]] ||
+	fail 'identity helper did not report the missing docker group'
 
-if shared_record=$(getent group "$shared_group"); then
-	IFS=: read -r _ _ existing_shared_gid _ <<<"$shared_record"
-	[[ $existing_shared_gid == "$shared_gid" ]] ||
-		fail "existing shared group has the wrong GID: ${shared_record}"
-	expected_shared_state=existing
-	expected_shared_result=present
-else
-	[[ -z $(getent group "$shared_gid" || true) ]] ||
-		fail "shared GID is already assigned: ${shared_gid}"
-	expected_shared_state=create
-	expected_shared_result=created
-	shared_group_created=true
+groupadd --gid "$shared_gid" "$docker_group"
+docker_group_created=true
+if shared_docker_gid_output=$("$helper" 2>&1); then
+	fail 'identity helper accepted docker as the shared GID assignment'
 fi
+[[ $shared_docker_gid_output == *"required group must not use shared GID ${shared_gid}: docker"* ]] ||
+	fail 'identity helper did not report docker using the shared GID'
+[[ -z $(getent passwd "$runner_user" || true) ]] ||
+	fail 'identity helper created the runner user before rejecting docker GID reuse'
+groupdel "$docker_group"
+docker_group_created=false
+
+groupadd "$docker_group"
+docker_group_created=true
+docker_record=$(getent group "$docker_group")
+IFS=: read -r _ _ docker_gid _ <<<"$docker_record"
+
+groupadd --gid "$shared_gid" "$duplicate_group"
+duplicate_group_created=true
+if occupied_gid_output=$("$helper" 2>&1); then
+	fail 'identity helper accepted an occupied shared GID'
+fi
+[[ $occupied_gid_output == *"cannot create ${shared_group}: GID ${shared_gid} is already in use"* ]] ||
+	fail 'identity helper did not report the occupied shared GID'
+[[ -z $(getent passwd "$runner_user" || true) ]] ||
+	fail 'identity helper created the runner user before rejecting an occupied GID'
+groupdel "$duplicate_group"
+duplicate_group_created=false
+
+groupadd --gid "$shared_gid" "$shared_group"
+shared_group_created=true
+groupadd --non-unique --gid "$shared_gid" "$duplicate_group"
+duplicate_group_created=true
+if duplicate_gid_output=$("$helper" 2>&1); then
+	fail 'identity helper accepted a duplicate shared GID assignment'
+fi
+[[ $duplicate_gid_output == *"shared GID does not resolve uniquely in /etc/group: ${shared_gid}"* ]] ||
+	fail 'identity helper did not report the duplicate shared GID assignment'
+[[ -z $(getent passwd "$runner_user" || true) ]] ||
+	fail 'identity helper created the runner user before rejecting duplicate GID reuse'
+[[ -z $(getent group "$runner_user" || true) ]] ||
+	fail 'identity helper created the private group before rejecting duplicate GID reuse'
+groupdel "$duplicate_group"
+duplicate_group_created=false
+groupdel "$shared_group"
+shared_group_created=false
 
 home_preexisting=false
 if [[ -e $runner_home || -L $runner_home ]]; then
@@ -98,7 +134,7 @@ fi
 dry_run_output=$("$helper" --dry-run)
 [[ $dry_run_output == *'mode=dry-run user=ci-runner user-state=create home=/opt/actions-runner'* ]] ||
 	fail 'dry-run reported the wrong user plan'
-[[ $dry_run_output == *"shared-group=mfci(2001) shared-group-state=${expected_shared_state}"* ]] ||
+[[ $dry_run_output == *'shared-group=mfci(2001) shared-group-state=create'* ]] ||
 	fail 'dry-run reported the wrong shared-group plan'
 [[ $dry_run_output == *"docker-group=docker(${docker_gid}) docker-membership=missing shared-membership=missing"* ]] ||
 	fail 'dry-run reported the wrong membership plan'
@@ -108,15 +144,14 @@ dry_run_output=$("$helper" --dry-run)
 	fail 'dry-run created the runner user'
 [[ -z $(getent group "$runner_user" || true) ]] ||
 	fail 'dry-run created the private group'
-if [[ $expected_shared_state == create ]]; then
-	[[ -z $(getent group "$shared_group" || true) ]] ||
-		fail 'dry-run created the shared group'
-fi
+[[ -z $(getent group "$shared_group" || true) ]] ||
+	fail 'dry-run created the shared group'
 
 runner_created=true
 runner_group_created=true
+shared_group_created=true
 apply_output=$("$helper")
-[[ $apply_output == *"verified status=ok user=created shared-group=${expected_shared_result} memberships=present home=/opt/actions-runner home-directory=unmanaged"* ]] ||
+[[ $apply_output == *'verified status=ok user=created shared-group=created memberships=present home=/opt/actions-runner home-directory=unmanaged'* ]] ||
 	fail 'apply verification was not reported'
 
 runner_record=$(getent passwd "$runner_user")

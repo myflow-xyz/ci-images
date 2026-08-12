@@ -28,11 +28,20 @@ The `docker` group grants control of the Docker daemon and is effectively
 root-equivalent on a typical rootful Docker host. Add only the dedicated runner
 account, and do not reuse `docker` as the bind-mount permission group.
 
-When `mfci` is absent, the helper creates it with GID `2001` only if that GID is
-unused. A new `ci-runner` gets a private primary group, `/bin/bash`, the fixed
-home metadata, and supplementary membership in `docker` and `mfci`. An existing
-account is accepted only when those fixed identity fields already match; any
-missing supplementary memberships are appended without removing other groups.
+When `mfci` is absent, the helper creates it with GID `2001` only if a keyed NSS
+lookup reports that GID unused. When `mfci` exists, keyed name and GID lookups
+must both resolve to `mfci:2001`. The local `/etc/group` database must contain
+at most that canonical assignment; local aliases and any `docker:2001`
+assignment are rejected. A new `ci-runner` gets a private primary group,
+`/bin/bash`, the fixed home metadata, and supplementary membership in `docker`
+and `mfci`. An existing account is accepted only when those fixed identity
+fields already match; any missing supplementary memberships are appended
+without removing other groups.
+
+Generic NSS cannot prove directory-wide GID uniqueness when a provider does
+not support enumeration. Identity-provider operators must therefore enforce
+unique remote GID assignments. The helper validates effective keyed NSS
+resolution and the local group database; it does not enumerate remote groups.
 
 The helper does not create the home directory, install Docker, create the
 `docker` group, install packages, download or register a runner, configure
@@ -63,6 +72,6 @@ Continue with the
 
 - `tests/setup-runner-user_spec.sh` checks the fixed CLI contract through
   ShellSpec.
-- `tests/setup-runner-user_integration.sh` verifies dry-run behavior, exact
-  identity creation, group membership, home-directory separation, and
-  idempotent reruns on Linux.
+- `tests/setup-runner-user_integration.sh` verifies GID isolation, dry-run
+  behavior, exact identity creation, group membership, home-directory
+  separation, and idempotent reruns on Linux.
