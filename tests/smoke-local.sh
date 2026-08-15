@@ -103,6 +103,8 @@ if [[ $target == all || $target == node ]]; then
 		--env \
 		"EXPECTED_NPM_BRACE_EXPANSION_VERSION=$(json '.tools.node.npm.dependency_replacements["brace-expansion"]')" \
 		--env \
+		"EXPECTED_NPM_IP_ADDRESS_VERSION=$(json '.tools.node.npm.dependency_replacements["ip-address"]')" \
+		--env \
 		"EXPECTED_NPM_TAR_VERSION=$(json '.tools.node.npm.dependency_replacements.tar')" \
 		--env "EXPECTED_NPM_VERSION=$(json '.tools.node.npm.version')" \
 		--env "EXPECTED_PNPM_VERSION=$(json '.tools.node.pnpm')" \

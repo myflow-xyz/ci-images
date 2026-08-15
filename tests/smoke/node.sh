@@ -7,6 +7,7 @@ expected_pnpm=${EXPECTED_PNPM_VERSION:?EXPECTED_PNPM_VERSION is not set}
 : "${EXPECTED_MARKDOWNLINT_VERSION:?EXPECTED_MARKDOWNLINT_VERSION is not set}"
 : "${EXPECTED_NODE_BUNDLE_VERSION:?EXPECTED_NODE_BUNDLE_VERSION is not set}"
 : "${EXPECTED_NPM_BRACE_EXPANSION_VERSION:?EXPECTED_NPM_BRACE_EXPANSION_VERSION is not set}"
+: "${EXPECTED_NPM_IP_ADDRESS_VERSION:?EXPECTED_NPM_IP_ADDRESS_VERSION is not set}"
 : "${EXPECTED_NPM_TAR_VERSION:?EXPECTED_NPM_TAR_VERSION is not set}"
 : "${EXPECTED_NPM_VERSION:?EXPECTED_NPM_VERSION is not set}"
 : "${EXPECTED_REDOCLY_VERSION:?EXPECTED_REDOCLY_VERSION is not set}"
@@ -22,6 +23,8 @@ expected_store="/var/cache/pnpm/store/v${expected_pnpm%%.*}"
 [[ $(npm --version) == "$EXPECTED_NPM_VERSION" ]]
 [[ $(node --print \
 	"require('${npm_root}/brace-expansion/package.json').version") == "$EXPECTED_NPM_BRACE_EXPANSION_VERSION" ]]
+[[ $(node --print \
+	"require('${npm_root}/ip-address/package.json').version") == "$EXPECTED_NPM_IP_ADDRESS_VERSION" ]]
 [[ $(node --print \
 	"require('${npm_root}/tar/package.json').version") == "$EXPECTED_NPM_TAR_VERSION" ]]
 [[ $(pnpm --version) == "$expected_pnpm" ]]

@@ -7,7 +7,7 @@ generation, analysis, test, and release jobs.
 
 The initial image contract includes:
 
-- Go 1.26.5, installed from the official per-architecture archive after
+- Go 1.26.6, installed from the official per-architecture archive after
   SHA-256 verification, with local toolchain selection and the JSON v2
   experiment enabled;
 - a C compiler, libc development headers, and native build prerequisites for

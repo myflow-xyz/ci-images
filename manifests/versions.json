@@ -9,7 +9,7 @@
     "uid": 1001,
     "gid": 2001
   },
-  "debian_snapshot": "20260727T000000Z",
+  "debian_snapshot": "20260814T000000Z",
   "upstream_images": {
     "dockerfile_frontend": {
       "reference": "docker.io/docker/dockerfile:1.7",
@@ -109,16 +109,16 @@
       }
     },
     "go": {
-      "runtime": "1.26.5",
+      "runtime": "1.26.6",
       "source": "https://go.dev/dl/",
       "assets": {
         "amd64": {
-          "url": "https://go.dev/dl/go1.26.5.linux-amd64.tar.gz",
-          "sha256": "5c2c3b16caefa1d968a94c1daca04a7ca301a496d9b086e17ad77bb81393f053"
+          "url": "https://go.dev/dl/go1.26.6.linux-amd64.tar.gz",
+          "sha256": "708effb774be8237570d0add163225abbdfaf4fca28b2611df167beba4feef89"
         },
         "arm64": {
-          "url": "https://go.dev/dl/go1.26.5.linux-arm64.tar.gz",
-          "sha256": "fe4789e92b1f33358680864bbe8704289e7bb5fc207d80623c308935bd696d49"
+          "url": "https://go.dev/dl/go1.26.6.linux-arm64.tar.gz",
+          "sha256": "d0507e9e9d7fe012aae570108cbd76c15de879e17130ab8cb90d4d7445cb1f2e"
         }
       },
       "hurl": {
@@ -177,9 +177,10 @@
           "sha256": "5dbb86c71d07a1957f2e90734092dd6a58bdcd9ebc2d8d41ca1c6e6a21d364e1"
         },
         "lockfile": "images/node/npm-runtime/package-lock.json",
-        "lockfile_sha256": "9ef8e7ee84af3fda84ae9c880f8e6446782fb07c6c79014f5af72f395b742263",
+        "lockfile_sha256": "faba218e4f54eccd27897458d38259a1da9bc205bc9ca9e92b2f18f63ca27ad2",
         "dependency_replacements": {
           "brace-expansion": "5.0.9",
+          "ip-address": "10.3.1",
           "tar": "7.5.22"
         }
       },

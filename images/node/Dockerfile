@@ -14,6 +14,7 @@ ARG NODE_TOOLS_BUNDLE_VERSION
 ARG NODE_VERSION
 ARG NPM_ASSET_URL
 ARG NPM_BRACE_EXPANSION_VERSION
+ARG NPM_IP_ADDRESS_VERSION
 ARG NPM_SHA256
 ARG NPM_TAR_VERSION
 ARG NPM_VERSION
@@ -72,14 +73,21 @@ RUN --mount=from=node-runtime,source=/usr/local/lib/node_modules/npm,target=/usr
       "require('/var/tmp/npm-runtime/node_modules/brace-expansion/package.json').version")" \
       = "${NPM_BRACE_EXPANSION_VERSION}"; \
     test "$(node --print \
+      "require('/var/tmp/npm-runtime/node_modules/ip-address/package.json').version")" \
+      = "${NPM_IP_ADDRESS_VERSION}"; \
+    test "$(node --print \
       "require('/var/tmp/npm-runtime/node_modules/tar/package.json').version")" \
       = "${NPM_TAR_VERSION}"; \
     rm -rf \
       /var/tmp/npm-package/node_modules/brace-expansion \
+      /var/tmp/npm-package/node_modules/ip-address \
       /var/tmp/npm-package/node_modules/tar; \
     mv \
       /var/tmp/npm-runtime/node_modules/brace-expansion \
       /var/tmp/npm-package/node_modules/brace-expansion; \
+    mv \
+      /var/tmp/npm-runtime/node_modules/ip-address \
+      /var/tmp/npm-package/node_modules/ip-address; \
     mv \
       /var/tmp/npm-runtime/node_modules/tar \
       /var/tmp/npm-package/node_modules/tar; \
@@ -98,6 +106,9 @@ RUN --mount=from=node-runtime,source=/usr/local/lib/node_modules/npm,target=/usr
     test "$(node --print \
       "require('/opt/ci-tools/npm/${NPM_VERSION}/node_modules/brace-expansion/package.json').version")" \
       = "${NPM_BRACE_EXPANSION_VERSION}"; \
+    test "$(node --print \
+      "require('/opt/ci-tools/npm/${NPM_VERSION}/node_modules/ip-address/package.json').version")" \
+      = "${NPM_IP_ADDRESS_VERSION}"; \
     test "$(node --print \
       "require('/opt/ci-tools/npm/${NPM_VERSION}/node_modules/tar/package.json').version")" \
       = "${NPM_TAR_VERSION}"
