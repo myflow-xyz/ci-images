@@ -264,6 +264,8 @@ node)
 		--build-arg \
 		"NPM_BRACE_EXPANSION_VERSION=$(json '.tools.node.npm.dependency_replacements["brace-expansion"]')" \
 		--build-arg \
+		"NPM_IP_ADDRESS_VERSION=$(json '.tools.node.npm.dependency_replacements["ip-address"]')" \
+		--build-arg \
 		"NPM_SHA256=$(json '.tools.node.npm.asset.sha256')" \
 		--build-arg \
 		"NPM_TAR_VERSION=$(json '.tools.node.npm.dependency_replacements.tar')" \

@@ -181,6 +181,10 @@ assert_package_version \
 	"$(jq -r '.tools.node.npm.dependency_replacements["brace-expansion"]' "$manifest")"
 assert_package_version \
 	images/node/npm-runtime/package-lock.json \
+	ip-address \
+	"$(jq -r '.tools.node.npm.dependency_replacements["ip-address"]' "$manifest")"
+assert_package_version \
+	images/node/npm-runtime/package-lock.json \
 	tar \
 	"$(jq -r '.tools.node.npm.dependency_replacements.tar' "$manifest")"
 assert_package_version \
