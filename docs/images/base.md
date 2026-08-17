@@ -42,8 +42,8 @@ The base image includes:
 - CPython 3.14.7 and its standard-library modules for repository-owned CI
   automation;
 - structured-data and diagnosis tools: `jq`, `yq`, ripgrep, and GitHub CLI;
-- shared policy tools: OSV-Scanner 2.5.0, gitleaks, actionlint, shfmt,
-  ShellCheck, and ShellSpec;
+- shared policy tools: OSV-Scanner 2.5.1, Trivy 0.74.0, gitleaks, actionlint,
+  shfmt, ShellCheck, and ShellSpec;
 - `tini` for descendants that require subprocess reaping.
 
 Python is built from the checksum-pinned CPython 3.14.7 source release against
@@ -53,16 +53,17 @@ support, development headers, or third-party Python packages.
 
 Git is built from a checksum-pinned upstream source release so the protected
 system configuration can scope trust to GitHub's workspace tree. actionlint,
-gitleaks, shfmt, and yq are built from exact module releases with Go 1.26.6.
-Narrow dependency overrides used to remove known vulnerabilities from released
-tools are recorded in the version manifest and verified by image smoke tests.
-Go tools are installed into immutable versioned directories and exposed through
-stable links in `/opt/ci-tools/bin`. Compilers are build inputs and are not
-retained in this image.
+gitleaks, OSV-Scanner, shfmt, and yq are built from exact module releases with
+Go 1.26.6. Narrow dependency overrides used to remove known vulnerabilities
+from released tools are recorded in the version manifest and verified by image
+smoke tests. Go tools are installed into immutable versioned directories and
+exposed through stable links in `/opt/ci-tools/bin`. Compilers are build inputs
+and are not retained in this image.
 
-OSV-Scanner is installed from checksum-pinned upstream Linux release binaries
-for both supported architectures. Vulnerability data is not embedded in the
-image; online scans still query OSV-Scanner's external data services.
+Trivy is installed from checksum-pinned upstream Linux release archives for
+both supported architectures. Vulnerability data is not embedded in the image;
+online scans by OSV-Scanner and Trivy still query or download their external
+data sources.
 
 ## Runtime contract
 

@@ -161,7 +161,7 @@ jobs:
         run: tests/dockerfiles.sh
 
       - name: Build native images
-        run: tests/build-local.sh all
+        run: tests/build-local-image.sh all
 
       - name: Run native image smoke tests
         run: tests/smoke-local.sh all
@@ -398,7 +398,7 @@ jobs:
           TRIVY_USERNAME: ${{ github.actor }}
         with:
           image-ref: ${{ matrix.image.ref }}
-          version: v0.70.0
+          version: v0.74.0
           scanners: vuln
           vuln-type: os,library
           severity: HIGH,CRITICAL

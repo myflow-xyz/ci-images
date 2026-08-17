@@ -23,8 +23,8 @@ pgvector/pgvector:0.8.2-pg18-bookworm@<digest>
 `node:24.19.0-bookworm-slim` image without adding Node to `ci-base`.
 
 - `ghcr.io/myflow-xyz/ci-base`: operating-system utilities, Python 3.14.7
-  standard-library scripting, OSV-Scanner, and runtime-independent repository
-  policy tools.
+  standard-library scripting, OSV-Scanner, Trivy, and runtime-independent
+  repository policy tools.
 - `ghcr.io/myflow-xyz/ci-go`: Go toolchain, native race-test prerequisites,
   and reusable Go CI executables.
 - `ghcr.io/myflow-xyz/ci-node`: generic Node.js, Markdown, and OpenAPI jobs
@@ -61,6 +61,16 @@ job image.
 Browse [the documentation index](docs/index.md) for detailed image contracts.
 Use [the usage guide](docs/usage.md) to select and pin an image, and follow
 [the release guide](docs/release.md) when publishing a stable suite version.
+
+## Local image verification
+
+After building a target with `tests/build-local-image.sh <target>`, use
+`tests/scan-local-image.sh <target>` to scan its local `ci-<target>:test` image
+before pushing. The helper requires Trivy in the developer environment,
+restricts the image source to the local Docker daemon, and applies the publish
+policy: fixed HIGH or CRITICAL operating-system and library vulnerabilities
+fail the scan. Use `all` to scan all six local images. Local verification covers
+the host platform; CI remains responsible for both published architectures.
 
 ## Design boundaries
 

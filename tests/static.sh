@@ -52,6 +52,8 @@ required_files=(
 	manifests/versions.json
 	tests/publish.sh
 	tests/release.sh
+	tests/scan-local-image.sh
+	tests/scan-local-image_spec.sh
 )
 
 for relative_path in "${required_files[@]}"; do
@@ -79,6 +81,7 @@ done < <(
       ["osv-scanner", .tools.base.osv_scanner.version],
       ["shellspec", .tools.base.shellspec.version],
       ["shfmt", .tools.base.shfmt.version],
+      ["Trivy", .tools.base.trivy.version],
       ["yq", .tools.base.yq.version],
       ["Go", .tools.go.runtime],
       ["Hurl", .tools.go.hurl.version],
@@ -152,12 +155,17 @@ jq --exit-status '
       ("https://www.python.org/ftp/python/" +
        $python.version + "/Python-" + $python.version + ".tar.xz")) and
   (.tools.base.osv_scanner as $osv |
-    $osv.assets.amd64.url ==
-      ("https://github.com/google/osv-scanner/releases/download/v" +
-       $osv.version + "/osv-scanner_linux_amd64") and
-    $osv.assets.arm64.url ==
-      ("https://github.com/google/osv-scanner/releases/download/v" +
-       $osv.version + "/osv-scanner_linux_arm64")) and
+    $osv.module ==
+      "github.com/google/osv-scanner/v2/cmd/osv-scanner") and
+  (.tools.base.trivy as $trivy |
+    $trivy.assets.amd64.url ==
+      ("https://github.com/aquasecurity/trivy/releases/download/v" +
+       $trivy.version + "/trivy_" + $trivy.version +
+       "_Linux-64bit.tar.gz") and
+    $trivy.assets.arm64.url ==
+      ("https://github.com/aquasecurity/trivy/releases/download/v" +
+       $trivy.version + "/trivy_" + $trivy.version +
+       "_Linux-ARM64.tar.gz")) and
   (.tools.go.hurl as $hurl |
     $hurl.assets.amd64.url ==
       ("https://github.com/Orange-OpenSource/hurl/releases/download/" +
@@ -318,5 +326,6 @@ fi
 
 "${repository_root}/tests/release.sh"
 "${repository_root}/tests/publish.sh"
+"${repository_root}/tests/scan-local-image_spec.sh"
 
 printf 'static verification passed\n'

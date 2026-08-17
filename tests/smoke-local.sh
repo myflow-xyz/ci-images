@@ -54,6 +54,7 @@ if [[ $target == all || $target == base ]]; then
 		"EXPECTED_OSV_SCANNER_VERSION=$(json '.tools.base.osv_scanner.version')" \
 		--env "EXPECTED_PYTHON_VERSION=$(json '.tools.base.python.version')" \
 		--env "EXPECTED_SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
+		--env "EXPECTED_TRIVY_VERSION=$(json '.tools.base.trivy.version')" \
 		--env "EXPECTED_YQ_VERSION=$(json '.tools.base.yq.version')" \
 		--env \
 		"EXPECTED_YQ_X_TEXT_VERSION=$(json '.tools.base.yq.dependency_overrides["golang.org/x/text"]')"

@@ -15,9 +15,10 @@ and upstream image digests.
 | `CPython` | `3.14.7` |
 | `actionlint` | `1.7.12` |
 | `gitleaks` | `8.30.1` |
-| `osv-scanner` | `2.5.0` |
+| `osv-scanner` | `2.5.1` |
 | `shellspec` | `0.28.1` |
 | `shfmt` | `3.13.1` |
+| `Trivy` | `0.74.0` |
 | `yq` | `4.53.3` |
 
 ## `ci-go`
