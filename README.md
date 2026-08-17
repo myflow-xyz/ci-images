@@ -62,6 +62,16 @@ Browse [the documentation index](docs/index.md) for detailed image contracts.
 Use [the usage guide](docs/usage.md) to select and pin an image, and follow
 [the release guide](docs/release.md) when publishing a stable suite version.
 
+## Local image verification
+
+After building a target with `tests/build-local-image.sh <target>`, use
+`tests/scan-local-image.sh <target>` to scan its local `ci-<target>:test` image
+before pushing. The helper requires Trivy in the developer environment,
+restricts the image source to the local Docker daemon, and applies the publish
+policy: fixed HIGH or CRITICAL operating-system and library vulnerabilities
+fail the scan. Use `all` to scan all six local images. Local verification covers
+the host platform; CI remains responsible for both published architectures.
+
 ## Design boundaries
 
 - Application lockfiles and Go modules remain authoritative.
