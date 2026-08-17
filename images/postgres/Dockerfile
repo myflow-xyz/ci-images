@@ -49,8 +49,8 @@ RUN set -eu; \
     test "$(/usr/local/go/bin/go version | awk '{print $3}')" \
       = "go${GO_VERSION}"
 
-RUN --mount=type=cache,target=/var/cache/go/mod \
-    --mount=type=cache,target=/var/cache/go/build \
+RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
+    --mount=type=cache,target=/var/cache/go/build,sharing=locked \
     set -eu; \
     install -d /out; \
     CGO_ENABLED=0 \

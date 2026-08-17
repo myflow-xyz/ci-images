@@ -91,8 +91,8 @@ RUN set -eu; \
     hurlfmt --version | grep --fixed-strings "hurlfmt ${HURL_VERSION}" >/dev/null; \
     rm -f /var/tmp/hurl.tar.gz
 
-RUN --mount=type=cache,target=/var/cache/go/mod \
-    --mount=type=cache,target=/var/cache/go/build \
+RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
+    --mount=type=cache,target=/var/cache/go/build,sharing=locked \
     set -eu; \
     build_tool() { \
       name=$1; \
