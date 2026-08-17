@@ -301,6 +301,15 @@ while IFS= read -r dockerfile; do
 		fail "${dockerfile#"$repository_root/"} has an unpinned frontend"
 done < <(find "${repository_root}/images" -name Dockerfile -type f | sort)
 
+while IFS= read -r cache_mount; do
+	[[ $cache_mount == *,sharing=locked* ]] ||
+		fail "unlocked Go build cache mount: ${cache_mount}"
+done < <(
+	git -C "$repository_root" grep -n \
+		-e '--mount=type=cache,target=/var/cache/go/' \
+		-- 'images/*/Dockerfile'
+)
+
 if git -C "$repository_root" grep -nE \
 	'mf-ci-|image-hub' \
 	-- README.md docs images manifests; then
