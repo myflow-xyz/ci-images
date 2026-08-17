@@ -37,6 +37,7 @@ for command in \
 	bash \
 	gh \
 	git \
+	git-lfs \
 	gitleaks \
 	jq \
 	make \
@@ -49,6 +50,23 @@ for command in \
 	yq; do
 	command -v "$command" >/dev/null
 done
+
+for package in \
+	ca-certificates \
+	coreutils \
+	curl \
+	git \
+	git-lfs \
+	grep \
+	jq \
+	openssl \
+	sed \
+	tar \
+	unzip; do
+	[[ $(dpkg-query --show --showformat='${db:Status-Status}' "$package") == installed ]]
+done
+
+git lfs version >/dev/null
 
 [[ $(command -v python3) == /usr/local/bin/python3 ]]
 [[ $(python3 --version) == "Python ${expected_python}" ]]

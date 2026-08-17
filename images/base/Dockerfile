@@ -385,6 +385,7 @@ RUN --mount=from=base-python-builder,source=/out/python-runtime-packages,target=
       gawk \
       gh \
       git \
+      git-lfs \
       grep \
       gzip \
       jq \

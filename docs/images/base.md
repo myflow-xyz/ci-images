@@ -37,8 +37,8 @@ The base image includes:
 
 - shell and build utilities: `sh`, Bash, Make, coreutils, findutils, diffutils,
   grep, sed, awk, and `procps`;
-- source and transfer utilities: Git, CA certificates, curl, wget, OpenSSL, tar,
-  gzip, xz, zip, and unzip;
+- source and transfer utilities: Git, Git LFS, CA certificates, curl, wget,
+  OpenSSL, tar, gzip, xz, zip, and unzip;
 - CPython 3.14.7 and its standard-library modules for repository-owned CI
   automation;
 - structured-data and diagnosis tools: `jq`, `yq`, ripgrep, and GitHub CLI;
