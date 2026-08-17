@@ -7,6 +7,7 @@ overview.
 
 ## Operator guides
 
+- [Version inventory by image](versions.md)
 - [Using the CI images](usage.md), including
   [self-hosted bind-mount permissions](usage.md#self-hosted-bind-mount-permissions)
 - [Releasing the CI images](release.md)

@@ -11,6 +11,7 @@ expected_python=${EXPECTED_PYTHON_VERSION:?EXPECTED_PYTHON_VERSION is not set}
 : "${EXPECTED_GITLEAKS_X_CRYPTO_VERSION:?EXPECTED_GITLEAKS_X_CRYPTO_VERSION is not set}"
 : "${EXPECTED_GITLEAKS_XZ_VERSION:?EXPECTED_GITLEAKS_XZ_VERSION is not set}"
 : "${EXPECTED_GITLEAKS_VERSION:?EXPECTED_GITLEAKS_VERSION is not set}"
+: "${EXPECTED_OSV_SCANNER_VERSION:?EXPECTED_OSV_SCANNER_VERSION is not set}"
 : "${EXPECTED_SHFMT_VERSION:?EXPECTED_SHFMT_VERSION is not set}"
 : "${EXPECTED_YQ_VERSION:?EXPECTED_YQ_VERSION is not set}"
 : "${EXPECTED_YQ_X_TEXT_VERSION:?EXPECTED_YQ_X_TEXT_VERSION is not set}"
@@ -36,9 +37,11 @@ for command in \
 	bash \
 	gh \
 	git \
+	git-lfs \
 	gitleaks \
 	jq \
 	make \
+	osv-scanner \
 	python3 \
 	rg \
 	shellcheck \
@@ -47,6 +50,23 @@ for command in \
 	yq; do
 	command -v "$command" >/dev/null
 done
+
+for package in \
+	ca-certificates \
+	coreutils \
+	curl \
+	git \
+	git-lfs \
+	grep \
+	jq \
+	openssl \
+	sed \
+	tar \
+	unzip; do
+	[[ $(dpkg-query --show --showformat='${db:Status-Status}' "$package") == installed ]]
+done
+
+git lfs version >/dev/null
 
 [[ $(command -v python3) == /usr/local/bin/python3 ]]
 [[ $(python3 --version) == "Python ${expected_python}" ]]
@@ -82,6 +102,12 @@ actionlint --version 2>&1 |
 	grep --fixed-strings "$EXPECTED_ACTIONLINT_VERSION" >/dev/null
 [[ $(git version) == "git version ${EXPECTED_GIT_VERSION}" ]]
 [[ $(gitleaks version) == "$EXPECTED_GITLEAKS_VERSION" ]]
+osv-scanner --version |
+	grep \
+		--line-regexp \
+		--fixed-strings \
+		"osv-scanner version: ${EXPECTED_OSV_SCANNER_VERSION}" \
+		>/dev/null
 grep \
 	--binary-files=text \
 	--fixed-strings \
@@ -117,6 +143,7 @@ done
 for command in \
 	actionlint \
 	gitleaks \
+	osv-scanner \
 	shellspec \
 	shfmt \
 	yq; do

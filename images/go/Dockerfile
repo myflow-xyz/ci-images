@@ -11,6 +11,7 @@ ARG GOIMPORTS_VERSION
 ARG GOOSE_VERSION
 ARG GOOSE_X_CRYPTO_VERSION
 ARG GOOSE_GRPC_VERSION
+ARG GOOSE_MODERNC_LIBC_VERSION
 ARG GOOSE_X_NET_VERSION
 ARG GOVULNCHECK_VERSION
 ARG GO_SHA256_AMD64
@@ -130,7 +131,8 @@ RUN --mount=type=cache,target=/var/cache/go/mod \
       "${GOOSE_VERSION}" \
       "golang.org/x/crypto@${GOOSE_X_CRYPTO_VERSION}" \
       "golang.org/x/net@${GOOSE_X_NET_VERSION}" \
-      "google.golang.org/grpc@${GOOSE_GRPC_VERSION}"; \
+      "google.golang.org/grpc@${GOOSE_GRPC_VERSION}" \
+      "modernc.org/libc@${GOOSE_MODERNC_LIBC_VERSION}"; \
     build_tool \
       golangci-lint \
       github.com/golangci/golangci-lint/v2/cmd/golangci-lint \

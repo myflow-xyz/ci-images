@@ -6,6 +6,7 @@ expected_go=${EXPECTED_GO_VERSION:?EXPECTED_GO_VERSION is not set}
 expected_sqlc=${EXPECTED_SQLC_VERSION:?EXPECTED_SQLC_VERSION is not set}
 expected_goose=${EXPECTED_GOOSE_VERSION:?EXPECTED_GOOSE_VERSION is not set}
 : "${EXPECTED_GOOSE_GRPC_VERSION:?EXPECTED_GOOSE_GRPC_VERSION is not set}"
+: "${EXPECTED_GOOSE_MODERNC_LIBC_VERSION:?EXPECTED_GOOSE_MODERNC_LIBC_VERSION is not set}"
 : "${EXPECTED_GOOSE_X_CRYPTO_VERSION:?EXPECTED_GOOSE_X_CRYPTO_VERSION is not set}"
 : "${EXPECTED_GOOSE_X_NET_VERSION:?EXPECTED_GOOSE_X_NET_VERSION is not set}"
 : "${EXPECTED_GOLANGCI_LINT_VERSION:?EXPECTED_GOLANGCI_LINT_VERSION is not set}"
@@ -117,6 +118,10 @@ assert_dependency_version \
 	goose \
 	google.golang.org/grpc \
 	"$EXPECTED_GOOSE_GRPC_VERSION"
+assert_dependency_version \
+	goose \
+	modernc.org/libc \
+	"$EXPECTED_GOOSE_MODERNC_LIBC_VERSION"
 assert_dependency_version \
 	golangci-lint \
 	golang.org/x/text \
