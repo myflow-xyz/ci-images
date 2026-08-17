@@ -13,6 +13,7 @@ expected_python=${EXPECTED_PYTHON_VERSION:?EXPECTED_PYTHON_VERSION is not set}
 : "${EXPECTED_GITLEAKS_VERSION:?EXPECTED_GITLEAKS_VERSION is not set}"
 : "${EXPECTED_OSV_SCANNER_VERSION:?EXPECTED_OSV_SCANNER_VERSION is not set}"
 : "${EXPECTED_SHFMT_VERSION:?EXPECTED_SHFMT_VERSION is not set}"
+: "${EXPECTED_TRIVY_VERSION:?EXPECTED_TRIVY_VERSION is not set}"
 : "${EXPECTED_YQ_VERSION:?EXPECTED_YQ_VERSION is not set}"
 : "${EXPECTED_YQ_X_TEXT_VERSION:?EXPECTED_YQ_X_TEXT_VERSION is not set}"
 
@@ -47,6 +48,7 @@ for command in \
 	shellcheck \
 	shellspec \
 	shfmt \
+	trivy \
 	yq; do
 	command -v "$command" >/dev/null
 done
@@ -108,6 +110,12 @@ osv-scanner --version |
 		--fixed-strings \
 		"osv-scanner version: ${EXPECTED_OSV_SCANNER_VERSION}" \
 		>/dev/null
+trivy --version |
+	grep \
+		--line-regexp \
+		--fixed-strings \
+		"Version: ${EXPECTED_TRIVY_VERSION}" \
+		>/dev/null
 grep \
 	--binary-files=text \
 	--fixed-strings \
@@ -131,7 +139,7 @@ grep \
 	"$(command -v yq)" \
 	>/dev/null
 
-for command in actionlint gitleaks shfmt yq; do
+for command in actionlint gitleaks osv-scanner shfmt trivy yq; do
 	grep \
 		--binary-files=text \
 		--fixed-strings \
@@ -146,6 +154,7 @@ for command in \
 	osv-scanner \
 	shellspec \
 	shfmt \
+	trivy \
 	yq; do
 	[[ $(command -v "$command") == "/opt/ci-tools/bin/${command}" ]]
 done

@@ -206,11 +206,12 @@ ARG GITLEAKS_XZ_VERSION
 ARG GO_SHA256_AMD64
 ARG GO_SHA256_ARM64
 ARG GO_VERSION
-ARG OSV_SCANNER_SHA256_AMD64
-ARG OSV_SCANNER_SHA256_ARM64
 ARG OSV_SCANNER_VERSION
 ARG SHFMT_VERSION
 ARG TARGETARCH
+ARG TRIVY_SHA256_AMD64
+ARG TRIVY_SHA256_ARM64
+ARG TRIVY_VERSION
 ARG YQ_VERSION
 ARG YQ_X_TEXT_VERSION
 
@@ -303,6 +304,10 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       "github.com/ulikunitz/xz@${GITLEAKS_XZ_VERSION}" \
       "golang.org/x/crypto@${GITLEAKS_X_CRYPTO_VERSION}"; \
     build_tool \
+      osv-scanner \
+      github.com/google/osv-scanner/v2/cmd/osv-scanner \
+      "v${OSV_SCANNER_VERSION}"; \
+    build_tool \
       shfmt \
       mvdan.cc/sh/v3/cmd/shfmt \
       "v${SHFMT_VERSION}"; \
@@ -314,24 +319,32 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
 
 RUN set -eu; \
     case "${TARGETARCH}" in \
-      amd64) osv_scanner_sha256="${OSV_SCANNER_SHA256_AMD64}" ;; \
-      arm64) osv_scanner_sha256="${OSV_SCANNER_SHA256_ARM64}" ;; \
+      amd64) \
+        trivy_architecture=64bit; \
+        trivy_sha256="${TRIVY_SHA256_AMD64}" \
+        ;; \
+      arm64) \
+        trivy_architecture=ARM64; \
+        trivy_sha256="${TRIVY_SHA256_ARM64}" \
+        ;; \
       *) \
         printf 'unsupported target architecture: %s\n' "${TARGETARCH}" >&2; \
         exit 1 \
         ;; \
     esac; \
-    osv_scanner_directory="/out/osv-scanner/${OSV_SCANNER_VERSION}"; \
-    install -d "${osv_scanner_directory}"; \
+    trivy_directory="/out/trivy/${TRIVY_VERSION}"; \
+    install -d "${trivy_directory}"; \
     /usr/local/libexec/ci/fetch-verified \
-      "https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/osv-scanner_linux_${TARGETARCH}" \
-      "${osv_scanner_sha256}" \
-      "${osv_scanner_directory}/osv-scanner"; \
-    chmod 0755 "${osv_scanner_directory}/osv-scanner"; \
-    "${osv_scanner_directory}/osv-scanner" --version \
-      | grep --line-regexp --fixed-strings \
-        "osv-scanner version: ${OSV_SCANNER_VERSION}" \
-        >/dev/null
+      "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-${trivy_architecture}.tar.gz" \
+      "${trivy_sha256}" \
+      /var/tmp/trivy.tar.gz; \
+    tar -xzf /var/tmp/trivy.tar.gz \
+      -C "${trivy_directory}" \
+      trivy; \
+    rm -f /var/tmp/trivy.tar.gz; \
+    chmod 0755 "${trivy_directory}/trivy"; \
+    test "$("${trivy_directory}/trivy" --version | awk '/^Version:/ { print $2 }')" \
+      = "${TRIVY_VERSION}"
 
 FROM ${BASE_IMAGE}
 
@@ -350,6 +363,7 @@ ARG PYTHON_VERSION
 ARG SHELLSPEC_SHA256
 ARG SHELLSPEC_VERSION
 ARG SHFMT_VERSION
+ARG TRIVY_VERSION
 ARG YQ_VERSION
 
 ENV CI=true \
@@ -435,6 +449,9 @@ RUN set -eu; \
     ln -s \
       "../shfmt/${SHFMT_VERSION}/shfmt" \
       /opt/ci-tools/bin/shfmt; \
+    ln -s \
+      "../trivy/${TRIVY_VERSION}/trivy" \
+      /opt/ci-tools/bin/trivy; \
     ln -s \
       "../yq/${YQ_VERSION}/yq" \
       /opt/ci-tools/bin/yq

@@ -23,8 +23,8 @@ pgvector/pgvector:0.8.2-pg18-bookworm@<digest>
 `node:24.19.0-bookworm-slim` image without adding Node to `ci-base`.
 
 - `ghcr.io/myflow-xyz/ci-base`: operating-system utilities, Python 3.14.7
-  standard-library scripting, OSV-Scanner, and runtime-independent repository
-  policy tools.
+  standard-library scripting, OSV-Scanner, Trivy, and runtime-independent
+  repository policy tools.
 - `ghcr.io/myflow-xyz/ci-go`: Go toolchain, native race-test prerequisites,
   and reusable Go CI executables.
 - `ghcr.io/myflow-xyz/ci-node`: generic Node.js, Markdown, and OpenAPI jobs

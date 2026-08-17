@@ -197,10 +197,6 @@ base)
 		--build-arg \
 		"OSV_SCANNER_VERSION=$(json '.tools.base.osv_scanner.version')" \
 		--build-arg \
-		"OSV_SCANNER_SHA256_AMD64=$(json '.tools.base.osv_scanner.assets.amd64.sha256')" \
-		--build-arg \
-		"OSV_SCANNER_SHA256_ARM64=$(json '.tools.base.osv_scanner.assets.arm64.sha256')" \
-		--build-arg \
 		"PYTHON_VERSION=$(json '.tools.base.python.version')" \
 		--build-arg \
 		"PYTHON_SHA256=$(json '.tools.base.python.asset.sha256')" \
@@ -215,6 +211,11 @@ base)
 		--build-arg \
 		"SHELLSPEC_SHA256=$(json '.tools.base.shellspec.asset.sha256')" \
 		--build-arg "SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
+		--build-arg "TRIVY_VERSION=$(json '.tools.base.trivy.version')" \
+		--build-arg \
+		"TRIVY_SHA256_AMD64=$(json '.tools.base.trivy.assets.amd64.sha256')" \
+		--build-arg \
+		"TRIVY_SHA256_ARM64=$(json '.tools.base.trivy.assets.arm64.sha256')" \
 		--build-arg "YQ_VERSION=$(json '.tools.base.yq.version')" \
 		--build-arg \
 		"YQ_X_TEXT_VERSION=$(json '.tools.base.yq.dependency_overrides["golang.org/x/text"]')"
