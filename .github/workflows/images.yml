@@ -161,7 +161,7 @@ jobs:
         run: tests/dockerfiles.sh
 
       - name: Build native images
-        run: tests/build-local.sh all
+        run: tests/build-local-image.sh all
 
       - name: Run native image smoke tests
         run: tests/smoke-local.sh all
