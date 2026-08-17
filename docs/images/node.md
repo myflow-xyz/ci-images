@@ -7,9 +7,9 @@ CI tasks that do not require the Vite frontend toolchain.
 
 The initial image contract includes:
 
-- Node.js 24.18.0 imported from the digest-pinned official Node image;
+- Node.js 24.19.0 imported from the digest-pinned official Node image;
 - npm and npx 12.0.2 from a hash-verified release artifact;
-- pnpm 11.21.0;
+- pnpm 11.22.0;
 - `markdownlint-cli2` 0.23.2;
 - Redocly CLI 2.46.1 for OpenAPI validation;
 - explicit npm and pnpm cache paths.
@@ -25,7 +25,7 @@ This image adds these variables to the
 [`ci-base` environment](base.md#runtime-environment):
 
 ```text
-NODE_VERSION=24.18.0
+NODE_VERSION=24.19.0
 NPM_CONFIG_CACHE=/var/cache/npm
 PNPM_CONFIG_STORE_DIR=/var/cache/pnpm/store
 ```

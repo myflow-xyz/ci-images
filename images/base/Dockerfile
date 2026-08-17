@@ -206,6 +206,9 @@ ARG GITLEAKS_XZ_VERSION
 ARG GO_SHA256_AMD64
 ARG GO_SHA256_ARM64
 ARG GO_VERSION
+ARG OSV_SCANNER_SHA256_AMD64
+ARG OSV_SCANNER_SHA256_ARM64
+ARG OSV_SCANNER_VERSION
 ARG SHFMT_VERSION
 ARG TARGETARCH
 ARG YQ_VERSION
@@ -309,6 +312,27 @@ RUN --mount=type=cache,target=/var/cache/go/mod \
       "v${YQ_VERSION}" \
       "golang.org/x/text@${YQ_X_TEXT_VERSION}"
 
+RUN set -eu; \
+    case "${TARGETARCH}" in \
+      amd64) osv_scanner_sha256="${OSV_SCANNER_SHA256_AMD64}" ;; \
+      arm64) osv_scanner_sha256="${OSV_SCANNER_SHA256_ARM64}" ;; \
+      *) \
+        printf 'unsupported target architecture: %s\n' "${TARGETARCH}" >&2; \
+        exit 1 \
+        ;; \
+    esac; \
+    osv_scanner_directory="/out/osv-scanner/${OSV_SCANNER_VERSION}"; \
+    install -d "${osv_scanner_directory}"; \
+    /usr/local/libexec/ci/fetch-verified \
+      "https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/osv-scanner_linux_${TARGETARCH}" \
+      "${osv_scanner_sha256}" \
+      "${osv_scanner_directory}/osv-scanner"; \
+    chmod 0755 "${osv_scanner_directory}/osv-scanner"; \
+    "${osv_scanner_directory}/osv-scanner" --version \
+      | grep --line-regexp --fixed-strings \
+        "osv-scanner version: ${OSV_SCANNER_VERSION}" \
+        >/dev/null
+
 FROM ${BASE_IMAGE}
 
 USER root
@@ -321,6 +345,7 @@ ARG CI_UID=1001
 ARG DEBIAN_SNAPSHOT
 ARG GITLEAKS_VERSION
 ARG MANIFEST_SHA=unknown
+ARG OSV_SCANNER_VERSION
 ARG PYTHON_VERSION
 ARG SHELLSPEC_SHA256
 ARG SHELLSPEC_VERSION
@@ -403,6 +428,9 @@ RUN set -eu; \
     ln -s \
       "../gitleaks/${GITLEAKS_VERSION}/gitleaks" \
       /opt/ci-tools/bin/gitleaks; \
+    ln -s \
+      "../osv-scanner/${OSV_SCANNER_VERSION}/osv-scanner" \
+      /opt/ci-tools/bin/osv-scanner; \
     ln -s \
       "../shfmt/${SHFMT_VERSION}/shfmt" \
       /opt/ci-tools/bin/shfmt; \

@@ -20,8 +20,8 @@
       "digest": "sha256:7b140f374b289a7c2befc338f42ebe6441b7ea838a042bbd5acbfca6ec875818"
     },
     "node": {
-      "reference": "docker.io/library/node:24.18.0-bookworm-slim",
-      "digest": "sha256:6f7b03f7c2c8e2e784dcf9295400527b9b1270fd37b7e9a7285cf83b6951452d"
+      "reference": "docker.io/library/node:24.19.0-bookworm-slim",
+      "digest": "sha256:3638d9a6fe4030bd716be989438248074489337ba3275657f93595428be4fc03"
     },
     "pgvector": {
       "reference": "docker.io/pgvector/pgvector:0.8.2-pg18-bookworm",
@@ -76,6 +76,20 @@
         "dependency_overrides": {
           "github.com/ulikunitz/xz": "v0.5.15",
           "golang.org/x/crypto": "v0.54.0"
+        }
+      },
+      "osv_scanner": {
+        "version": "2.5.0",
+        "source": "https://github.com/google/osv-scanner",
+        "assets": {
+          "amd64": {
+            "url": "https://github.com/google/osv-scanner/releases/download/v2.5.0/osv-scanner_linux_amd64",
+            "sha256": "edcfc41d257db36148f065055655fe3fcfc434b0b423ea67468a84c207524e0c"
+          },
+          "arm64": {
+            "url": "https://github.com/google/osv-scanner/releases/download/v2.5.0/osv-scanner_linux_arm64",
+            "sha256": "fe152e1a546af223e6c557cc3111a8bb3e5dc02fcbf7dbe95d26567c0f0041f2"
+          }
         }
       },
       "python": {
@@ -139,37 +153,38 @@
         "module": "github.com/sqlc-dev/sqlc/cmd/sqlc",
         "version": "v1.31.1",
         "dependency_overrides": {
-          "golang.org/x/net": "v0.57.0",
-          "google.golang.org/grpc": "v1.82.1"
+          "golang.org/x/net": "v0.58.0",
+          "google.golang.org/grpc": "v1.83.0"
         }
       },
       "goose": {
         "module": "github.com/pressly/goose/v3/cmd/goose",
         "version": "v3.27.3",
         "dependency_overrides": {
-          "golang.org/x/crypto": "v0.54.0",
-          "golang.org/x/net": "v0.57.0",
-          "google.golang.org/grpc": "v1.82.1"
+          "golang.org/x/crypto": "v0.55.0",
+          "golang.org/x/net": "v0.58.0",
+          "google.golang.org/grpc": "v1.83.0",
+          "modernc.org/libc": "v1.74.4"
         }
       },
       "golangci_lint": {
         "module": "github.com/golangci/golangci-lint/v2/cmd/golangci-lint",
         "version": "v2.12.2",
         "dependency_overrides": {
-          "golang.org/x/text": "v0.39.0"
+          "golang.org/x/text": "v0.41.0"
         }
       },
       "goimports": {
         "module": "golang.org/x/tools/cmd/goimports",
-        "version": "v0.48.0"
+        "version": "v0.49.0"
       },
       "govulncheck": {
         "module": "golang.org/x/vuln/cmd/govulncheck",
-        "version": "v1.6.0"
+        "version": "v1.7.0"
       }
     },
     "node": {
-      "runtime": "24.18.0",
+      "runtime": "24.19.0",
       "npm": {
         "version": "12.0.2",
         "asset": {
@@ -177,10 +192,10 @@
           "sha256": "5dbb86c71d07a1957f2e90734092dd6a58bdcd9ebc2d8d41ca1c6e6a21d364e1"
         },
         "lockfile": "images/node/npm-runtime/package-lock.json",
-        "lockfile_sha256": "faba218e4f54eccd27897458d38259a1da9bc205bc9ca9e92b2f18f63ca27ad2",
+        "lockfile_sha256": "830984f5491930d4b01b1a3b4e15379b7bffb0593f4594464f97b0b1478729a0",
         "dependency_replacements": {
           "brace-expansion": "5.0.9",
-          "ip-address": "10.3.1",
+          "ip-address": "10.5.0",
           "tar": "7.5.22"
         }
       },
@@ -191,8 +206,8 @@
       },
       "bundle_version": "3",
       "lockfile": "images/node/npm/package-lock.json",
-      "lockfile_sha256": "2e8ac742c8d4b07580b06096994a9b108bfd8aa462b72f7357f2a72760cefa31",
-      "pnpm": "11.21.0",
+      "lockfile_sha256": "f8967aafe208d604c4119e898e2c161888c93cca6cb7bc43fd91995e36843dde",
+      "pnpm": "11.22.0",
       "redocly": "2.46.1"
     },
     "vite": {
@@ -204,7 +219,7 @@
         "repository": "https://github.com/microsoft/typescript-go",
         "commit": "2bd066d87f5bafd315be9f40889d0a60b9e58e0b",
         "dependency_overrides": {
-          "golang.org/x/text": "v0.40.0"
+          "golang.org/x/text": "v0.41.0"
         }
       },
       "typescript_legacy": {
@@ -220,7 +235,7 @@
         "repository": "https://github.com/oxc-project/tsgolint",
         "commit": "482dcf70bffce7ea56f63128c74beb67dec658a2",
         "dependency_overrides": {
-          "golang.org/x/text": "v0.40.0"
+          "golang.org/x/text": "v0.41.0"
         }
       },
       "oxfmt": "0.63.0"

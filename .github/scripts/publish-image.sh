@@ -195,6 +195,12 @@ base)
 		--build-arg \
 		"GITLEAKS_XZ_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["github.com/ulikunitz/xz"]')" \
 		--build-arg \
+		"OSV_SCANNER_VERSION=$(json '.tools.base.osv_scanner.version')" \
+		--build-arg \
+		"OSV_SCANNER_SHA256_AMD64=$(json '.tools.base.osv_scanner.assets.amd64.sha256')" \
+		--build-arg \
+		"OSV_SCANNER_SHA256_ARM64=$(json '.tools.base.osv_scanner.assets.arm64.sha256')" \
+		--build-arg \
 		"PYTHON_VERSION=$(json '.tools.base.python.version')" \
 		--build-arg \
 		"PYTHON_SHA256=$(json '.tools.base.python.asset.sha256')" \
@@ -238,6 +244,8 @@ go)
 		"GOOSE_X_NET_VERSION=$(json '.tools.go.goose.dependency_overrides["golang.org/x/net"]')" \
 		--build-arg \
 		"GOOSE_GRPC_VERSION=$(json '.tools.go.goose.dependency_overrides["google.golang.org/grpc"]')" \
+		--build-arg \
+		"GOOSE_MODERNC_LIBC_VERSION=$(json '.tools.go.goose.dependency_overrides["modernc.org/libc"]')" \
 		--build-arg \
 		"GOLANGCI_LINT_VERSION=$(json '.tools.go.golangci_lint.version')" \
 		--build-arg \

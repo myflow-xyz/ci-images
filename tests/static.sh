@@ -32,6 +32,7 @@ required_files=(
 	docs/index.md
 	docs/release.md
 	docs/usage.md
+	docs/versions.md
 	docs/images/base.md
 	docs/images/go.md
 	docs/images/node.md
@@ -63,6 +64,52 @@ for image_doc in "${repository_root}"/docs/images/*.md; do
 		fail "missing runtime environment contract: ${image_doc#"$repository_root/"}"
 done
 
+versions_doc="${repository_root}/docs/versions.md"
+while IFS=$'\t' read -r component version; do
+	row="| \`${component}\` | \`${version#v}\` |"
+	grep --fixed-strings --line-regexp "$row" "$versions_doc" >/dev/null ||
+		fail "missing version inventory row: ${component} ${version#v}"
+done < <(
+	jq -r '
+    [
+      ["Git", .tools.base.git.version],
+      ["CPython", .tools.base.python.version],
+      ["actionlint", .tools.base.actionlint.version],
+      ["gitleaks", .tools.base.gitleaks.version],
+      ["osv-scanner", .tools.base.osv_scanner.version],
+      ["shellspec", .tools.base.shellspec.version],
+      ["shfmt", .tools.base.shfmt.version],
+      ["yq", .tools.base.yq.version],
+      ["Go", .tools.go.runtime],
+      ["Hurl", .tools.go.hurl.version],
+      ["sqlc", .tools.go.sqlc.version],
+      ["goose", .tools.go.goose.version],
+      ["golangci-lint", .tools.go.golangci_lint.version],
+      ["goimports", .tools.go.goimports.version],
+      ["govulncheck", .tools.go.govulncheck.version],
+      ["Node.js", .tools.node.runtime],
+      ["npm", .tools.node.npm.version],
+      ["pnpm", .tools.node.pnpm],
+      ["markdownlint-cli2", .tools.node.markdownlint_cli2.version],
+      ["@redocly/cli", .tools.node.redocly],
+      ["@typescript/native", .tools.vite.typescript],
+      ["TypeScript compatibility package", .tools.vite.typescript_legacy.compat_package],
+      ["TypeScript legacy compiler", .tools.vite.typescript_legacy.compiler],
+      ["vite", .tools.vite.vite],
+      ["vitest", .tools.vite.vitest],
+      ["@vitest/coverage-v8", .tools.vite.coverage_v8],
+      ["oxlint", .tools.vite.oxlint],
+      ["oxlint-tsgolint", .tools.vite.oxlint_tsgolint],
+      ["oxfmt", .tools.vite.oxfmt],
+      ["@playwright/test", .tools.playwright.version],
+      ["PostgreSQL", .tools.postgres.postgres],
+      ["pgvector", .tools.postgres.pgvector],
+      ["gosu", .tools.postgres.gosu.version]
+    ][] |
+    @tsv
+  ' "$manifest"
+)
+
 jq --exit-status '
   .schema_version == 1 and
   .platforms == ["linux/amd64", "linux/arm64"] and
@@ -73,7 +120,7 @@ jq --exit-status '
   (.upstream_images.debian.reference |
     endswith("debian:bookworm-slim")) and
   (.upstream_images.node.reference |
-    endswith("node:24.18.0-bookworm-slim")) and
+    endswith("node:24.19.0-bookworm-slim")) and
   ([.upstream_images[].digest |
     test("^sha256:[0-9a-f]{64}$")] | all) and
   ([.images[].name] | sort) == ([
@@ -104,6 +151,13 @@ jq --exit-status '
     $python.asset.url ==
       ("https://www.python.org/ftp/python/" +
        $python.version + "/Python-" + $python.version + ".tar.xz")) and
+  (.tools.base.osv_scanner as $osv |
+    $osv.assets.amd64.url ==
+      ("https://github.com/google/osv-scanner/releases/download/v" +
+       $osv.version + "/osv-scanner_linux_amd64") and
+    $osv.assets.arm64.url ==
+      ("https://github.com/google/osv-scanner/releases/download/v" +
+       $osv.version + "/osv-scanner_linux_arm64")) and
   (.tools.go.hurl as $hurl |
     $hurl.assets.amd64.url ==
       ("https://github.com/Orange-OpenSource/hurl/releases/download/" +

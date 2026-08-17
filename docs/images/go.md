@@ -26,9 +26,10 @@ versioned directories. Stable links are exposed through
 upstream Linux archives for both supported architectures.
 
 The manifest records narrow dependency overrides used to rebuild a tool when
-its released dependency graph contains a fixed HIGH or CRITICAL vulnerability.
-The image smoke contract verifies those resolved module versions; an override
-is removed when the upstream tool release incorporates the fix.
+its released dependency graph contains a fixed HIGH or CRITICAL vulnerability
+or an upstream-retracted module version. The image smoke contract verifies
+those resolved module versions; an override is removed when the upstream tool
+release incorporates the fix.
 
 ## Runtime environment
 

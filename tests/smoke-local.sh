@@ -50,6 +50,8 @@ if [[ $target == all || $target == base ]]; then
 		"EXPECTED_GITLEAKS_X_CRYPTO_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["golang.org/x/crypto"]')" \
 		--env \
 		"EXPECTED_GITLEAKS_XZ_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["github.com/ulikunitz/xz"]')" \
+		--env \
+		"EXPECTED_OSV_SCANNER_VERSION=$(json '.tools.base.osv_scanner.version')" \
 		--env "EXPECTED_PYTHON_VERSION=$(json '.tools.base.python.version')" \
 		--env "EXPECTED_SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
 		--env "EXPECTED_YQ_VERSION=$(json '.tools.base.yq.version')" \
@@ -76,6 +78,8 @@ if [[ $target == all || $target == go ]]; then
 		"EXPECTED_GOOSE_X_NET_VERSION=$(json '.tools.go.goose.dependency_overrides["golang.org/x/net"]')" \
 		--env \
 		"EXPECTED_GOOSE_GRPC_VERSION=$(json '.tools.go.goose.dependency_overrides["google.golang.org/grpc"]')" \
+		--env \
+		"EXPECTED_GOOSE_MODERNC_LIBC_VERSION=$(json '.tools.go.goose.dependency_overrides["modernc.org/libc"]')" \
 		--env \
 		"EXPECTED_GOLANGCI_LINT_VERSION=$(json '.tools.go.golangci_lint.version')" \
 		--env \

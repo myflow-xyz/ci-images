@@ -11,6 +11,7 @@ expected_python=${EXPECTED_PYTHON_VERSION:?EXPECTED_PYTHON_VERSION is not set}
 : "${EXPECTED_GITLEAKS_X_CRYPTO_VERSION:?EXPECTED_GITLEAKS_X_CRYPTO_VERSION is not set}"
 : "${EXPECTED_GITLEAKS_XZ_VERSION:?EXPECTED_GITLEAKS_XZ_VERSION is not set}"
 : "${EXPECTED_GITLEAKS_VERSION:?EXPECTED_GITLEAKS_VERSION is not set}"
+: "${EXPECTED_OSV_SCANNER_VERSION:?EXPECTED_OSV_SCANNER_VERSION is not set}"
 : "${EXPECTED_SHFMT_VERSION:?EXPECTED_SHFMT_VERSION is not set}"
 : "${EXPECTED_YQ_VERSION:?EXPECTED_YQ_VERSION is not set}"
 : "${EXPECTED_YQ_X_TEXT_VERSION:?EXPECTED_YQ_X_TEXT_VERSION is not set}"
@@ -39,6 +40,7 @@ for command in \
 	gitleaks \
 	jq \
 	make \
+	osv-scanner \
 	python3 \
 	rg \
 	shellcheck \
@@ -82,6 +84,12 @@ actionlint --version 2>&1 |
 	grep --fixed-strings "$EXPECTED_ACTIONLINT_VERSION" >/dev/null
 [[ $(git version) == "git version ${EXPECTED_GIT_VERSION}" ]]
 [[ $(gitleaks version) == "$EXPECTED_GITLEAKS_VERSION" ]]
+osv-scanner --version |
+	grep \
+		--line-regexp \
+		--fixed-strings \
+		"osv-scanner version: ${EXPECTED_OSV_SCANNER_VERSION}" \
+		>/dev/null
 grep \
 	--binary-files=text \
 	--fixed-strings \
@@ -117,6 +125,7 @@ done
 for command in \
 	actionlint \
 	gitleaks \
+	osv-scanner \
 	shellspec \
 	shfmt \
 	yq; do

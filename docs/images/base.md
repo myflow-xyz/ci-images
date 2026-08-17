@@ -42,7 +42,8 @@ The base image includes:
 - CPython 3.14.7 and its standard-library modules for repository-owned CI
   automation;
 - structured-data and diagnosis tools: `jq`, `yq`, ripgrep, and GitHub CLI;
-- shared policy tools: gitleaks, actionlint, shfmt, ShellCheck, and ShellSpec;
+- shared policy tools: OSV-Scanner 2.5.0, gitleaks, actionlint, shfmt,
+  ShellCheck, and ShellSpec;
 - `tini` for descendants that require subprocess reaping.
 
 Python is built from the checksum-pinned CPython 3.14.7 source release against
@@ -58,6 +59,10 @@ tools are recorded in the version manifest and verified by image smoke tests.
 Go tools are installed into immutable versioned directories and exposed through
 stable links in `/opt/ci-tools/bin`. Compilers are build inputs and are not
 retained in this image.
+
+OSV-Scanner is installed from checksum-pinned upstream Linux release binaries
+for both supported architectures. Vulnerability data is not embedded in the
+image; online scans still query OSV-Scanner's external data services.
 
 ## Runtime contract
 
