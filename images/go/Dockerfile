@@ -7,12 +7,14 @@ ARG BUILD_CREATED=unknown
 ARG BUILD_REVISION=unknown
 ARG GOLANGCI_LINT_VERSION
 ARG GOLANGCI_LINT_X_TEXT_VERSION
+ARG GOIMPORTS_X_MOD_VERSION
 ARG GOIMPORTS_VERSION
 ARG GOOSE_VERSION
 ARG GOOSE_X_CRYPTO_VERSION
 ARG GOOSE_GRPC_VERSION
 ARG GOOSE_MODERNC_LIBC_VERSION
 ARG GOOSE_X_NET_VERSION
+ARG GOVULNCHECK_X_MOD_VERSION
 ARG GOVULNCHECK_VERSION
 ARG GO_SHA256_AMD64
 ARG GO_SHA256_ARM64
@@ -141,15 +143,16 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
     build_tool \
       goimports \
       golang.org/x/tools/cmd/goimports \
-      "${GOIMPORTS_VERSION}"; \
+      "${GOIMPORTS_VERSION}" \
+      "golang.org/x/mod@${GOIMPORTS_X_MOD_VERSION}"; \
     build_tool \
       govulncheck \
       golang.org/x/vuln/cmd/govulncheck \
-      "${GOVULNCHECK_VERSION}"
+      "${GOVULNCHECK_VERSION}" \
+      "golang.org/x/mod@${GOVULNCHECK_X_MOD_VERSION}"
 
 ENV GOBIN=/opt/ci-tools/bin \
     GOCACHE=/var/cache/go/build \
-    GOEXPERIMENT=jsonv2 \
     GOMODCACHE=/var/cache/go/mod \
     GOPATH=/var/lib/go \
     GOROOT=/usr/local/go \

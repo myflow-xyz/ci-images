@@ -12,7 +12,9 @@ expected_goose=${EXPECTED_GOOSE_VERSION:?EXPECTED_GOOSE_VERSION is not set}
 : "${EXPECTED_GOLANGCI_LINT_VERSION:?EXPECTED_GOLANGCI_LINT_VERSION is not set}"
 : "${EXPECTED_GOLANGCI_LINT_X_TEXT_VERSION:?EXPECTED_GOLANGCI_LINT_X_TEXT_VERSION is not set}"
 : "${EXPECTED_GOIMPORTS_VERSION:?EXPECTED_GOIMPORTS_VERSION is not set}"
+: "${EXPECTED_GOIMPORTS_X_MOD_VERSION:?EXPECTED_GOIMPORTS_X_MOD_VERSION is not set}"
 : "${EXPECTED_GOVULNCHECK_VERSION:?EXPECTED_GOVULNCHECK_VERSION is not set}"
+: "${EXPECTED_GOVULNCHECK_X_MOD_VERSION:?EXPECTED_GOVULNCHECK_X_MOD_VERSION is not set}"
 : "${EXPECTED_HURL_VERSION:?EXPECTED_HURL_VERSION is not set}"
 expected_golangci=$EXPECTED_GOLANGCI_LINT_VERSION
 expected_goimports=$EXPECTED_GOIMPORTS_VERSION
@@ -25,7 +27,7 @@ expected_path=/usr/local/go/bin:/opt/ci-tools/bin:/usr/local/sbin:/usr/local/bin
 [[ $(go version | awk '{print $3}') == "go${expected_go}" ]]
 [[ $GOBIN == /opt/ci-tools/bin ]]
 [[ $GOCACHE == /var/cache/go/build ]]
-[[ $GOEXPERIMENT == jsonv2 ]]
+[[ -z ${GOEXPERIMENT:-} ]]
 [[ $GOMODCACHE == /var/cache/go/mod ]]
 [[ $GOPATH == /var/lib/go ]]
 [[ $GOROOT == /usr/local/go ]]
@@ -126,6 +128,14 @@ assert_dependency_version \
 	golangci-lint \
 	golang.org/x/text \
 	"$EXPECTED_GOLANGCI_LINT_X_TEXT_VERSION"
+assert_dependency_version \
+	goimports \
+	golang.org/x/mod \
+	"$EXPECTED_GOIMPORTS_X_MOD_VERSION"
+assert_dependency_version \
+	govulncheck \
+	golang.org/x/mod \
+	"$EXPECTED_GOVULNCHECK_X_MOD_VERSION"
 
 hurl_smoke_directory=$(mktemp -d /var/tmp/hurl-smoke.XXXXXX)
 hurl_request="${hurl_smoke_directory}/request.hurl"

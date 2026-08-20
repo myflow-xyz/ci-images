@@ -197,6 +197,8 @@ base)
 		--build-arg \
 		"OSV_SCANNER_VERSION=$(json '.tools.base.osv_scanner.version')" \
 		--build-arg \
+		"OSV_SCANNER_X_MOD_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["golang.org/x/mod"]')" \
+		--build-arg \
 		"PYTHON_VERSION=$(json '.tools.base.python.version')" \
 		--build-arg \
 		"PYTHON_SHA256=$(json '.tools.base.python.asset.sha256')" \
@@ -254,7 +256,11 @@ go)
 		--build-arg \
 		"GOIMPORTS_VERSION=$(json '.tools.go.goimports.version')" \
 		--build-arg \
-		"GOVULNCHECK_VERSION=$(json '.tools.go.govulncheck.version')"
+		"GOIMPORTS_X_MOD_VERSION=$(json '.tools.go.goimports.dependency_overrides["golang.org/x/mod"]')" \
+		--build-arg \
+		"GOVULNCHECK_VERSION=$(json '.tools.go.govulncheck.version')" \
+		--build-arg \
+		"GOVULNCHECK_X_MOD_VERSION=$(json '.tools.go.govulncheck.dependency_overrides["golang.org/x/mod"]')"
 	;;
 node)
 	node_image=$(image_reference node)

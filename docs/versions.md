@@ -19,17 +19,17 @@ and upstream image digests.
 | `shellspec` | `0.28.1` |
 | `shfmt` | `3.13.1` |
 | `Trivy` | `0.74.0` |
-| `yq` | `4.53.3` |
+| `yq` | `4.53.4` |
 
 ## `ci-go`
 
 | Component | Version |
 | --- | --- |
-| `Go` | `1.26.6` |
+| `Go` | `1.27.0` |
 | `Hurl` | `8.0.1` |
 | `sqlc` | `1.31.1` |
 | `goose` | `3.27.3` |
-| `golangci-lint` | `2.12.2` |
+| `golangci-lint` | `2.13.0` |
 | `goimports` | `0.49.0` |
 | `govulncheck` | `1.7.0` |
 

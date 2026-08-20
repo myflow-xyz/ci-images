@@ -24,7 +24,7 @@ repository disabled during that refresh. The service base omits CA
 certificates, so the snapshot bootstrap uses HTTP with apt's signature
 verification; the isolated builder installs CA certificates before fetching Go
 over HTTPS. The image also replaces the upstream `gosu` executable with version
-1.19 built from its exact source commit using Go 1.26.6. The replacement remains
+1.19 built from its exact source commit using Go 1.27.0. The replacement remains
 at the canonical `/usr/local/bin/gosu` path and is exposed through
 `/opt/ci-tools/bin`. Neither the Go compiler nor build sources are retained.
 
