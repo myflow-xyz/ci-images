@@ -7,14 +7,16 @@ promotes existing OCI index digests; it does not rebuild or rescan images.
 
 The release workflow accepts only the current `main` commit. The CI images
 workflow for that commit must have completed successfully and promoted all six
-images to both:
+images to `sha-<full-commit>` tags for immutable source identity.
 
-- `sha-<full-commit>` for immutable source identity;
-- `latest` for the current verified `main` suite.
+The immutable revision tags are the release inputs. The mutable `latest` tag is
+a discovery pointer for verified `main` pushes and is not a release
+precondition.
 
-The `sha-<full-commit>` and `latest` tags must resolve to the same digest for
-every image. This prevents a release from combining images from different
-source revisions.
+If the automatic workflow skipped image publication because the commit did not
+change image inputs, dispatch the CI images workflow manually from `main`.
+Manual publication creates the required immutable revision tags without moving
+`latest`.
 
 ## Version selection
 
@@ -40,7 +42,7 @@ The workflow:
 
 1. verifies that the selected revision is the current `main` commit;
 2. calculates the next version from stable Git tags;
-3. resolves and compares every immutable revision tag and `latest` tag;
+3. resolves and validates every immutable revision tag;
 4. rejects a version tag that already identifies another digest;
 5. assigns the version tag to each verified OCI index and verifies the result;
 6. creates the Git tag and GitHub Release at the source revision, including the
