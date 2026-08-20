@@ -1,0 +1,1 @@
+- PMem scoping: in the shared `mfinfra` pmem project, every repository-related knowledge block must use `module` anchor `ci`, and every repository-related work item must include tag `ci`.
