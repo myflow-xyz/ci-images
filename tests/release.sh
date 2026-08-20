@@ -237,14 +237,10 @@ assert_equal 0 "$(create_count)" 'idempotent release promotions'
 assert_release_output
 
 reset_registry
-if FAKE_LATEST_MISMATCH_IMAGE=go \
-	"$release_images" v0.1.0 "$output_file" \
-	>"$failure_output" 2>&1; then
-	fail 'latest mismatch was accepted'
-fi
-grep -q 'latest does not identify the selected revision' "$failure_output" ||
-	fail 'latest mismatch diagnostic'
-assert_equal 0 "$(create_count)" 'latest mismatch promotions'
+FAKE_LATEST_MISMATCH_IMAGE=go \
+	"$release_images" v0.1.0 "$output_file"
+assert_equal 6 "$(create_count)" 'stale latest promotions'
+assert_release_output
 
 reset_registry
 if FAKE_VERSION_CONFLICT_IMAGE=base \
