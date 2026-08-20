@@ -7,9 +7,9 @@ generation, analysis, test, and release jobs.
 
 The initial image contract includes:
 
-- Go 1.26.6, installed from the official per-architecture archive after
+- Go 1.27.0, installed from the official per-architecture archive after
   SHA-256 verification, with local toolchain selection and the JSON v2
-  experiment enabled;
+  implementation enabled by default;
 - a C compiler, libc development headers, and native build prerequisites for
   race-enabled tests;
 - Go's standard build, format, vet, test, and coverage commands;
@@ -17,7 +17,7 @@ The initial image contract includes:
   `hurlfmt`;
 - sqlc 1.31.1;
 - Goose 3.27.3;
-- golangci-lint 2.12.2;
+- golangci-lint 2.13.0;
 - pinned `goimports` and `govulncheck` releases.
 
 External Go executables are built from exact module versions into immutable
@@ -38,7 +38,6 @@ The image adds this Go environment to the variables inherited from `ci-base`:
 ```text
 GOBIN=/opt/ci-tools/bin
 GOCACHE=/var/cache/go/build
-GOEXPERIMENT=jsonv2
 GOMODCACHE=/var/cache/go/mod
 GOPATH=/var/lib/go
 GOROOT=/usr/local/go

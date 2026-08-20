@@ -74,14 +74,17 @@
         "source": "https://github.com/gitleaks/gitleaks",
         "module": "github.com/zricethezav/gitleaks/v8",
         "dependency_overrides": {
-          "github.com/ulikunitz/xz": "v0.5.15",
-          "golang.org/x/crypto": "v0.54.0"
+          "github.com/ulikunitz/xz": "v0.5.16",
+          "golang.org/x/crypto": "v0.55.0"
         }
       },
       "osv_scanner": {
         "version": "2.5.1",
         "source": "https://github.com/google/osv-scanner",
-        "module": "github.com/google/osv-scanner/v2/cmd/osv-scanner"
+        "module": "github.com/google/osv-scanner/v2/cmd/osv-scanner",
+        "dependency_overrides": {
+          "golang.org/x/mod": "v0.40.0"
+        }
       },
       "trivy": {
         "version": "0.74.0",
@@ -119,25 +122,25 @@
         "module": "mvdan.cc/sh/v3/cmd/shfmt"
       },
       "yq": {
-        "version": "4.53.3",
+        "version": "4.53.4",
         "source": "https://github.com/mikefarah/yq",
         "module": "github.com/mikefarah/yq/v4",
         "dependency_overrides": {
-          "golang.org/x/text": "v0.39.0"
+          "golang.org/x/text": "v0.41.0"
         }
       }
     },
     "go": {
-      "runtime": "1.26.6",
+      "runtime": "1.27.0",
       "source": "https://go.dev/dl/",
       "assets": {
         "amd64": {
-          "url": "https://go.dev/dl/go1.26.6.linux-amd64.tar.gz",
-          "sha256": "708effb774be8237570d0add163225abbdfaf4fca28b2611df167beba4feef89"
+          "url": "https://go.dev/dl/go1.27.0.linux-amd64.tar.gz",
+          "sha256": "675c26c449cbb18fc24b74650de1eabbae6e16f64326fd85a283fb3b58280685"
         },
         "arm64": {
-          "url": "https://go.dev/dl/go1.26.6.linux-arm64.tar.gz",
-          "sha256": "d0507e9e9d7fe012aae570108cbd76c15de879e17130ab8cb90d4d7445cb1f2e"
+          "url": "https://go.dev/dl/go1.27.0.linux-arm64.tar.gz",
+          "sha256": "51798d2c42d0e1c6ed7fd9f48728b4193abac9e8aad6dbac2fe96a81f5909bda"
         }
       },
       "hurl": {
@@ -159,7 +162,7 @@
         "version": "v1.31.1",
         "dependency_overrides": {
           "golang.org/x/net": "v0.58.0",
-          "google.golang.org/grpc": "v1.83.0"
+          "google.golang.org/grpc": "v1.83.1"
         }
       },
       "goose": {
@@ -168,24 +171,30 @@
         "dependency_overrides": {
           "golang.org/x/crypto": "v0.55.0",
           "golang.org/x/net": "v0.58.0",
-          "google.golang.org/grpc": "v1.83.0",
-          "modernc.org/libc": "v1.74.4"
+          "google.golang.org/grpc": "v1.83.1",
+          "modernc.org/libc": "v1.75.3"
         }
       },
       "golangci_lint": {
         "module": "github.com/golangci/golangci-lint/v2/cmd/golangci-lint",
-        "version": "v2.12.2",
+        "version": "v2.13.0",
         "dependency_overrides": {
           "golang.org/x/text": "v0.41.0"
         }
       },
       "goimports": {
         "module": "golang.org/x/tools/cmd/goimports",
-        "version": "v0.49.0"
+        "version": "v0.49.0",
+        "dependency_overrides": {
+          "golang.org/x/mod": "v0.40.0"
+        }
       },
       "govulncheck": {
         "module": "golang.org/x/vuln/cmd/govulncheck",
-        "version": "v1.7.0"
+        "version": "v1.7.0",
+        "dependency_overrides": {
+          "golang.org/x/mod": "v0.40.0"
+        }
       }
     },
     "node": {

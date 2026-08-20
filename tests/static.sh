@@ -180,8 +180,11 @@ jq --exit-status '
       ("https://registry.npmjs.org/npm/-/npm-" +
        $npm.version + ".tgz")) and
   ([.tools.base.gitleaks.dependency_overrides[],
+    .tools.base.osv_scanner.dependency_overrides[],
     .tools.base.yq.dependency_overrides[],
     .tools.go.golangci_lint.dependency_overrides[],
+    .tools.go.goimports.dependency_overrides[],
+    .tools.go.govulncheck.dependency_overrides[],
     .tools.go.sqlc.dependency_overrides[],
     .tools.go.goose.dependency_overrides[],
     .tools.vite.typescript_source.dependency_overrides[],

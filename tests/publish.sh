@@ -250,6 +250,7 @@ for name in "${names[@]}"; do
 	if [[ $name == base ]]; then
 		for build_arg in \
 			"OSV_SCANNER_VERSION=$(jq -r '.tools.base.osv_scanner.version' "$manifest")" \
+			"OSV_SCANNER_X_MOD_VERSION=$(jq -r '.tools.base.osv_scanner.dependency_overrides["golang.org/x/mod"]' "$manifest")" \
 			"PYTHON_VERSION=$(jq -r '.tools.base.python.version' "$manifest")" \
 			"PYTHON_SHA256=$(jq -r '.tools.base.python.asset.sha256' "$manifest")" \
 			"TRIVY_VERSION=$(jq -r '.tools.base.trivy.version' "$manifest")" \
@@ -260,9 +261,13 @@ for name in "${names[@]}"; do
 		done
 	fi
 	if [[ $name == go ]]; then
-		build_arg="GOOSE_MODERNC_LIBC_VERSION=$(jq -r '.tools.go.goose.dependency_overrides["modernc.org/libc"]' "$manifest")"
-		grep -Fq -- "--build-arg ${build_arg}" "$fake_log" ||
-			fail 'missing go build argument: GOOSE_MODERNC_LIBC_VERSION'
+		for build_arg in \
+			"GOOSE_MODERNC_LIBC_VERSION=$(jq -r '.tools.go.goose.dependency_overrides["modernc.org/libc"]' "$manifest")" \
+			"GOIMPORTS_X_MOD_VERSION=$(jq -r '.tools.go.goimports.dependency_overrides["golang.org/x/mod"]' "$manifest")" \
+			"GOVULNCHECK_X_MOD_VERSION=$(jq -r '.tools.go.govulncheck.dependency_overrides["golang.org/x/mod"]' "$manifest")"; do
+			grep -Fq -- "--build-arg ${build_arg}" "$fake_log" ||
+				fail "missing go build argument: ${build_arg%%=*}"
+		done
 	fi
 	if [[ $name == vite ]]; then
 		for build_arg in \

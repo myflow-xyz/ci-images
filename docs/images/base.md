@@ -54,7 +54,7 @@ support, development headers, or third-party Python packages.
 Git is built from a checksum-pinned upstream source release so the protected
 system configuration can scope trust to GitHub's workspace tree. actionlint,
 gitleaks, OSV-Scanner, shfmt, and yq are built from exact module releases with
-Go 1.26.6. Narrow dependency overrides used to remove known vulnerabilities
+Go 1.27.0. Narrow dependency overrides used to remove known vulnerabilities
 from released tools are recorded in the version manifest and verified by image
 smoke tests. Go tools are installed into immutable versioned directories and
 exposed through stable links in `/opt/ci-tools/bin`. Compilers are build inputs

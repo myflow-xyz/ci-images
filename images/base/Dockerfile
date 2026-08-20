@@ -206,6 +206,7 @@ ARG GITLEAKS_XZ_VERSION
 ARG GO_SHA256_AMD64
 ARG GO_SHA256_ARM64
 ARG GO_VERSION
+ARG OSV_SCANNER_X_MOD_VERSION
 ARG OSV_SCANNER_VERSION
 ARG SHFMT_VERSION
 ARG TARGETARCH
@@ -306,7 +307,8 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
     build_tool \
       osv-scanner \
       github.com/google/osv-scanner/v2/cmd/osv-scanner \
-      "v${OSV_SCANNER_VERSION}"; \
+      "v${OSV_SCANNER_VERSION}" \
+      "golang.org/x/mod@${OSV_SCANNER_X_MOD_VERSION}"; \
     build_tool \
       shfmt \
       mvdan.cc/sh/v3/cmd/shfmt \
