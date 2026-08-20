@@ -90,7 +90,6 @@ assert_digest() {
 
 while IFS=$'\t' read -r name image; do
 	revision_ref="${image}:sha-${revision}"
-	latest_ref="${image}:latest"
 	release_ref="${image}:${version}"
 
 	if ! revision_digest=$(inspect_digest "$revision_ref"); then
@@ -99,22 +98,6 @@ while IFS=$'\t' read -r name image; do
 		exit 1
 	fi
 	assert_digest "$revision_digest" "$revision_ref"
-
-	if ! latest_digest=$(inspect_digest "$latest_ref"); then
-		printf 'latest tag is unavailable: %s\n' "$latest_ref" >&2
-		exit 1
-	fi
-	assert_digest "$latest_digest" "$latest_ref"
-
-	if [[ $latest_digest != "$revision_digest" ]]; then
-		printf \
-			'latest does not identify the selected revision: %s (%s != %s)\n' \
-			"$image" \
-			"$latest_digest" \
-			"$revision_digest" \
-			>&2
-		exit 1
-	fi
 
 	version_digest=
 	if version_digest=$(
