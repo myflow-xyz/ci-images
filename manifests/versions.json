@@ -172,7 +172,7 @@
           "golang.org/x/crypto": "v0.55.0",
           "golang.org/x/net": "v0.58.0",
           "google.golang.org/grpc": "v1.83.1",
-          "modernc.org/libc": "v1.75.3"
+          "modernc.org/libc": "v1.75.4"
         }
       },
       "golangci_lint": {
