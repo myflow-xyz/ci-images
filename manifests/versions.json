@@ -218,11 +218,11 @@
         "lockfile": "images/node/markdownlint/package-lock.json",
         "lockfile_sha256": "67ac75155d173347711bf06819067cd0a2dd5407c110b0f14730b3e3c9e3c0b3"
       },
-      "bundle_version": "3",
+      "bundle_version": "4",
       "lockfile": "images/node/npm/package-lock.json",
-      "lockfile_sha256": "f8967aafe208d604c4119e898e2c161888c93cca6cb7bc43fd91995e36843dde",
-      "pnpm": "11.22.0",
-      "redocly": "2.46.1"
+      "lockfile_sha256": "ee5f34985fd0dbdf6e7548f5b2686051a7edefa8a440473b0c3ba80bf238b409",
+      "pnpm": "11.23.0",
+      "redocly": "2.47.0"
     },
     "vite": {
       "bundle_version": "5",

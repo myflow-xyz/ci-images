@@ -39,9 +39,9 @@ and upstream image digests.
 | --- | --- |
 | `Node.js` | `24.19.0` |
 | `npm` | `12.0.2` |
-| `pnpm` | `11.22.0` |
+| `pnpm` | `11.23.0` |
 | `markdownlint-cli2` | `0.23.2` |
-| `@redocly/cli` | `2.46.1` |
+| `@redocly/cli` | `2.47.0` |
 
 ## `ci-vite`
 
