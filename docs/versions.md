@@ -19,7 +19,7 @@ and upstream image digests.
 | `shellspec` | `0.28.1` |
 | `shfmt` | `3.13.1` |
 | `Trivy` | `0.74.0` |
-| `yq` | `4.53.4` |
+| `yq` | `4.53.6` |
 
 ## `ci-go`
 

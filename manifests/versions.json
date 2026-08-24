@@ -122,7 +122,7 @@
         "module": "mvdan.cc/sh/v3/cmd/shfmt"
       },
       "yq": {
-        "version": "4.53.4",
+        "version": "4.53.6",
         "source": "https://github.com/mikefarah/yq",
         "module": "github.com/mikefarah/yq/v4",
         "dependency_overrides": {
