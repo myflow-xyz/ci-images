@@ -9,7 +9,7 @@
     "uid": 1001,
     "gid": 2001
   },
-  "debian_snapshot": "20260814T000000Z",
+  "debian_snapshot": "20260823T000000Z",
   "upstream_images": {
     "dockerfile_frontend": {
       "reference": "docker.io/docker/dockerfile:1.7",
@@ -17,7 +17,7 @@
     },
     "debian": {
       "reference": "docker.io/library/debian:bookworm-slim",
-      "digest": "sha256:7b140f374b289a7c2befc338f42ebe6441b7ea838a042bbd5acbfca6ec875818"
+      "digest": "sha256:abd67ffcfa541b485a3dff59865ab629aa048a6c613e639d36e7456b0b229241"
     },
     "node": {
       "reference": "docker.io/library/node:24.19.0-bookworm-slim",
@@ -122,7 +122,7 @@
         "module": "mvdan.cc/sh/v3/cmd/shfmt"
       },
       "yq": {
-        "version": "4.53.4",
+        "version": "4.53.6",
         "source": "https://github.com/mikefarah/yq",
         "module": "github.com/mikefarah/yq/v4",
         "dependency_overrides": {
@@ -172,12 +172,12 @@
           "golang.org/x/crypto": "v0.55.0",
           "golang.org/x/net": "v0.58.0",
           "google.golang.org/grpc": "v1.83.1",
-          "modernc.org/libc": "v1.75.3"
+          "modernc.org/libc": "v1.75.4"
         }
       },
       "golangci_lint": {
         "module": "github.com/golangci/golangci-lint/v2/cmd/golangci-lint",
-        "version": "v2.13.0",
+        "version": "v2.13.1",
         "dependency_overrides": {
           "golang.org/x/text": "v0.41.0"
         }
@@ -218,16 +218,16 @@
         "lockfile": "images/node/markdownlint/package-lock.json",
         "lockfile_sha256": "67ac75155d173347711bf06819067cd0a2dd5407c110b0f14730b3e3c9e3c0b3"
       },
-      "bundle_version": "3",
+      "bundle_version": "4",
       "lockfile": "images/node/npm/package-lock.json",
-      "lockfile_sha256": "f8967aafe208d604c4119e898e2c161888c93cca6cb7bc43fd91995e36843dde",
-      "pnpm": "11.22.0",
-      "redocly": "2.46.1"
+      "lockfile_sha256": "ee5f34985fd0dbdf6e7548f5b2686051a7edefa8a440473b0c3ba80bf238b409",
+      "pnpm": "11.23.0",
+      "redocly": "2.47.0"
     },
     "vite": {
-      "bundle_version": "5",
+      "bundle_version": "6",
       "lockfile": "images/vite/npm/package-lock.json",
-      "lockfile_sha256": "3755691abb4dd697b0a737f0e669f46b27123bd2a7b671fb8753f17166069de6",
+      "lockfile_sha256": "8df3157163e33f2e5ba5e5eb75488a1f55e1cb2d4f00eb4e671245107b7e2789",
       "typescript": "7.0.2",
       "typescript_source": {
         "repository": "https://github.com/microsoft/typescript-go",
@@ -240,10 +240,10 @@
         "compat_package": "6.0.2",
         "compiler": "6.0.3"
       },
-      "vite": "8.2.1",
-      "vitest": "4.1.10",
-      "coverage_v8": "4.1.10",
-      "oxlint": "1.78.0",
+      "vite": "8.2.2",
+      "vitest": "4.1.11",
+      "coverage_v8": "4.1.11",
+      "oxlint": "1.79.0",
       "oxlint_tsgolint": "7.0.2001",
       "oxlint_tsgolint_source": {
         "repository": "https://github.com/oxc-project/tsgolint",
@@ -252,7 +252,7 @@
           "golang.org/x/text": "v0.41.0"
         }
       },
-      "oxfmt": "0.63.0"
+      "oxfmt": "0.64.0"
     },
     "playwright": {
       "version": "1.62.1",

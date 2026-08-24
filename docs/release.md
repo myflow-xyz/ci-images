@@ -1,7 +1,9 @@
 # Releasing the CI images
 
-A release assigns one semantic version to the verified six-image suite. It
-promotes existing OCI index digests; it does not rebuild or rescan images.
+A release assigns one semantic numeric version to the verified six-image
+suite. Git tags and GitHub Releases use `vX.Y.Z`; stable OCI image tags use
+`X.Y.Z`. The workflow promotes existing OCI index digests; it does not rebuild
+or rescan images.
 
 ## Preconditions
 
@@ -22,7 +24,7 @@ Manual publication creates the required immutable revision tags without moving
 
 Run the **Release CI images** workflow on `main` and select one bump:
 
-| Selection | Previous stable version | Next version |
+| Selection | Previous Git tag | Next Git tag |
 | --- | --- | --- |
 | `patch` | `v1.2.3` | `v1.2.4` |
 | `minor` | `v1.2.3` | `v1.3.0` |
@@ -31,6 +33,11 @@ Run the **Release CI images** workflow on `main` and select one bump:
 `patch` is the default. If the repository has no stable version tag, the
 baseline is `v0.0.0`; select `minor` for an initial `v0.1.0` release or `major`
 for `v1.0.0`.
+
+The workflow derives the stable image tag by removing the Git tag's single
+leading `v`. This split starts with Git tag `v0.0.9` and image tag `0.0.9`.
+Earlier `v`-prefixed image tags remain immutable and do not receive unprefixed
+aliases.
 
 One version always covers `ci-base`, `ci-go`, `ci-node`, `ci-vite`,
 `ci-playwright`, and `ci-postgres`. Individual images do not advance versions
@@ -41,15 +48,16 @@ independently.
 The workflow:
 
 1. verifies that the selected revision is the current `main` commit;
-2. calculates the next version from stable Git tags;
+2. calculates the next `vX.Y.Z` Git tag from stable Git tags;
 3. resolves and validates every immutable revision tag;
-4. rejects a version tag that already identifies another digest;
-5. assigns the version tag to each verified OCI index and verifies the result;
-6. creates the Git tag and GitHub Release at the source revision, including the
-   six index digests.
+4. derives the `X.Y.Z` image tag and rejects it if it already identifies another
+   digest;
+5. assigns the image tag to each verified OCI index and verifies the result;
+6. creates the `vX.Y.Z` Git tag and GitHub Release at the source revision,
+   including the six index digests.
 
-The Git tag is created only after registry promotion succeeds. A version tag
-that already identifies the expected digest is accepted so a partially
+The Git tag is created only after registry promotion succeeds. A stable image
+tag that already identifies the expected digest is accepted so a partially
 completed registry promotion can be retried safely.
 
 ## Tag policy
@@ -61,12 +69,13 @@ completed registry promotion can be retried safely.
 | `edge` | optional `develop` push | Integration pointer; off by default. |
 | `latest` | verified `main` push | Moving stable-branch pointer. |
 | `run-<run>` | manual image publication | Ad hoc verification pointer. |
-| `vX.Y.Z` | manual release | Immutable suite release. |
+| `X.Y.Z` | manual release | Immutable suite release. |
 
-Consumers use the shared `vX.Y.Z` tag and pin its OCI index digest in workflow
-configuration. The container runtime selects the compatible platform manifest;
-architecture-specific suffix tags are not part of the release contract.
-Neither `edge` nor `latest` is a reproducible consumer pin.
+Consumers use the shared `X.Y.Z` image tag, verify it against the matching
+`vX.Y.Z` GitHub Release, and pin its OCI index digest in workflow configuration.
+The container runtime selects the compatible platform manifest;
+architecture-specific suffix tags are not part of the release contract. Neither
+`edge` nor `latest` is a reproducible consumer pin.
 
 ## Verification
 
@@ -74,7 +83,7 @@ A release is successful only when:
 
 - the Release CI images workflow completed successfully;
 - the GitHub Release and Git tag point to the intended `main` commit;
-- all six release tags exist in GHCR;
+- all six unprefixed release tags exist in GHCR;
 - each release tag resolves to the digest recorded in the GitHub Release;
 - that digest also matches the commit's immutable revision tag.
 
@@ -90,13 +99,13 @@ digest inspection, and pull examples.
 
 ## Failure and rollback
 
-If registry promotion stops after assigning only some version tags, rerun the
-same bump. The absent Git tag causes the same version to be calculated, and
+If registry promotion stops after assigning only some stable image tags, rerun
+the same bump. The absent Git tag causes the same version to be calculated, and
 matching existing registry tags are preserved.
 
-If an existing version tag has a different digest, the workflow fails before
-promotion. Investigate the registry state; do not overwrite or delete the
-stable tag to force a release.
+If an existing stable image tag has a different digest, the workflow fails
+before promotion. Investigate the registry state; do not overwrite or delete
+the stable tag to force a release.
 
 Published versions are never moved. Roll back a consumer by restoring a
 previous recorded digest. Publish a new version for any corrected image suite.

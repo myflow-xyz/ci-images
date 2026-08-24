@@ -17,7 +17,7 @@ The initial image contract includes:
   `hurlfmt`;
 - sqlc 1.31.1;
 - Goose 3.27.3;
-- golangci-lint 2.13.0;
+- golangci-lint 2.13.1;
 - pinned `goimports` and `govulncheck` releases.
 
 External Go executables are built from exact module versions into immutable

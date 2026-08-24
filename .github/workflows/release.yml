@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  BUILDX_VERSION: v0.35.0
+  BUILDX_VERSION: v0.36.1
 
 jobs:
   release:
@@ -62,22 +62,22 @@ jobs:
             exit 1
           fi
 
-      - name: Calculate version
-        id: version
+      - name: Calculate Git tag
+        id: release
         env:
           BUMP: ${{ inputs.bump }}
         run: |
-          version=$(.github/scripts/next-version.sh "$BUMP")
-          printf 'version=%s\n' "$version" >>"$GITHUB_OUTPUT"
+          git_tag=$(.github/scripts/next-version.sh "$BUMP")
+          printf 'git_tag=%s\n' "$git_tag" >>"$GITHUB_OUTPUT"
 
       - name: Set up Buildx
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
         with:
           version: ${{ env.BUILDX_VERSION }}
           driver: docker
 
       - name: Log in to GHCR
-        uses: docker/login-action@371161bbe7024a29a25c5e19bfcbc0804fe9ad2c # v4.5.2
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -85,16 +85,16 @@ jobs:
 
       - name: Promote verified digests
         env:
+          GIT_TAG: ${{ steps.release.outputs.git_tag }}
           OUTPUT_FILE: ${{ runner.temp }}/released-images.json
-          VERSION: ${{ steps.version.outputs.version }}
-        run: .github/scripts/release-images.sh "$VERSION" "$OUTPUT_FILE"
+        run: .github/scripts/release-images.sh "$GIT_TAG" "$OUTPUT_FILE"
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_TAG: ${{ steps.release.outputs.git_tag }}
           OUTPUT_FILE: ${{ runner.temp }}/released-images.json
           RELEASE_NOTES: ${{ runner.temp }}/release-notes.md
-          VERSION: ${{ steps.version.outputs.version }}
         run: |
           {
             printf \
@@ -109,17 +109,17 @@ jobs:
           } >"$RELEASE_NOTES"
 
           release_url=$(
-            gh release create "$VERSION" \
+            gh release create "$GIT_TAG" \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
-              --title "$VERSION" \
+              --title "$GIT_TAG" \
               --notes-file "$RELEASE_NOTES" \
               --latest
           )
 
           tag_revision=$(
             gh api \
-              "repos/${GITHUB_REPOSITORY}/git/ref/tags/${VERSION}" \
+              "repos/${GITHUB_REPOSITORY}/git/ref/tags/${GIT_TAG}" \
               --jq '.object.sha'
           )
           if [[ $tag_revision != "$GITHUB_SHA" ]]; then
@@ -129,7 +129,7 @@ jobs:
           fi
 
           {
-            printf '## %s\n\n' "$VERSION"
+            printf '## %s\n\n' "$GIT_TAG"
             printf 'Source revision: %s\n\n' "$GITHUB_SHA"
             printf 'GitHub Release: %s\n\n' "$release_url"
             printf '| Image | OCI index digest |\n'

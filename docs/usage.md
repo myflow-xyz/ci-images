@@ -40,23 +40,24 @@ printf '%s\n' "$GHCR_TOKEN" |
 Use a stable version to discover the release digest:
 
 ```bash
-docker buildx imagetools inspect ghcr.io/myflow-xyz/ci-go:v0.1.0
+docker buildx imagetools inspect ghcr.io/myflow-xyz/ci-go:0.1.0
 ```
 
 Compare the reported OCI index digest with the digest table in the matching
-GitHub Release. Then pull or configure the shared release tag pinned to that
-index digest:
+`v0.1.0` GitHub Release. Then pull or configure the shared release tag pinned
+to that index digest:
 
 ```bash
-docker pull ghcr.io/myflow-xyz/ci-go:v0.1.0@sha256:<digest>
+docker pull ghcr.io/myflow-xyz/ci-go:0.1.0@sha256:<digest>
 ```
 
 The container runtime selects AMD64 or ARM64 from the index automatically.
-Architecture-specific suffix tags are not required. Use `vX.Y.Z` for stable
-release discovery, `latest` only to inspect the current verified `main` suite,
-and `edge` only when optional `develop` publication is enabled for integration
-testing. The default workflow does not update `edge`. Do not consume candidate
-or run-specific tags.
+Architecture-specific suffix tags are not required. Use `X.Y.Z` for stable
+image discovery; the corresponding Git tag and GitHub Release use `vX.Y.Z`.
+Use `latest` only to inspect the current verified `main` suite, and `edge` only
+when optional `develop` publication is enabled for integration testing. The
+default workflow does not update `edge`. Do not consume candidate or
+run-specific tags.
 
 For a private package in GitHub Actions, grant the consumer repository read
 access to each package, set `packages: read`, and authenticate with its
@@ -78,7 +79,7 @@ jobs:
       contents: read
       packages: read
     container:
-      image: ghcr.io/myflow-xyz/ci-go:v0.1.0@sha256:<digest>
+      image: ghcr.io/myflow-xyz/ci-go:0.1.0@sha256:<digest>
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -105,13 +106,13 @@ jobs:
       contents: read
       packages: read
     container:
-      image: ghcr.io/myflow-xyz/ci-go:v0.1.0@sha256:<digest>
+      image: ghcr.io/myflow-xyz/ci-go:0.1.0@sha256:<digest>
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     services:
       postgres:
-        image: ghcr.io/myflow-xyz/ci-postgres:v0.1.0@sha256:<digest>
+        image: ghcr.io/myflow-xyz/ci-postgres:0.1.0@sha256:<digest>
         credentials:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
@@ -275,7 +276,7 @@ jobs:
   test:
     runs-on: [self-hosted, linux]
     container:
-      image: ghcr.io/myflow-xyz/ci-go:v0.1.0@sha256:<digest>
+      image: ghcr.io/myflow-xyz/ci-go:0.1.0@sha256:<digest>
       volumes:
         - >-
           /opt/actions-runner/shared/cache/go:/var/cache/go
@@ -292,7 +293,7 @@ The same runtime contract for direct Docker invocation is:
 ```bash
 docker run --rm \
   --mount type=bind,src=<host-directory>,dst=/workspace \
-  ghcr.io/myflow-xyz/ci-base:v0.1.0@sha256:<digest>
+  ghcr.io/myflow-xyz/ci-base:0.1.0@sha256:<digest>
 ```
 
 ### Existing host group
@@ -320,7 +321,7 @@ jobs:
   test:
     runs-on: [self-hosted, linux]
     container:
-      image: ghcr.io/myflow-xyz/ci-go:v0.1.0@sha256:<digest>
+      image: ghcr.io/myflow-xyz/ci-go:0.1.0@sha256:<digest>
       options: --group-add ${{ vars.CI_GROUP_GID }}
     steps:
       - uses: actions/checkout@<commit-sha>
@@ -335,7 +336,7 @@ test -n "$ci_group_gid"
 docker run --rm \
   --group-add "$ci_group_gid" \
   --mount type=bind,src=<host-directory>,dst=/workspace \
-  ghcr.io/myflow-xyz/ci-base:v0.1.0@sha256:<digest>
+  ghcr.io/myflow-xyz/ci-base:0.1.0@sha256:<digest>
 ```
 
 The mounted directory must use `ci-group` group ownership and group-write,
