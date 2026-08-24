@@ -50,12 +50,12 @@ and upstream image digests.
 | `@typescript/native` | `7.0.2` |
 | `TypeScript compatibility package` | `6.0.2` |
 | `TypeScript legacy compiler` | `6.0.3` |
-| `vite` | `8.2.1` |
-| `vitest` | `4.1.10` |
-| `@vitest/coverage-v8` | `4.1.10` |
-| `oxlint` | `1.78.0` |
+| `vite` | `8.2.2` |
+| `vitest` | `4.1.11` |
+| `@vitest/coverage-v8` | `4.1.11` |
+| `oxlint` | `1.79.0` |
 | `oxlint-tsgolint` | `7.0.2001` |
-| `oxfmt` | `0.63.0` |
+| `oxfmt` | `0.64.0` |
 
 ## `ci-playwright`
 

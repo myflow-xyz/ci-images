@@ -225,9 +225,9 @@
       "redocly": "2.47.0"
     },
     "vite": {
-      "bundle_version": "5",
+      "bundle_version": "6",
       "lockfile": "images/vite/npm/package-lock.json",
-      "lockfile_sha256": "3755691abb4dd697b0a737f0e669f46b27123bd2a7b671fb8753f17166069de6",
+      "lockfile_sha256": "8df3157163e33f2e5ba5e5eb75488a1f55e1cb2d4f00eb4e671245107b7e2789",
       "typescript": "7.0.2",
       "typescript_source": {
         "repository": "https://github.com/microsoft/typescript-go",
@@ -240,10 +240,10 @@
         "compat_package": "6.0.2",
         "compiler": "6.0.3"
       },
-      "vite": "8.2.1",
-      "vitest": "4.1.10",
-      "coverage_v8": "4.1.10",
-      "oxlint": "1.78.0",
+      "vite": "8.2.2",
+      "vitest": "4.1.11",
+      "coverage_v8": "4.1.11",
+      "oxlint": "1.79.0",
       "oxlint_tsgolint": "7.0.2001",
       "oxlint_tsgolint_source": {
         "repository": "https://github.com/oxc-project/tsgolint",
@@ -252,7 +252,7 @@
           "golang.org/x/text": "v0.41.0"
         }
       },
-      "oxfmt": "0.63.0"
+      "oxfmt": "0.64.0"
     },
     "playwright": {
       "version": "1.62.1",
