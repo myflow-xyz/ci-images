@@ -9,9 +9,9 @@ The initial image contract includes:
 
 - Node.js 24.19.0 imported from the digest-pinned official Node image;
 - npm and npx 12.0.2 from a hash-verified release artifact;
-- pnpm 11.22.0;
+- pnpm 11.23.0;
 - `markdownlint-cli2` 0.23.2;
-- Redocly CLI 2.46.1 for OpenAPI validation;
+- Redocly CLI 2.47.0 for OpenAPI validation;
 - explicit npm and pnpm cache paths.
 
 The npm release artifact is hash-verified, and its reviewed bundled dependency
