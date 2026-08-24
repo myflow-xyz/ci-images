@@ -127,7 +127,7 @@ if [[ ${1-} == buildx && ${2-} == imagetools &&
 		exit 0
 	fi
 
-	if [[ $tag == v* ]]; then
+	if [[ $tag =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
 		if [[ ${FAKE_VERSION_ERROR_IMAGE:-} == "$name" ]]; then
 			printf 'unauthorized\n' >&2
 			exit 1
@@ -201,7 +201,8 @@ create_count() {
 assert_release_output() {
 	jq --exit-status \
 		--arg revision "$GITHUB_SHA" \
-		--arg version v0.1.0 \
+		--arg git_tag v0.1.0 \
+		--arg image_tag 0.1.0 \
 		'
 			length == 6 and
 			([.[].name] | sort) == [
@@ -214,17 +215,31 @@ assert_release_output() {
 			] and
 			([
 				.[] |
-				.version == $version and
+				.git_tag == $git_tag and
+				.image_tag == $image_tag and
 				(.digest | test("^sha256:[0-9a-f]{64}$")) and
 				.revision_ref ==
 					(.image + ":sha-" + $revision) and
-				.release_ref == (.image + ":" + $version) and
+				.release_ref == (.image + ":" + $image_tag) and
+				(has("version") | not) and
 				(has("needs_promotion") | not)
 			] | all)
 		' \
 		"$output_file" >/dev/null ||
 		fail 'release output contract'
 }
+
+reset_registry
+if "$release_images" 0.1.0 "$output_file" \
+	>"$failure_output" 2>&1; then
+	fail 'unprefixed Git tag input was accepted'
+else
+	release_status=$?
+fi
+assert_equal 64 "$release_status" 'unprefixed Git tag status'
+grep -q 'stable Git tag is not supported' "$failure_output" ||
+	fail 'unprefixed Git tag diagnostic'
+assert_equal 0 "$(create_count)" 'unprefixed Git tag promotions'
 
 reset_registry
 "$release_images" v0.1.0 "$output_file"
@@ -246,11 +261,12 @@ reset_registry
 if FAKE_VERSION_CONFLICT_IMAGE=base \
 	"$release_images" v0.1.0 "$output_file" \
 	>"$failure_output" 2>&1; then
-	fail 'conflicting stable tag was accepted'
+	fail 'conflicting stable image tag was accepted'
 fi
-grep -q 'stable tag already identifies another digest' "$failure_output" ||
-	fail 'stable tag conflict diagnostic'
-assert_equal 0 "$(create_count)" 'stable tag conflict promotions'
+grep -q 'stable image tag already identifies another digest' \
+	"$failure_output" ||
+	fail 'stable image tag conflict diagnostic'
+assert_equal 0 "$(create_count)" 'stable image tag conflict promotions'
 
 reset_registry
 if FAKE_VERSION_ERROR_IMAGE=base \
@@ -277,7 +293,7 @@ base_digest=$(docker buildx imagetools inspect \
 	ghcr.io/myflow-xyz/ci-base:latest \
 	--format '{{.Manifest.Digest}}')
 printf '%s\t%s\n' \
-	ghcr.io/myflow-xyz/ci-base:v0.1.0 \
+	ghcr.io/myflow-xyz/ci-base:0.1.0 \
 	"$base_digest" \
 	>"$fake_state"
 "$release_images" v0.1.0 "$output_file"
@@ -341,7 +357,7 @@ GITHUB_EVENT_NAME=workflow_dispatch \
 assert_equal 6 \
 	"$(grep -c ':run-123$' "$fake_log")" \
 	'mixed-attempt manual publication aliases'
-if grep -Eq ':(edge|latest|v[0-9])' "$fake_log"; then
+if grep -Eq ':(edge|latest|[0-9]+\.[0-9]+\.[0-9]+)$' "$fake_log"; then
 	fail 'manual publication created a moving or stable alias'
 fi
 
