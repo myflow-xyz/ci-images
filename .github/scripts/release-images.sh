@@ -3,20 +3,21 @@
 set -euo pipefail
 
 if [[ $# -ne 2 ]]; then
-	printf 'usage: %s <version> <output-json>\n' "$0" >&2
+	printf 'usage: %s <git-tag> <output-json>\n' "$0" >&2
 	exit 64
 fi
 
-version=$1
+git_tag=$1
 output_file=$2
 revision=${GITHUB_SHA:?GITHUB_SHA is not set}
 repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 manifest="${repository_root}/manifests/versions.json"
 
-if [[ ! $version =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
-	printf 'stable release version is not supported: %s\n' "$version" >&2
+if [[ ! $git_tag =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+	printf 'stable Git tag is not supported: %s\n' "$git_tag" >&2
 	exit 64
 fi
+image_tag=${git_tag#v}
 if [[ ! $revision =~ ^[0-9a-f]{40}$ ]]; then
 	printf 'invalid source revision: %s\n' "$revision" >&2
 	exit 1
@@ -66,7 +67,7 @@ inspect_optional_digest() {
 		return 0
 	fi
 	if grep -Eiq \
-		'manifest unknown|name unknown|404[[:space:]]+not found|ghcr\.io/myflow-xyz/ci-[a-z]+:v[0-9]+\.[0-9]+\.[0-9]+: not found' \
+		'manifest unknown|name unknown|404[[:space:]]+not found|ghcr\.io/myflow-xyz/ci-[a-z]+:[0-9]+\.[0-9]+\.[0-9]+: not found' \
 		"$error_file"; then
 		return 1
 	fi
@@ -90,7 +91,7 @@ assert_digest() {
 
 while IFS=$'\t' read -r name image; do
 	revision_ref="${image}:sha-${revision}"
-	release_ref="${image}:${version}"
+	release_ref="${image}:${image_tag}"
 
 	if ! revision_digest=$(inspect_digest "$revision_ref"); then
 		printf 'immutable revision tag is unavailable: %s\n' \
@@ -99,23 +100,23 @@ while IFS=$'\t' read -r name image; do
 	fi
 	assert_digest "$revision_digest" "$revision_ref"
 
-	version_digest=
-	if version_digest=$(
+	release_digest=
+	if release_digest=$(
 		inspect_optional_digest \
 			"$release_ref" \
 			"${temporary_directory}/${name}-inspect.err"
 	); then
-		version_status=0
+		release_status=0
 	else
-		version_status=$?
+		release_status=$?
 	fi
 
-	case "$version_status" in
+	case "$release_status" in
 	0)
-		assert_digest "$version_digest" "$release_ref"
-		if [[ $version_digest != "$revision_digest" ]]; then
+		assert_digest "$release_digest" "$release_ref"
+		if [[ $release_digest != "$revision_digest" ]]; then
 			printf \
-				'stable tag already identifies another digest: %s\n' \
+				'stable image tag already identifies another digest: %s\n' \
 				"$release_ref" \
 				>&2
 			exit 1
@@ -126,14 +127,15 @@ while IFS=$'\t' read -r name image; do
 		needs_promotion=true
 		;;
 	*)
-		exit "$version_status"
+		exit "$release_status"
 		;;
 	esac
 
 	jq -n \
 		--arg name "$name" \
 		--arg image "$image" \
-		--arg version "$version" \
+		--arg git_tag "$git_tag" \
+		--arg image_tag "$image_tag" \
 		--arg digest "$revision_digest" \
 		--arg revision_ref "$revision_ref" \
 		--arg release_ref "$release_ref" \
@@ -141,7 +143,8 @@ while IFS=$'\t' read -r name image; do
 		'{
 			name: $name,
 			image: $image,
-			version: $version,
+			git_tag: $git_tag,
+			image_tag: $image_tag,
 			digest: $digest,
 			revision_ref: $revision_ref,
 			release_ref: $release_ref,
