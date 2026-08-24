@@ -177,7 +177,7 @@
       },
       "golangci_lint": {
         "module": "github.com/golangci/golangci-lint/v2/cmd/golangci-lint",
-        "version": "v2.13.0",
+        "version": "v2.13.1",
         "dependency_overrides": {
           "golang.org/x/text": "v0.41.0"
         }

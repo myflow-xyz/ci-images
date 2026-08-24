@@ -29,7 +29,7 @@ and upstream image digests.
 | `Hurl` | `8.0.1` |
 | `sqlc` | `1.31.1` |
 | `goose` | `3.27.3` |
-| `golangci-lint` | `2.13.0` |
+| `golangci-lint` | `2.13.1` |
 | `goimports` | `0.49.0` |
 | `govulncheck` | `1.7.0` |
 
