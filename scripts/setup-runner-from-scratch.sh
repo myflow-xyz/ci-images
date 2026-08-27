@@ -338,12 +338,16 @@ install \
 	--group "$owner_primary_gid" \
 	--mode 0755 \
 	-- \
-	"$runner_root" \
+	"$runner_root"
+
+install \
+	--directory \
+	--owner "$owner_uid" \
+	--group "$group_gid" \
+	--mode 2755 \
+	-- \
 	"$workspace_root" \
-	"$repository_root" \
-	"$shared_root" \
-	"$shared_bin" \
-	"$shared_downloads"
+	"$repository_root"
 
 install \
 	--directory \
@@ -352,7 +356,10 @@ install \
 	--mode 2775 \
 	-- \
 	"$work_root" \
-	"$shared_cache"
+	"$shared_root" \
+	"$shared_bin" \
+	"$shared_cache" \
+	"$shared_downloads"
 
 verify_directory() {
 	local directory=$1
@@ -365,19 +372,22 @@ verify_directory() {
 		fail "directory verification failed: ${directory} expected=${expected} actual=${actual}"
 }
 
-for directory in \
+verify_directory \
 	"$runner_root" \
-	"$workspace_root" \
-	"$repository_root" \
-	"$shared_root" \
-	"$shared_bin" \
-	"$shared_downloads"; do
+	"${owner_uid}:${owner_primary_gid}:755"
+
+for directory in "$workspace_root" "$repository_root"; do
 	verify_directory \
 		"$directory" \
-		"${owner_uid}:${owner_primary_gid}:755"
+		"${owner_uid}:${group_gid}:2755"
 done
 
-for directory in "$work_root" "$shared_cache"; do
+for directory in \
+	"$work_root" \
+	"$shared_root" \
+	"$shared_bin" \
+	"$shared_cache" \
+	"$shared_downloads"; do
 	verify_directory \
 		"$directory" \
 		"${owner_uid}:${group_gid}:2775"

@@ -228,8 +228,8 @@ Host provisioning is split into three independently verifiable stages:
    creates only the explicit runner skeleton and verifies its ownership and
    modes. It does not recurse through existing contents or apply ACLs.
 3. The [runner permission helper](../scripts/docs/setup-runner-permissions.md)
-   normalizes only `workspace/<repository>/_work` trees and `shared/cache`, then
-   verifies their recursive group and ACL contract.
+   normalizes `workspace/<repository>/_work` trees and the complete `shared`
+   tree, then verifies their recursive group and ACL contract.
 
 For the standard identity and one repository runner:
 
@@ -245,7 +245,7 @@ sudo scripts/setup-runner-permissions.sh
 None of these helpers downloads, registers, or manages the GitHub Actions
 runner service. The permission helper repairs the `workspace` and runner
 installation control-directory contract. Unsafe write access on the runner
-root or `shared` is rejected for the runner operator to fix.
+root is rejected for the runner operator to fix.
 
 An opt-in host preflight may run the helper with `--check` directly from a
 host-side step inherited from the runner service. It verifies the invoking
@@ -254,7 +254,7 @@ filesystem state. It must fail the job rather than repair a runner. The runner
 operator applies changes and restarts the service separately before the
 workflow is rerun.
 
-The runner account owns each managed `_work` or `shared/cache` root. Files and
+The runner account owns each managed `_work` or `shared` root. Files and
 directories created below those roots may retain the container UID; the shared
 GID and inherited permissions provide cross-UID access.
 

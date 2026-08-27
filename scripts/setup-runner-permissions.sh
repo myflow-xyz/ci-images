@@ -19,7 +19,7 @@ usage() {
 		'' \
 		'Configure writable GitHub Actions runner data under:' \
 		'  <runner-root>/workspace/*/_work' \
-		'  <runner-root>/shared/cache' \
+		'  <runner-root>/shared' \
 		'  control directories: setgid 2755' \
 		'  directories: setgid 2775; files: group mirrors owner, other has no write' \
 		'' \
@@ -236,7 +236,6 @@ runner_root=$(readlink -f -- "$runner_root")
 
 workspace_root="${runner_root}/workspace"
 shared_root="${runner_root}/shared"
-cache_root="${shared_root}/cache"
 
 [[ -d $workspace_root && ! -L $workspace_root ]] ||
 	fail "workspace root must be a real directory: ${workspace_root}"
@@ -247,14 +246,6 @@ if [[ -e $shared_root || -L $shared_root ]]; then
 		fail "shared root must be a real directory: ${shared_root}"
 else
 	shared_state=create
-fi
-
-cache_state=existing
-if [[ -e $cache_root || -L $cache_root ]]; then
-	[[ -d $cache_root && ! -L $cache_root ]] ||
-		fail "cache root must be a real directory: ${cache_root}"
-else
-	cache_state=create
 fi
 
 declare -a workdirs=()
@@ -313,9 +304,6 @@ reject_writable_unmanaged_parent() {
 }
 
 reject_writable_unmanaged_parent "$runner_root"
-if [[ $shared_state == existing ]]; then
-	reject_writable_unmanaged_parent "$shared_root"
-fi
 
 expected_control_acl=$(
 	printf '%s\n' \
@@ -384,8 +372,8 @@ reject_unsupported_entries() {
 }
 
 declare -a existing_targets=("${workdirs[@]}")
-if [[ $cache_state == existing ]]; then
-	existing_targets+=("$cache_root")
+if [[ $shared_state == existing ]]; then
+	existing_targets+=("$shared_root")
 fi
 
 for target in "${existing_targets[@]}"; do
@@ -413,7 +401,7 @@ elif $dry_run; then
 fi
 target_count=$((${#workdirs[@]} + 1))
 printf \
-	'%s: plan mode=%s root=%s owner=%s(%s) group=%s(%s) workdirs=%s controls=%s control-corrections=%s shared=%s cache=%s configured-membership=%s\n' \
+	'%s: plan mode=%s root=%s owner=%s(%s) group=%s(%s) workdirs=%s controls=%s control-corrections=%s shared=%s configured-membership=%s\n' \
 	"$program_name" \
 	"$mode" \
 	"$runner_root" \
@@ -425,7 +413,6 @@ printf \
 	"${#control_directories[@]}" \
 	"$control_correction_count" \
 	"$shared_state" \
-	"$cache_state" \
 	"$membership_plan"
 
 if $dry_run; then
@@ -438,14 +425,12 @@ fi
 if $check_only; then
 	[[ $shared_state == existing ]] ||
 		fail "shared root is missing: ${shared_root}"
-	[[ $cache_state == existing ]] ||
-		fail "cache root is missing: ${cache_root}"
 	for control_directory in "${control_directories[@]}"; do
 		verify_control_directory "$control_directory"
 	done
 fi
 
-declare -a targets=("${workdirs[@]}" "$cache_root")
+declare -a targets=("${workdirs[@]}" "$shared_root")
 
 apply_permissions() {
 	local target=$1
@@ -660,22 +645,10 @@ if [[ $shared_state == create ]]; then
 	install \
 		--directory \
 		--owner "$owner_uid" \
-		--group "$owner_primary_gid" \
-		--mode 0755 \
-		-- \
-		"$shared_root"
-	reject_writable_unmanaged_parent "$shared_root"
-fi
-
-if [[ $cache_state == create ]]; then
-	reject_writable_unmanaged_parent "$shared_root"
-	install \
-		--directory \
-		--owner "$owner_uid" \
 		--group "$group_gid" \
 		--mode 2775 \
 		-- \
-		"$cache_root"
+		"$shared_root"
 fi
 
 for control_directory in "${control_directories[@]}"; do

@@ -210,23 +210,24 @@ repository_root="${runner_root}/workspace/${repository}"
 work_root="${repository_root}/_work"
 shared_root="${runner_root}/shared"
 
-declare -a owner_directories=(
-	"$runner_root"
-	"${runner_root}/workspace"
-	"$repository_root"
-	"$shared_root"
-	"${shared_root}/bin"
-	"${shared_root}/downloads"
-)
+[[ -d $runner_root && ! -L $runner_root ]] ||
+	fail "runner root is missing: ${runner_root}"
+[[ $(stat --format '%u:%g:%a' "$runner_root") == "${owner_uid}:${owner_gid}:755" ]] ||
+	fail "runner root identity is wrong: ${runner_root}"
 
-for directory in "${owner_directories[@]}"; do
+for directory in "${runner_root}/workspace" "$repository_root"; do
 	[[ -d $directory && ! -L $directory ]] ||
-		fail "owner directory is missing: ${directory}"
-	[[ $(stat --format '%u:%g:%a' "$directory") == "${owner_uid}:${owner_gid}:755" ]] ||
-		fail "owner directory identity is wrong: ${directory}"
+		fail "control directory is missing: ${directory}"
+	[[ $(stat --format '%u:%g:%a' "$directory") == "${owner_uid}:${group_gid}:2755" ]] ||
+		fail "control directory identity is wrong: ${directory}"
 done
 
-for directory in "$work_root" "${shared_root}/cache"; do
+for directory in \
+	"$work_root" \
+	"$shared_root" \
+	"${shared_root}/bin" \
+	"${shared_root}/cache" \
+	"${shared_root}/downloads"; do
 	[[ -d $directory && ! -L $directory ]] ||
 		fail "shared directory is missing: ${directory}"
 	[[ $(stat --format '%u:%g:%a' "$directory") == "${owner_uid}:${group_gid}:2775" ]] ||

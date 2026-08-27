@@ -81,12 +81,16 @@ assert_fails_with() {
 
 runner_root="${temporary_directory}/runner root"
 mkdir -p \
+	"${runner_root}/shared/bin/tools" \
 	"${runner_root}/shared/cache/go/nested" \
+	"${runner_root}/shared/downloads" \
 	"${runner_root}/workspace/repository-a/_work/project/nested" \
 	"${runner_root}/workspace/repository-b/_work/_temp" \
 	"${runner_root}/workspace/repository-c"
 
 printf 'cache\n' >"${runner_root}/shared/cache/go/nested/data"
+printf 'tool\n' >"${runner_root}/shared/bin/tools/tool"
+printf 'download\n' >"${runner_root}/shared/downloads/archive"
 printf 'workspace\n' > \
 	"${runner_root}/workspace/repository-a/_work/project/nested/data"
 printf 'read-only\n' > \
@@ -102,23 +106,28 @@ ln -s \
 	"${runner_root}/workspace/repository-a/_work/outside-link"
 
 chmod 0700 \
+	"${runner_root}/shared" \
+	"${runner_root}/shared/bin" \
+	"${runner_root}/shared/bin/tools" \
 	"${runner_root}/shared/cache" \
 	"${runner_root}/shared/cache/go" \
 	"${runner_root}/shared/cache/go/nested" \
+	"${runner_root}/shared/downloads" \
 	"${runner_root}/workspace/repository-a/_work" \
 	"${runner_root}/workspace/repository-a/_work/project" \
 	"${runner_root}/workspace/repository-a/_work/project/nested" \
 	"${runner_root}/workspace/repository-b/_work"
 chmod 1777 "${runner_root}/workspace/repository-b/_work/_temp"
 chmod 0600 \
+	"${runner_root}/shared/bin/tools/tool" \
 	"${runner_root}/shared/cache/go/nested/data" \
+	"${runner_root}/shared/downloads/archive" \
 	"${runner_root}/workspace/repository-a/_work/project/nested/data"
 chmod 0400 \
 	"${runner_root}/workspace/repository-a/_work/project/nested/read-only"
 chmod 0700 "${runner_root}/workspace/repository-a/_work/project/tool"
 chmod 0755 \
 	"${runner_root}" \
-	"${runner_root}/shared" \
 	"${runner_root}/workspace/repository-c"
 chmod 2775 \
 	"${runner_root}/workspace" \
@@ -249,21 +258,24 @@ assert_fails_with \
 	--check
 chmod 2755 "${runner_root}/workspace"
 
-chmod 0600 "$work_file"
-parent_failure_before=$(stat --format '%u:%g:%a' "$work_file")
-chmod g+w "${runner_root}/shared"
+chmod 0755 "${runner_root}/shared"
 assert_fails_with \
-	'group-writable shared parent' \
-	"unmanaged parent grants non-owner write access: ${runner_root}/shared" \
+	'non-writable shared root check' \
+	"directory mode verification failed: ${runner_root}/shared" \
+	setpriv \
+	--reuid "$owner_uid" \
+	--regid "$owner_gid" \
+	--init-groups \
 	"$helper" \
 	--runner-root "$runner_root" \
 	--owner "$owner_name" \
-	--group "$group_name"
-parent_failure_after=$(stat --format '%u:%g:%a' "$work_file")
-[[ $parent_failure_after == "$parent_failure_before" ]] ||
-	fail 'unsafe shared parent detection did not precede mutation'
-chmod 0755 "${runner_root}/shared"
-chmod 0664 "$work_file"
+	--group "$group_name" \
+	--check
+"$helper" \
+	--runner-root "$runner_root" \
+	--owner "$owner_name" \
+	--group "$group_name" \
+	>/dev/null
 
 setfacl \
 	--modify \
@@ -362,7 +374,7 @@ read_only_file="${runner_root}/workspace/repository-a/_work/project/nested/read-
 declare -a targets=(
 	"${runner_root}/workspace/repository-a/_work"
 	"${runner_root}/workspace/repository-b/_work"
-	"${runner_root}/shared/cache"
+	"${runner_root}/shared"
 )
 declare -a control_directories=(
 	"${runner_root}/workspace"
@@ -540,11 +552,11 @@ mkdir -p \
 special_file="${special_root}/workspace/repository/_work/data"
 printf 'unchanged\n' >"$special_file"
 chmod 0604 "$special_file"
-mkfifo "${special_root}/workspace/repository/_work/job.fifo"
+mkfifo "${special_root}/shared/cache/job.fifo"
 special_before=$(stat --format '%u:%g:%a' "$special_file")
 assert_fails_with \
 	'unsupported file type' \
-	"unsupported file type: ${special_root}/workspace/repository/_work/job.fifo" \
+	"unsupported file type: ${special_root}/shared/cache/job.fifo" \
 	"$helper" \
 	--runner-root "$special_root" \
 	--owner "$owner_name" \
@@ -697,9 +709,7 @@ empty_dry_run_output=$(
 		--dry-run
 )
 [[ $empty_dry_run_output == *'shared=create'* ]] ||
-	fail 'missing shared parent creation was not planned'
-[[ $empty_dry_run_output == *'cache=create'* ]] ||
-	fail 'missing cache creation was not planned'
+	fail 'missing shared-tree creation was not planned'
 [[ $empty_dry_run_output == *'controls=1 control-corrections=1'* ]] ||
 	fail 'missing-layout dry-run did not plan workspace control repair'
 [[ ! -e ${empty_root}/shared ]] ||
@@ -726,21 +736,14 @@ create_output=$(
 		--group "$group_name"
 )
 [[ $create_output == *'shared=create'* ]] ||
-	fail 'missing shared parent creation was not reported'
-[[ $create_output == *'cache=create'* ]] ||
-	fail 'missing cache creation was not reported'
+	fail 'missing shared-tree creation was not reported'
 [[ $create_output == *'verified status=ok targets=1'* ]] ||
-	fail 'created cache verification was not reported'
+	fail 'created shared-tree verification was not reported'
 shared_identity=$(
 	stat --format '%u:%g:%a' "${empty_root}/shared"
 )
-[[ $shared_identity == "${owner_uid}:${owner_gid}:755" ]] ||
-	fail 'missing shared parent was not safely provisioned'
-cache_identity=$(
-	stat --format '%u:%g:%a' "${empty_root}/shared/cache"
-)
-[[ $cache_identity == "${owner_uid}:${group_gid}:2775" ]] ||
-	fail 'missing cache root was not provisioned'
+[[ $shared_identity == "${owner_uid}:${group_gid}:2775" ]] ||
+	fail 'missing shared tree was not provisioned'
 [[ $(stat --format '%u:%g:%a' "${empty_root}/workspace") == "${owner_uid}:${group_gid}:2755" ]] ||
 	fail 'empty workspace control directory was not normalized'
 

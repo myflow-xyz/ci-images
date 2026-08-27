@@ -20,11 +20,11 @@ For repository name `repo-example`, the helper creates:
     └── downloads/
 ```
 
-The runner root, `workspace`, repository directory, `shared`, `shared/bin`, and
-`shared/downloads` are owner-managed mode `0755` directories. `_work` and
-`shared/cache` are initially group-owned mode `2775` directories. The separate
-permission helper recursively normalizes those two managed trees and applies
-their inherited ACLs.
+The runner root is an owner-managed mode `0755` directory. `workspace` and the
+repository directory are group-owned control directories with setgid mode
+`2755`. `_work` and the complete `shared` tree are group-owned mode `2775`
+directories. The separate permission helper recursively normalizes the `_work`
+and `shared` managed trees and applies their inherited ACLs.
 
 The root-owned, read-only `.mfci-runner-root` marker records that this helper
 created the runner root. Existing roots are accepted only with that marker,
