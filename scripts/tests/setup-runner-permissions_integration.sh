@@ -81,12 +81,16 @@ assert_fails_with() {
 
 runner_root="${temporary_directory}/runner root"
 mkdir -p \
+	"${runner_root}/shared/bin/tools" \
 	"${runner_root}/shared/cache/go/nested" \
+	"${runner_root}/shared/downloads" \
 	"${runner_root}/workspace/repository-a/_work/project/nested" \
 	"${runner_root}/workspace/repository-b/_work/_temp" \
 	"${runner_root}/workspace/repository-c"
 
 printf 'cache\n' >"${runner_root}/shared/cache/go/nested/data"
+printf 'tool\n' >"${runner_root}/shared/bin/tools/tool"
+printf 'download\n' >"${runner_root}/shared/downloads/archive"
 printf 'workspace\n' > \
 	"${runner_root}/workspace/repository-a/_work/project/nested/data"
 printf 'read-only\n' > \
@@ -102,27 +106,33 @@ ln -s \
 	"${runner_root}/workspace/repository-a/_work/outside-link"
 
 chmod 0700 \
+	"${runner_root}/shared" \
+	"${runner_root}/shared/bin" \
+	"${runner_root}/shared/bin/tools" \
 	"${runner_root}/shared/cache" \
 	"${runner_root}/shared/cache/go" \
 	"${runner_root}/shared/cache/go/nested" \
+	"${runner_root}/shared/downloads" \
 	"${runner_root}/workspace/repository-a/_work" \
 	"${runner_root}/workspace/repository-a/_work/project" \
 	"${runner_root}/workspace/repository-a/_work/project/nested" \
 	"${runner_root}/workspace/repository-b/_work"
 chmod 1777 "${runner_root}/workspace/repository-b/_work/_temp"
 chmod 0600 \
+	"${runner_root}/shared/bin/tools/tool" \
 	"${runner_root}/shared/cache/go/nested/data" \
+	"${runner_root}/shared/downloads/archive" \
 	"${runner_root}/workspace/repository-a/_work/project/nested/data"
 chmod 0400 \
 	"${runner_root}/workspace/repository-a/_work/project/nested/read-only"
 chmod 0700 "${runner_root}/workspace/repository-a/_work/project/tool"
 chmod 0755 \
 	"${runner_root}" \
-	"${runner_root}/shared" \
+	"${runner_root}/workspace/repository-c"
+chmod 2775 \
 	"${runner_root}/workspace" \
 	"${runner_root}/workspace/repository-a" \
-	"${runner_root}/workspace/repository-b" \
-	"${runner_root}/workspace/repository-c"
+	"${runner_root}/workspace/repository-b"
 chmod 0640 \
 	"${runner_root}/workspace/repository-a/config" \
 	"${runner_root}/workspace/repository-c/outside"
@@ -141,6 +151,9 @@ setfacl \
 
 work_file="${runner_root}/workspace/repository-a/_work/project/nested/data"
 before_dry_run=$(stat --format '%u:%g:%a' "$work_file")
+workspace_before_dry_run=$(
+	stat --format '%u:%g:%a' "${runner_root}/workspace"
+)
 dry_run_output=$(
 	"$helper" \
 		--runner-root "$runner_root" \
@@ -149,15 +162,22 @@ dry_run_output=$(
 		--dry-run
 )
 after_dry_run=$(stat --format '%u:%g:%a' "$work_file")
+workspace_after_dry_run=$(
+	stat --format '%u:%g:%a' "${runner_root}/workspace"
+)
 
 [[ $before_dry_run == "$after_dry_run" ]] ||
 	fail 'dry-run changed a target'
+[[ $workspace_before_dry_run == "$workspace_after_dry_run" ]] ||
+	fail 'dry-run changed a control directory'
 [[ $dry_run_output == *'mode=dry-run'* ]] ||
 	fail 'dry-run mode was not reported'
 [[ $dry_run_output == *"root=${runner_root}"* ]] ||
 	fail 'resolved runner root was not reported'
 [[ $dry_run_output == *'workdirs=2'* ]] ||
 	fail 'dry-run discovered the wrong work-tree count'
+[[ $dry_run_output == *'controls=3 control-corrections=3'* ]] ||
+	fail 'dry-run reported the wrong control-directory plan'
 [[ $dry_run_output == *'targets=3'* ]] ||
 	fail 'dry-run reported the wrong target count'
 
@@ -178,12 +198,6 @@ outside_before=$(
 		--format '%u:%g:%a' \
 		"${runner_root}/workspace/repository-c/outside"
 )
-parent_before=$(
-	stat \
-		--format '%u:%g:%a' \
-		"${runner_root}/workspace/repository-a"
-)
-
 apply_output=$(
 	"$helper" \
 		--runner-root "$runner_root" \
@@ -232,7 +246,7 @@ chmod 0755 "$runner_root"
 chmod g+w "${runner_root}/workspace"
 assert_fails_with \
 	'group-writable workspace root' \
-	"unmanaged parent grants non-owner write access: ${runner_root}/workspace" \
+	"control directory identity verification failed: ${runner_root}/workspace expected=${owner_uid}:${group_gid}:2755" \
 	setpriv \
 	--reuid "$owner_uid" \
 	--regid "$owner_gid" \
@@ -242,43 +256,49 @@ assert_fails_with \
 	--owner "$owner_name" \
 	--group "$group_name" \
 	--check
-chmod 0755 "${runner_root}/workspace"
+chmod 2755 "${runner_root}/workspace"
 
-chmod 0600 "$work_file"
-parent_failure_before=$(stat --format '%u:%g:%a' "$work_file")
-chmod g+w "${runner_root}/shared"
+chmod 0755 "${runner_root}/shared"
 assert_fails_with \
-	'group-writable shared parent' \
-	"unmanaged parent grants non-owner write access: ${runner_root}/shared" \
+	'non-writable shared root check' \
+	"directory mode verification failed: ${runner_root}/shared" \
+	setpriv \
+	--reuid "$owner_uid" \
+	--regid "$owner_gid" \
+	--init-groups \
 	"$helper" \
 	--runner-root "$runner_root" \
 	--owner "$owner_name" \
-	--group "$group_name"
-parent_failure_after=$(stat --format '%u:%g:%a' "$work_file")
-[[ $parent_failure_after == "$parent_failure_before" ]] ||
-	fail 'unsafe shared parent detection did not precede mutation'
-chmod 0755 "${runner_root}/shared"
-chmod 0664 "$work_file"
+	--group "$group_name" \
+	--check
+"$helper" \
+	--runner-root "$runner_root" \
+	--owner "$owner_name" \
+	--group "$group_name" \
+	>/dev/null
 
-chmod 0600 "$work_file"
-parent_failure_before=$(stat --format '%u:%g:%a' "$work_file")
 setfacl \
 	--modify \
 	"user:${acl_probe_uid}:rwx" \
 	"${runner_root}/workspace/repository-a"
-assert_fails_with \
-	'named-ACL-writable runner directory' \
-	"unmanaged parent grants non-owner write access: ${runner_root}/workspace/repository-a" \
+control_repair_plan=$(
 	"$helper" \
+		--runner-root "$runner_root" \
+		--owner "$owner_name" \
+		--group "$group_name" \
+		--dry-run
+)
+[[ $control_repair_plan == *'controls=3 control-corrections=1'* ]] ||
+	fail 'dry-run did not report a writable named ACL for repair'
+"$helper" \
 	--runner-root "$runner_root" \
 	--owner "$owner_name" \
-	--group "$group_name"
-parent_failure_after=$(stat --format '%u:%g:%a' "$work_file")
-[[ $parent_failure_after == "$parent_failure_before" ]] ||
-	fail 'unsafe runner parent detection did not precede mutation'
-setfacl --remove-all "${runner_root}/workspace/repository-a"
-chmod 0755 "${runner_root}/workspace/repository-a"
-chmod 0664 "$work_file"
+	--group "$group_name" \
+	>/dev/null
+[[ $(stat --format '%u:%g:%a' "${runner_root}/workspace/repository-a") == "${owner_uid}:${group_gid}:2755" ]] ||
+	fail 'runner control directory identity was not repaired'
+[[ $(getfacl -cp "${runner_root}/workspace/repository-a") == $'user::rwx\ngroup::r-x\nother::r-x' ]] ||
+	fail 'runner control directory ACL was not repaired'
 
 setfacl \
 	--modify \
@@ -293,7 +313,7 @@ if ! "$helper" \
 	fail 'a masked non-writable parent ACL was rejected'
 fi
 setfacl --remove-all "${runner_root}/workspace/repository-a"
-chmod 0755 "${runner_root}/workspace/repository-a"
+chmod 2755 "${runner_root}/workspace/repository-a"
 
 assert_fails_with \
 	'stale effective group membership' \
@@ -354,7 +374,18 @@ read_only_file="${runner_root}/workspace/repository-a/_work/project/nested/read-
 declare -a targets=(
 	"${runner_root}/workspace/repository-a/_work"
 	"${runner_root}/workspace/repository-b/_work"
-	"${runner_root}/shared/cache"
+	"${runner_root}/shared"
+)
+declare -a control_directories=(
+	"${runner_root}/workspace"
+	"${runner_root}/workspace/repository-a"
+	"${runner_root}/workspace/repository-b"
+)
+expected_control_acl=$(
+	printf '%s\n' \
+		'user::rwx' \
+		'group::r-x' \
+		'other::r-x'
 )
 expected_directory_acl=$(
 	printf '%s\n' \
@@ -443,6 +474,13 @@ for target in "${targets[@]}"; do
 	done < <(find "$target" -type f)
 done
 
+for control_directory in "${control_directories[@]}"; do
+	[[ $(stat --format '%u:%g:%a' "$control_directory") == "${owner_uid}:${group_gid}:2755" ]] ||
+		fail "control directory identity was not normalized: ${control_directory}"
+	[[ $(getfacl -cp "$control_directory") == "$expected_control_acl" ]] ||
+		fail "control directory ACL was not normalized: ${control_directory}"
+done
+
 [[ $(getfacl -cp "$read_only_file") == "$expected_read_only_acl" ]] ||
 	fail 'the read-only file ACL was not normalized exactly'
 
@@ -451,12 +489,6 @@ outside_after=$(
 )
 [[ $outside_after == "$outside_before" ]] ||
 	fail 'a symlink target outside the writable trees changed'
-parent_after=$(
-	stat --format '%u:%g:%a' "${runner_root}/workspace/repository-a"
-)
-[[ $parent_after == "$parent_before" ]] ||
-	fail 'a runner installation directory changed'
-
 linked_runner_target="${temporary_directory}/linked-runner-target"
 linked_runner="${runner_root}/workspace/linked-runner"
 mkdir -p "${linked_runner_target}/_work"
@@ -520,11 +552,11 @@ mkdir -p \
 special_file="${special_root}/workspace/repository/_work/data"
 printf 'unchanged\n' >"$special_file"
 chmod 0604 "$special_file"
-mkfifo "${special_root}/workspace/repository/_work/job.fifo"
+mkfifo "${special_root}/shared/cache/job.fifo"
 special_before=$(stat --format '%u:%g:%a' "$special_file")
 assert_fails_with \
 	'unsupported file type' \
-	"unsupported file type: ${special_root}/workspace/repository/_work/job.fifo" \
+	"unsupported file type: ${special_root}/shared/cache/job.fifo" \
 	"$helper" \
 	--runner-root "$special_root" \
 	--owner "$owner_name" \
@@ -677,9 +709,9 @@ empty_dry_run_output=$(
 		--dry-run
 )
 [[ $empty_dry_run_output == *'shared=create'* ]] ||
-	fail 'missing shared parent creation was not planned'
-[[ $empty_dry_run_output == *'cache=create'* ]] ||
-	fail 'missing cache creation was not planned'
+	fail 'missing shared-tree creation was not planned'
+[[ $empty_dry_run_output == *'controls=1 control-corrections=1'* ]] ||
+	fail 'missing-layout dry-run did not plan workspace control repair'
 [[ ! -e ${empty_root}/shared ]] ||
 	fail 'dry-run created the shared parent'
 assert_fails_with \
@@ -704,21 +736,16 @@ create_output=$(
 		--group "$group_name"
 )
 [[ $create_output == *'shared=create'* ]] ||
-	fail 'missing shared parent creation was not reported'
-[[ $create_output == *'cache=create'* ]] ||
-	fail 'missing cache creation was not reported'
+	fail 'missing shared-tree creation was not reported'
 [[ $create_output == *'verified status=ok targets=1'* ]] ||
-	fail 'created cache verification was not reported'
+	fail 'created shared-tree verification was not reported'
 shared_identity=$(
 	stat --format '%u:%g:%a' "${empty_root}/shared"
 )
-[[ $shared_identity == "${owner_uid}:${owner_gid}:755" ]] ||
-	fail 'missing shared parent was not safely provisioned'
-cache_identity=$(
-	stat --format '%u:%g:%a' "${empty_root}/shared/cache"
-)
-[[ $cache_identity == "${owner_uid}:${group_gid}:2775" ]] ||
-	fail 'missing cache root was not provisioned'
+[[ $shared_identity == "${owner_uid}:${group_gid}:2775" ]] ||
+	fail 'missing shared tree was not provisioned'
+[[ $(stat --format '%u:%g:%a' "${empty_root}/workspace") == "${owner_uid}:${group_gid}:2755" ]] ||
+	fail 'empty workspace control directory was not normalized'
 
 assert_fails_with \
 	'non-root execution' \

@@ -19,7 +19,8 @@ usage() {
 		'' \
 		'Configure writable GitHub Actions runner data under:' \
 		'  <runner-root>/workspace/*/_work' \
-		'  <runner-root>/shared/cache' \
+		'  <runner-root>/shared' \
+		'  control directories: setgid 2755' \
 		'  directories: setgid 2775; files: group mirrors owner, other has no write' \
 		'' \
 		'Options:' \
@@ -129,6 +130,7 @@ required_commands=(
 	getfacl
 	id
 	readlink
+	stat
 )
 
 if ! $check_only; then
@@ -234,7 +236,6 @@ runner_root=$(readlink -f -- "$runner_root")
 
 workspace_root="${runner_root}/workspace"
 shared_root="${runner_root}/shared"
-cache_root="${shared_root}/cache"
 
 [[ -d $workspace_root && ! -L $workspace_root ]] ||
 	fail "workspace root must be a real directory: ${workspace_root}"
@@ -247,15 +248,8 @@ else
 	shared_state=create
 fi
 
-cache_state=existing
-if [[ -e $cache_root || -L $cache_root ]]; then
-	[[ -d $cache_root && ! -L $cache_root ]] ||
-		fail "cache root must be a real directory: ${cache_root}"
-else
-	cache_state=create
-fi
-
 declare -a workdirs=()
+declare -a control_directories=("$workspace_root")
 shopt -s nullglob
 declare -a workdir_candidates=("${workspace_root}"/*/_work)
 shopt -u nullglob
@@ -268,6 +262,7 @@ for workdir in "${workdir_candidates[@]}"; do
 		fail "work tree must not be a symbolic link: ${workdir}"
 	[[ -d $workdir ]] ||
 		fail "work tree is not a directory: ${workdir}"
+	control_directories+=("$runner_directory")
 	workdirs+=("$workdir")
 done
 
@@ -309,13 +304,58 @@ reject_writable_unmanaged_parent() {
 }
 
 reject_writable_unmanaged_parent "$runner_root"
-reject_writable_unmanaged_parent "$workspace_root"
-if [[ $shared_state == existing ]]; then
-	reject_writable_unmanaged_parent "$shared_root"
-fi
-for workdir in "${workdirs[@]}"; do
-	reject_writable_unmanaged_parent "${workdir%/_work}"
-done
+
+expected_control_acl=$(
+	printf '%s\n' \
+		'user::rwx' \
+		'group::r-x' \
+		'other::r-x'
+)
+
+control_directory_identity() {
+	local target=$1
+
+	stat --format '%u:%g:%a' -- "$target" ||
+		fail "cannot inspect control directory identity: ${target}"
+}
+
+control_directory_acl() {
+	local target=$1
+
+	getfacl -cp -- "$target" ||
+		fail "cannot inspect control directory ACL: ${target}"
+}
+
+control_directory_matches() {
+	local target=$1
+	local expected_identity="${owner_uid}:${group_gid}:2755"
+
+	[[ $(control_directory_identity "$target") == "$expected_identity" ]] &&
+		[[ $(control_directory_acl "$target") == "$expected_control_acl" ]]
+}
+
+verify_control_directory() {
+	local target=$1
+	local actual_identity
+	local expected_identity="${owner_uid}:${group_gid}:2755"
+
+	actual_identity=$(control_directory_identity "$target")
+	[[ $actual_identity == "$expected_identity" ]] ||
+		fail "control directory identity verification failed: ${target} expected=${expected_identity} actual=${actual_identity}"
+	[[ $(control_directory_acl "$target") == "$expected_control_acl" ]] ||
+		fail "control directory ACL verification failed: ${target}"
+}
+
+normalize_control_directory() {
+	local target=$1
+
+	[[ -d $target && ! -L $target ]] ||
+		fail "control directory must remain a real directory: ${target}"
+	chown --no-dereference "${owner_uid}:${group_gid}" -- "$target"
+	setfacl --remove-all --remove-default -- "$target"
+	chmod 2755 -- "$target"
+	verify_control_directory "$target"
+}
 
 reject_unsupported_entries() {
 	local target=$1
@@ -332,8 +372,8 @@ reject_unsupported_entries() {
 }
 
 declare -a existing_targets=("${workdirs[@]}")
-if [[ $cache_state == existing ]]; then
-	existing_targets+=("$cache_root")
+if [[ $shared_state == existing ]]; then
+	existing_targets+=("$shared_root")
 fi
 
 for target in "${existing_targets[@]}"; do
@@ -346,6 +386,13 @@ else
 	membership_plan=missing
 fi
 
+control_correction_count=0
+for control_directory in "${control_directories[@]}"; do
+	if ! control_directory_matches "$control_directory"; then
+		((control_correction_count += 1))
+	fi
+done
+
 mode=apply
 if $check_only; then
 	mode=check
@@ -354,7 +401,7 @@ elif $dry_run; then
 fi
 target_count=$((${#workdirs[@]} + 1))
 printf \
-	'%s: plan mode=%s root=%s owner=%s(%s) group=%s(%s) workdirs=%s shared=%s cache=%s configured-membership=%s\n' \
+	'%s: plan mode=%s root=%s owner=%s(%s) group=%s(%s) workdirs=%s controls=%s control-corrections=%s shared=%s configured-membership=%s\n' \
 	"$program_name" \
 	"$mode" \
 	"$runner_root" \
@@ -363,8 +410,9 @@ printf \
 	"$group_name" \
 	"$group_gid" \
 	"${#workdirs[@]}" \
+	"${#control_directories[@]}" \
+	"$control_correction_count" \
 	"$shared_state" \
-	"$cache_state" \
 	"$membership_plan"
 
 if $dry_run; then
@@ -377,11 +425,12 @@ fi
 if $check_only; then
 	[[ $shared_state == existing ]] ||
 		fail "shared root is missing: ${shared_root}"
-	[[ $cache_state == existing ]] ||
-		fail "cache root is missing: ${cache_root}"
+	for control_directory in "${control_directories[@]}"; do
+		verify_control_directory "$control_directory"
+	done
 fi
 
-declare -a targets=("${workdirs[@]}" "$cache_root")
+declare -a targets=("${workdirs[@]}" "$shared_root")
 
 apply_permissions() {
 	local target=$1
@@ -596,23 +645,15 @@ if [[ $shared_state == create ]]; then
 	install \
 		--directory \
 		--owner "$owner_uid" \
-		--group "$owner_primary_gid" \
-		--mode 0755 \
-		-- \
-		"$shared_root"
-	reject_writable_unmanaged_parent "$shared_root"
-fi
-
-if [[ $cache_state == create ]]; then
-	reject_writable_unmanaged_parent "$shared_root"
-	install \
-		--directory \
-		--owner "$owner_uid" \
 		--group "$group_gid" \
 		--mode 2775 \
 		-- \
-		"$cache_root"
+		"$shared_root"
 fi
+
+for control_directory in "${control_directories[@]}"; do
+	normalize_control_directory "$control_directory"
+done
 
 owner_has_configured_group ||
 	fail "owner is not a member of resolved group: ${owner_name}/${group_name}"
