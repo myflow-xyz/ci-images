@@ -9,16 +9,17 @@ export LC_ALL PATH
 readonly program_name=${0##*/}
 readonly default_group_name=mfci
 readonly default_group_gid=2001
+readonly default_repository=mfxyz
 readonly runner_root_marker=.mfci-runner-root
 runner_root=
 owner_spec=
-repository=
+repository=$default_repository
 group_spec=$default_group_name
 dry_run=false
 
 usage() {
 	printf '%s\n' \
-		"Usage: ${program_name} --runner-root PATH --owner USER|UID --repository NAME [options]" \
+		"Usage: ${program_name} --runner-root PATH --owner USER|UID [options]" \
 		'' \
 		'Create this self-hosted runner directory structure:' \
 		'  <runner-root>/workspace/<repository>/_work' \
@@ -28,10 +29,10 @@ usage() {
 		'  --runner-root PATH New or helper-managed runner root below:' \
 		'                     /opt, /var, /home, or /Users' \
 		'  --owner USER|UID   Existing non-root runner owner' \
-		'  --repository NAME  Repository-specific runner directory name' \
 		'' \
 		'Options:' \
 		'  --group GROUP|GID  Shared group (default: mfci)' \
+		'  --repository NAME  Runner directory name (default: mfxyz)' \
 		'  --dry-run          Resolve and report without changing the host' \
 		'  -h, --help         Show this help' \
 		'' \
@@ -128,7 +129,6 @@ done
 
 [[ -n $runner_root ]] || usage_error '--runner-root is required'
 [[ -n $owner_spec ]] || usage_error '--owner is required'
-[[ -n $repository ]] || usage_error '--repository is required'
 [[ $repository =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] ||
 	usage_error "invalid repository name: ${repository}"
 

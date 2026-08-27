@@ -237,8 +237,7 @@ For the standard identity and one repository runner:
 sudo scripts/setup-runner-user.sh
 sudo scripts/setup-runner-from-scratch.sh \
   --runner-root /opt/actions-runner \
-  --owner ci-runner \
-  --repository repo-example
+  --owner ci-runner
 sudo scripts/setup-runner-permissions.sh
 ```
 

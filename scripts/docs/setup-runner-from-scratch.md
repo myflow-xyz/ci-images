@@ -6,13 +6,13 @@ permission policy are separate stages.
 
 ## Created structure
 
-For repository name `repo-example`, the helper creates:
+With the default repository directory `mfxyz`, the helper creates:
 
 ```text
 <runner-root>/
 ├── .mfci-runner-root
 ├── workspace/
-│   └── repo-example/
+│   └── mfxyz/
 │       └── _work/
 └── shared/
     ├── bin/
@@ -63,7 +63,6 @@ the host:
 sudo scripts/setup-runner-from-scratch.sh \
   --runner-root /opt/actions-runner \
   --owner ci-runner \
-  --repository repo-example \
   --dry-run
 ```
 
@@ -72,13 +71,13 @@ Create and verify the structure using the default `mfci` shared group:
 ```bash
 sudo scripts/setup-runner-from-scratch.sh \
   --runner-root /opt/actions-runner \
-  --owner ci-runner \
-  --repository repo-example
+  --owner ci-runner
 ```
 
-Use `--group GROUP|GID` for a different existing shared group. The canonical
-`mfci` group must use GID `2001`. The owner may be a name or numeric ID. The
-repository value is a single directory name, not a path.
+Use `--repository NAME` to override the default `mfxyz` runner directory. The
+value is a single directory name, not a path. Use `--group GROUP|GID` for a
+different existing shared group. The canonical `mfci` group must use GID
+`2001`. The owner may be a name or numeric ID.
 
 If the owner is not in the resolved shared group, apply mode stops before
 creating or normalizing the runner root. Dry-run reports the missing membership

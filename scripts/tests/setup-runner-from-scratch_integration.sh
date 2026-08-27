@@ -153,13 +153,12 @@ owner_has_group &&
 	fail 'unsafe root validation changed owner group membership'
 
 runner_root="${temporary_directory}/runner root"
-repository=repo-example
+repository=mfxyz
 
 dry_run_output=$(
 	"$helper" \
 		--runner-root "$runner_root" \
 		--owner "$owner_uid" \
-		--repository "$repository" \
 		--dry-run
 )
 [[ $dry_run_output == *'mode=dry-run'* ]] ||
@@ -168,6 +167,8 @@ dry_run_output=$(
 	fail 'dry-run reported the wrong runner-root state'
 [[ $dry_run_output == *'group=mfci(2001) configured-membership=missing'* ]] ||
 	fail 'dry-run reported the wrong identity state'
+[[ $dry_run_output == *'repository=mfxyz'* ]] ||
+	fail 'dry-run did not select the default repository directory'
 [[ $dry_run_output == *'create=8 existing=0'* ]] ||
 	fail 'dry-run reported the wrong directory plan'
 [[ $dry_run_output == *'dry-run status=ok directories=8'* ]] ||
@@ -183,8 +184,7 @@ assert_fails_with \
 	"$membership_warning" \
 	"$helper" \
 	--runner-root "$runner_root" \
-	--owner "$owner_name" \
-	--repository "$repository"
+	--owner "$owner_name"
 [[ ! -e $runner_root ]] ||
 	fail 'missing membership created the runner root'
 
@@ -195,8 +195,7 @@ owner_has_group ||
 apply_output=$(
 	"$helper" \
 		--runner-root "$runner_root" \
-		--owner "$owner_name" \
-		--repository "$repository"
+		--owner "$owner_name"
 )
 [[ $apply_output == *'setup-runner-from-scratch.sh: verified status=ok directories=8 membership=present'* ]] ||
 	fail 'bootstrap verification was not reported'
@@ -250,8 +249,7 @@ chmod 0640 \
 repeat_output=$(
 	"$helper" \
 		--runner-root "$runner_root" \
-		--owner "$owner_name" \
-		--repository "$repository"
+		--owner "$owner_name"
 )
 [[ $repeat_output == *'create=0 existing=8'* ]] ||
 	fail 'repeat run did not recognize the existing structure'
