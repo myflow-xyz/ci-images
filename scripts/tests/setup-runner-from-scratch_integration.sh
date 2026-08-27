@@ -229,7 +229,7 @@ done
 for directory in "$work_root" "${shared_root}/cache"; do
 	[[ -d $directory && ! -L $directory ]] ||
 		fail "shared directory is missing: ${directory}"
-	[[ $(stat --format '%u:%g:%a' "$directory") == "${owner_uid}:${group_gid}:2770" ]] ||
+	[[ $(stat --format '%u:%g:%a' "$directory") == "${owner_uid}:${group_gid}:2775" ]] ||
 		fail "shared directory identity is wrong: ${directory}"
 done
 

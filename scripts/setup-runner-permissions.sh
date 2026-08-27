@@ -20,6 +20,7 @@ usage() {
 		'Configure writable GitHub Actions runner data under:' \
 		'  <runner-root>/workspace/*/_work' \
 		'  <runner-root>/shared/cache' \
+		'  directories: setgid 2775; files: group mirrors owner, other has no write' \
 		'' \
 		'Options:' \
 		'  --runner-root PATH Runner root (default: /opt/actions-runner)' \
@@ -390,12 +391,12 @@ apply_permissions() {
 		-exec chown --no-dereference "${owner_uid}:${group_gid}" -- {} +
 	find "$target" \
 		-type d \
-		-exec chmod 2770 -- {} +
+		-exec chmod 2775 -- {} +
 	find "$target" \
 		-type d \
 		-exec setfacl \
 		--set \
-		user::rwx,group::rwx,other::---,default:user::rwx,default:group::rwx,default:other::--- \
+		user::rwx,group::rwx,other::r-x,default:user::rwx,default:group::rwx,default:other::r-x \
 		-- \
 		{} +
 	find "$target" \
@@ -403,7 +404,7 @@ apply_permissions() {
 		-exec setfacl --remove-all -- {} +
 	find "$target" \
 		-type f \
-		-exec chmod u-s,g-s,o-t,g=u,o= -- {} +
+		-exec chmod u-s,g-s,o-t,g=u,o=u,o-w -- {} +
 }
 
 acl_records_match() {
@@ -437,13 +438,13 @@ acl_records_match() {
 					owner_count++
 				} else if (lines[line_number] == "group::" group_permissions) {
 					group_count++
-				} else if (lines[line_number] == "other::---") {
+				} else if (lines[line_number] == "other::r-x") {
 					other_count++
 				} else if (lines[line_number] == "default:user::" owner_permissions) {
 					default_owner_count++
 				} else if (lines[line_number] == "default:group::" group_permissions) {
 					default_group_count++
-				} else if (lines[line_number] == "default:other::---") {
+				} else if (lines[line_number] == "default:other::r-x") {
 					default_other_count++
 				} else {
 					exit 1
@@ -475,6 +476,7 @@ file_acl_records_match() {
 		{
 			owner_permissions = ""
 			group_permissions = ""
+			other_permissions = ""
 			owner_count = 0
 			group_count = 0
 			other_count = 0
@@ -492,18 +494,22 @@ file_acl_records_match() {
 				} else if (lines[line_number] ~ /^group::[r-][w-][x-]$/) {
 					group_permissions = substr(lines[line_number], 8)
 					group_count++
-				} else if (lines[line_number] == "other::---") {
+				} else if (lines[line_number] ~ /^other::[r-][w-][x-]$/) {
+					other_permissions = substr(lines[line_number], 8)
 					other_count++
 				} else {
 					exit 1
 				}
 			}
 
+			expected_other_permissions = owner_permissions
+			gsub(/w/, "-", expected_other_permissions)
 			if (entry_count != 3 ||
 			    owner_count != 1 ||
 			    group_count != 1 ||
 			    other_count != 1 ||
-			    owner_permissions != group_permissions) {
+			    owner_permissions != group_permissions ||
+			    other_permissions != expected_other_permissions) {
 				exit 1
 			}
 		}
@@ -539,7 +545,7 @@ verify_permissions() {
 	mismatch=$(
 		find "$target" \
 			-type d \
-			! -perm 2770 \
+			! -perm 2775 \
 			-print \
 			-quit
 	)
@@ -549,7 +555,7 @@ verify_permissions() {
 	mismatch=$(
 		find "$target" \
 			-type f \
-			-perm /7007 \
+			-perm /7002 \
 			-print \
 			-quit
 	)
@@ -603,7 +609,7 @@ if [[ $cache_state == create ]]; then
 		--directory \
 		--owner "$owner_uid" \
 		--group "$group_gid" \
-		--mode 2770 \
+		--mode 2775 \
 		-- \
 		"$cache_root"
 fi
