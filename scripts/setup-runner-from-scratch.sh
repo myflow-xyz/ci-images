@@ -349,7 +349,7 @@ install \
 	--directory \
 	--owner "$owner_uid" \
 	--group "$group_gid" \
-	--mode 2770 \
+	--mode 2775 \
 	-- \
 	"$work_root" \
 	"$shared_cache"
@@ -380,7 +380,7 @@ done
 for directory in "$work_root" "$shared_cache"; do
 	verify_directory \
 		"$directory" \
-		"${owner_uid}:${group_gid}:2770"
+		"${owner_uid}:${group_gid}:2775"
 done
 
 printf \

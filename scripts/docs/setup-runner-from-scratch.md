@@ -22,7 +22,7 @@ For repository name `repo-example`, the helper creates:
 
 The runner root, `workspace`, repository directory, `shared`, `shared/bin`, and
 `shared/downloads` are owner-managed mode `0755` directories. `_work` and
-`shared/cache` are initially group-owned mode `2770` directories. The separate
+`shared/cache` are initially group-owned mode `2775` directories. The separate
 permission helper recursively normalizes those two managed trees and applies
 their inherited ACLs.
 

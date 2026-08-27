@@ -257,6 +257,15 @@ The runner account owns each managed `_work` or `shared/cache` root. Files and
 directories created below those roots may retain the container UID; the shared
 GID and inherited permissions provide cross-UID access.
 
+Managed directories use setgid mode `2775`. Group permissions on regular files
+mirror owner permissions, while other permissions mirror owner read and execute
+access without write; a normal writable file therefore uses mode `0664`.
+Default ACLs preserve this behavior for runner-created `_temp` file-command
+channels and container-created descendants even when their UIDs differ. This
+policy intentionally lets unrelated future host accounts read source, caches,
+artifacts, and temporary file-command content, so use it only on hosts where
+that read boundary is acceptable.
+
 Pre-create every exact cache bind source before Docker starts a job. Docker may
 otherwise create a missing source with unsuitable ownership.
 

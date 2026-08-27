@@ -258,7 +258,7 @@ parent_failure_after=$(stat --format '%u:%g:%a' "$work_file")
 [[ $parent_failure_after == "$parent_failure_before" ]] ||
 	fail 'unsafe shared parent detection did not precede mutation'
 chmod 0755 "${runner_root}/shared"
-chmod 0660 "$work_file"
+chmod 0664 "$work_file"
 
 chmod 0600 "$work_file"
 parent_failure_before=$(stat --format '%u:%g:%a' "$work_file")
@@ -278,7 +278,7 @@ parent_failure_after=$(stat --format '%u:%g:%a' "$work_file")
 	fail 'unsafe runner parent detection did not precede mutation'
 setfacl --remove-all "${runner_root}/workspace/repository-a"
 chmod 0755 "${runner_root}/workspace/repository-a"
-chmod 0660 "$work_file"
+chmod 0664 "$work_file"
 
 setfacl \
 	--modify \
@@ -338,17 +338,17 @@ assert_fails_with \
 check_failure_after=$(stat --format '%u:%g:%a' "$work_file")
 [[ $check_failure_after == "$check_failure_before" ]] ||
 	fail 'verification-only mode changed a target'
-chmod 0660 "$work_file"
+chmod 0664 "$work_file"
 
-[[ $(stat --format %A "$work_file") == -rw-rw---- ]] ||
+[[ $(stat --format %A "$work_file") == -rw-rw-r-- ]] ||
 	fail 'an existing regular file did not receive owner and group write access'
 tool_mode=$(
 	stat --format %A "${runner_root}/workspace/repository-a/_work/project/tool"
 )
-[[ $tool_mode == -rwxrwx--- ]] ||
+[[ $tool_mode == -rwxrwxr-x ]] ||
 	fail 'an existing executable did not retain executable access'
 read_only_file="${runner_root}/workspace/repository-a/_work/project/nested/read-only"
-[[ $(stat --format %A "$read_only_file") == -r--r----- ]] ||
+[[ $(stat --format %A "$read_only_file") == -r--r--r-- ]] ||
 	fail 'an existing read-only file did not retain read-only access'
 
 declare -a targets=(
@@ -360,31 +360,38 @@ expected_directory_acl=$(
 	printf '%s\n' \
 		'user::rwx' \
 		'group::rwx' \
-		'other::---' \
+		'other::r-x' \
 		'default:user::rwx' \
 		'default:group::rwx' \
-		'default:other::---'
+		'default:other::r-x'
 )
 expected_read_only_acl=$(
 	printf '%s\n' \
 		'user::r--' \
 		'group::r--' \
-		'other::---'
+		'other::r--'
 )
 
 assert_mirrored_file_permissions() {
 	local regular_file=$1
 	local mode
+	local owner_mode
+	local other_mode
 	local owner_permissions
 	local group_permissions
+	local other_permissions
 	local file_acl
 	local expected_file_acl
 
 	mode=$(stat --format %a "$regular_file")
 	[[ $mode =~ ^[0-7]{3}$ ]] ||
 		fail "file has special permission bits: ${regular_file}"
-	[[ ${mode:0:1} == "${mode:1:1}" && ${mode:2:1} == 0 ]] ||
+	[[ ${mode:0:1} == "${mode:1:1}" ]] ||
 		fail "file owner and group permissions differ: ${regular_file}"
+	owner_mode=$((8#${mode:0:1}))
+	other_mode=$((8#${mode:2:1}))
+	((other_mode == (owner_mode & 5))) ||
+		fail "file other permissions do not mirror owner read and execute access: ${regular_file}"
 
 	file_acl=$(getfacl -cp "$regular_file")
 	owner_permissions=$(
@@ -397,11 +404,12 @@ assert_mirrored_file_permissions() {
 	)
 	[[ -n $owner_permissions && $owner_permissions == "$group_permissions" ]] ||
 		fail "file ACL owner and group permissions differ: ${regular_file}"
+	other_permissions=${owner_permissions//w/-}
 	expected_file_acl=$(
 		printf '%s\n' \
 			"user::${owner_permissions}" \
 			"group::${group_permissions}" \
-			'other::---'
+			"other::${other_permissions}"
 	)
 	[[ $file_acl == "$expected_file_acl" ]] ||
 		fail "file ACL has unexpected entries: ${regular_file}"
@@ -420,7 +428,7 @@ for target in "${targets[@]}"; do
 		fail "descendant group ownership was not normalized below ${target}"
 	fi
 
-	if find "$target" -type d ! -perm 2770 -print -quit |
+	if find "$target" -type d ! -perm 2775 -print -quit |
 		grep -q .; then
 		fail "directory permissions were not normalized below ${target}"
 	fi
@@ -539,14 +547,41 @@ setpriv \
 
 [[ $(stat --format %g "$group_probe") == "$group_gid" ]] ||
 	fail 'a new directory did not inherit the shared group'
-[[ $(stat --format %A "$group_probe") == drwxrws--- ]] ||
+[[ $(stat --format %A "$group_probe") == drwxrwsr-x ]] ||
 	fail 'a new directory did not inherit writable group access'
 [[ $(stat --format %g "${group_probe}/file") == "$group_gid" ]] ||
 	fail 'a new file did not inherit the shared group'
-[[ $(stat --format %A "${group_probe}/file") == -rw-rw---- ]] ||
+[[ $(stat --format %A "${group_probe}/file") == -rw-rw-r-- ]] ||
 	fail 'a new file did not inherit writable group access'
 [[ $(stat --format %u "$group_probe") == "$probe_uid" ]] ||
 	fail 'the cross-UID probe was not owned by its creator'
+
+other_read_output=$(
+	setpriv \
+		--reuid "$acl_probe_uid" \
+		--regid "$stale_gid" \
+		--clear-groups \
+		cat "$work_file"
+)
+[[ $other_read_output == *'group-write'* ]] ||
+	fail 'an unrelated host identity could not read a managed file'
+# shellcheck disable=SC2016
+if setpriv \
+	--reuid "$acl_probe_uid" \
+	--regid "$stale_gid" \
+	--clear-groups \
+	bash -c 'printf "unexpected-write\n" >>"$1"' _ "$work_file" \
+	2>/dev/null; then
+	fail 'an unrelated host identity wrote a managed file'
+fi
+if setpriv \
+	--reuid "$acl_probe_uid" \
+	--regid "$stale_gid" \
+	--clear-groups \
+	touch "${group_probe}/unexpected-write" \
+	2>/dev/null; then
+	fail 'an unrelated host identity created a managed file'
+fi
 
 git_home="${temporary_directory}/git-home"
 git_repository="${runner_root}/workspace/repository-a/_work/git-probe"
@@ -585,7 +620,7 @@ git_object=$(
 )
 [[ -n $git_object ]] ||
 	fail 'Git did not create a loose object'
-[[ $(stat --format %a "$git_object") == 440 ]] ||
+[[ $(stat --format %a "$git_object") == 444 ]] ||
 	fail 'a Git loose object did not inherit read-only group access'
 [[ $(getfacl -cp "$git_object") == "$expected_read_only_acl" ]] ||
 	fail 'a Git loose object did not inherit the read-only ACL'
@@ -617,7 +652,7 @@ assert_fails_with \
 	--owner "$owner_name" \
 	--group "$group_name" \
 	--check
-chmod 2770 "$group_probe"
+chmod 2775 "$group_probe"
 
 runner_owned_file="${runner_root}/workspace/repository-b/_work/_temp/runner-owned"
 [[ $(stat --format %u "$runner_owned_file") == "$owner_uid" ]] ||
@@ -682,7 +717,7 @@ shared_identity=$(
 cache_identity=$(
 	stat --format '%u:%g:%a' "${empty_root}/shared/cache"
 )
-[[ $cache_identity == "${owner_uid}:${group_gid}:2770" ]] ||
+[[ $cache_identity == "${owner_uid}:${group_gid}:2775" ]] ||
 	fail 'missing cache root was not provisioned'
 
 assert_fails_with \

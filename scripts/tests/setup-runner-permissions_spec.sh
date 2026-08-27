@@ -7,6 +7,7 @@ Describe 'setup-runner-permissions.sh CLI'
 		When run "$helper" --help
 		The status should be success
 		The output should include '<runner-root>/workspace/*/_work'
+		The output should include 'directories: setgid 2775'
 		The output should include '--runner-root PATH'
 		The output should include 'default: ci-runner'
 		The output should include '--check'
