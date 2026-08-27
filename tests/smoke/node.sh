@@ -4,6 +4,7 @@ set -euo pipefail
 
 expected_node=${EXPECTED_NODE_VERSION:?EXPECTED_NODE_VERSION is not set}
 expected_pnpm=${EXPECTED_PNPM_VERSION:?EXPECTED_PNPM_VERSION is not set}
+: "${EXPECTED_PNPM_STORE_VERSION:?EXPECTED_PNPM_STORE_VERSION is not set}"
 : "${EXPECTED_MARKDOWNLINT_VERSION:?EXPECTED_MARKDOWNLINT_VERSION is not set}"
 : "${EXPECTED_NODE_BUNDLE_VERSION:?EXPECTED_NODE_BUNDLE_VERSION is not set}"
 : "${EXPECTED_NPM_BRACE_EXPANSION_VERSION:?EXPECTED_NPM_BRACE_EXPANSION_VERSION is not set}"
@@ -16,7 +17,7 @@ expected_markdownlint=$EXPECTED_MARKDOWNLINT_VERSION
 expected_redocly=$EXPECTED_REDOCLY_VERSION
 bundle_root="/opt/ci-tools/node/${expected_bundle}/node_modules"
 npm_root="/opt/ci-tools/npm/${EXPECTED_NPM_VERSION}/node_modules"
-expected_store="/var/cache/pnpm/store/v${expected_pnpm%%.*}"
+expected_store="/var/cache/pnpm/store/v${EXPECTED_PNPM_STORE_VERSION}"
 
 [[ $(node --version) == "v${expected_node}" ]]
 [[ $NODE_VERSION == "$expected_node" ]]
@@ -28,10 +29,18 @@ expected_store="/var/cache/pnpm/store/v${expected_pnpm%%.*}"
 [[ $(node --print \
 	"require('${npm_root}/tar/package.json').version") == "$EXPECTED_NPM_TAR_VERSION" ]]
 [[ $(pnpm --version) == "$expected_pnpm" ]]
+pnpm_executable=$(readlink -f "$(command -v pnpm)")
+[[ $pnpm_executable == "/opt/ci-tools/pnpm/${expected_pnpm}/pnpm" ]]
+[[ $(PATH=/usr/bin:/bin "$pnpm_executable" --version) == "$expected_pnpm" ]]
+[[ $(od -An -tx1 -N4 "$pnpm_executable" | tr -d '[:space:]') == 7f454c46 ]]
+[[ $(pnpx --version) == "$expected_pnpm" ]]
+dpkg-query --status libatomic1 |
+	grep --line-regexp 'Status: install ok installed' >/dev/null
 markdownlint-cli2 --version 2>&1 |
 	grep --fixed-strings "markdownlint-cli2 v${expected_markdownlint}" >/dev/null
 [[ $(node --print \
 	"require('${bundle_root}/@redocly/cli/package.json').version") == "$expected_redocly" ]]
+[[ ! -e ${bundle_root}/pnpm ]]
 [[ $NPM_CONFIG_CACHE == /var/cache/npm ]]
 [[ $PNPM_CONFIG_STORE_DIR == /var/cache/pnpm/store ]]
 [[ -z ${PNPM_HOME+x} ]]

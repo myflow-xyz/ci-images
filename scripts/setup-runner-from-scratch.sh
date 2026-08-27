@@ -9,16 +9,17 @@ export LC_ALL PATH
 readonly program_name=${0##*/}
 readonly default_group_name=mfci
 readonly default_group_gid=2001
+readonly default_repository=mfxyz
 readonly runner_root_marker=.mfci-runner-root
 runner_root=
 owner_spec=
-repository=
+repository=$default_repository
 group_spec=$default_group_name
 dry_run=false
 
 usage() {
 	printf '%s\n' \
-		"Usage: ${program_name} --runner-root PATH --owner USER|UID --repository NAME [options]" \
+		"Usage: ${program_name} --runner-root PATH --owner USER|UID [options]" \
 		'' \
 		'Create this self-hosted runner directory structure:' \
 		'  <runner-root>/workspace/<repository>/_work' \
@@ -28,10 +29,10 @@ usage() {
 		'  --runner-root PATH New or helper-managed runner root below:' \
 		'                     /opt, /var, /home, or /Users' \
 		'  --owner USER|UID   Existing non-root runner owner' \
-		'  --repository NAME  Repository-specific runner directory name' \
 		'' \
 		'Options:' \
 		'  --group GROUP|GID  Shared group (default: mfci)' \
+		'  --repository NAME  Runner directory name (default: mfxyz)' \
 		'  --dry-run          Resolve and report without changing the host' \
 		'  -h, --help         Show this help' \
 		'' \
@@ -128,7 +129,6 @@ done
 
 [[ -n $runner_root ]] || usage_error '--runner-root is required'
 [[ -n $owner_spec ]] || usage_error '--owner is required'
-[[ -n $repository ]] || usage_error '--repository is required'
 [[ $repository =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] ||
 	usage_error "invalid repository name: ${repository}"
 
@@ -338,21 +338,28 @@ install \
 	--group "$owner_primary_gid" \
 	--mode 0755 \
 	-- \
-	"$runner_root" \
-	"$workspace_root" \
-	"$repository_root" \
-	"$shared_root" \
-	"$shared_bin" \
-	"$shared_downloads"
+	"$runner_root"
 
 install \
 	--directory \
 	--owner "$owner_uid" \
 	--group "$group_gid" \
-	--mode 2770 \
+	--mode 2755 \
+	-- \
+	"$workspace_root" \
+	"$repository_root"
+
+install \
+	--directory \
+	--owner "$owner_uid" \
+	--group "$group_gid" \
+	--mode 2775 \
 	-- \
 	"$work_root" \
-	"$shared_cache"
+	"$shared_root" \
+	"$shared_bin" \
+	"$shared_cache" \
+	"$shared_downloads"
 
 verify_directory() {
 	local directory=$1
@@ -365,22 +372,25 @@ verify_directory() {
 		fail "directory verification failed: ${directory} expected=${expected} actual=${actual}"
 }
 
-for directory in \
+verify_directory \
 	"$runner_root" \
-	"$workspace_root" \
-	"$repository_root" \
+	"${owner_uid}:${owner_primary_gid}:755"
+
+for directory in "$workspace_root" "$repository_root"; do
+	verify_directory \
+		"$directory" \
+		"${owner_uid}:${group_gid}:2755"
+done
+
+for directory in \
+	"$work_root" \
 	"$shared_root" \
 	"$shared_bin" \
+	"$shared_cache" \
 	"$shared_downloads"; do
 	verify_directory \
 		"$directory" \
-		"${owner_uid}:${owner_primary_gid}:755"
-done
-
-for directory in "$work_root" "$shared_cache"; do
-	verify_directory \
-		"$directory" \
-		"${owner_uid}:${group_gid}:2770"
+		"${owner_uid}:${group_gid}:2775"
 done
 
 printf \

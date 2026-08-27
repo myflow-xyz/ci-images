@@ -269,6 +269,17 @@ for name in "${names[@]}"; do
 				fail "missing go build argument: ${build_arg%%=*}"
 		done
 	fi
+	if [[ $name == node ]]; then
+		for build_arg in \
+			"PNPM_ASSET_URL_AMD64=$(jq -r '.tools.node.pnpm.assets.amd64.url' "$manifest")" \
+			"PNPM_ASSET_URL_ARM64=$(jq -r '.tools.node.pnpm.assets.arm64.url' "$manifest")" \
+			"PNPM_SHA256_AMD64=$(jq -r '.tools.node.pnpm.assets.amd64.sha256' "$manifest")" \
+			"PNPM_SHA256_ARM64=$(jq -r '.tools.node.pnpm.assets.arm64.sha256' "$manifest")" \
+			"PNPM_VERSION=$(jq -r '.tools.node.pnpm.version' "$manifest")"; do
+			grep -Fq -- "--build-arg ${build_arg}" "$fake_log" ||
+				fail "missing node build argument: ${build_arg%%=*}"
+		done
+	fi
 	if [[ $name == vite ]]; then
 		for build_arg in \
 			"TYPESCRIPT_GO_SOURCE=$(jq -r '.tools.vite.typescript_source.repository' "$manifest")" \

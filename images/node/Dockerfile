@@ -18,8 +18,13 @@ ARG NPM_IP_ADDRESS_VERSION
 ARG NPM_SHA256
 ARG NPM_TAR_VERSION
 ARG NPM_VERSION
+ARG PNPM_ASSET_URL_AMD64
+ARG PNPM_ASSET_URL_ARM64
+ARG PNPM_SHA256_AMD64
+ARG PNPM_SHA256_ARM64
 ARG PNPM_VERSION
 ARG REDOCLY_VERSION
+ARG TARGETARCH
 
 USER root
 
@@ -29,6 +34,7 @@ ENV NODE_VERSION=${NODE_VERSION} \
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
+      libatomic1 \
       libgcc-s1 \
       libstdc++6 \
     && rm -rf /var/lib/apt/lists/*
@@ -43,6 +49,39 @@ COPY --from=node-runtime /usr/local/share/man/man1/node.1 \
 RUN set -eu; \
     ln -s node /usr/local/bin/nodejs; \
     test "$(node --version)" = "v${NODE_VERSION}"
+
+RUN set -eu; \
+    case "${TARGETARCH}" in \
+      amd64) \
+        pnpm_asset_url="${PNPM_ASSET_URL_AMD64}"; \
+        pnpm_sha256="${PNPM_SHA256_AMD64}" \
+        ;; \
+      arm64) \
+        pnpm_asset_url="${PNPM_ASSET_URL_ARM64}"; \
+        pnpm_sha256="${PNPM_SHA256_ARM64}" \
+        ;; \
+      *) \
+        printf 'unsupported target architecture: %s\n' "${TARGETARCH}" >&2; \
+        exit 1 \
+        ;; \
+    esac; \
+    pnpm_directory="/opt/ci-tools/pnpm/${PNPM_VERSION}"; \
+    install -d "${pnpm_directory}"; \
+    /usr/local/libexec/ci/fetch-verified \
+      "${pnpm_asset_url}" \
+      "${pnpm_sha256}" \
+      /var/tmp/pnpm.tar.gz; \
+    tar -xzf /var/tmp/pnpm.tar.gz \
+      -C "${pnpm_directory}"; \
+    rm -f /var/tmp/pnpm.tar.gz; \
+    chmod 0755 "${pnpm_directory}/pnpm"; \
+    test "$("${pnpm_directory}/pnpm" --version)" = "${PNPM_VERSION}"; \
+    ln -s \
+      "../pnpm/${PNPM_VERSION}/pnpm" \
+      /opt/ci-tools/bin/pnpm; \
+    ln -s \
+      "../pnpm/${PNPM_VERSION}/pnpm" \
+      /opt/ci-tools/bin/pnpx
 
 COPY images/node/npm-runtime/package.json \
   images/node/npm-runtime/package-lock.json \
@@ -145,9 +184,6 @@ COPY images/node/npm/package.json images/node/npm/package-lock.json \
 RUN --mount=type=cache,target=/var/cache/npm \
     set -eu; \
     test "$(node --print \
-      "require('/var/tmp/node-tools/package.json').dependencies.pnpm")" \
-      = "${PNPM_VERSION}"; \
-    test "$(node --print \
       "require('/var/tmp/node-tools/package.json').dependencies['@redocly/cli']")" \
       = "${REDOCLY_VERSION}"; \
     npm ci \
@@ -157,21 +193,12 @@ RUN --mount=type=cache,target=/var/cache/npm \
       --omit=dev \
       --prefix /var/tmp/node-tools; \
     test "$(node --print \
-      "require('/var/tmp/node-tools/node_modules/pnpm/package.json').version")" \
-      = "${PNPM_VERSION}"; \
-    test "$(node --print \
       "require('/var/tmp/node-tools/node_modules/@redocly/cli/package.json').version")" \
       = "${REDOCLY_VERSION}"; \
     install -d /opt/ci-tools/node; \
     mv \
       /var/tmp/node-tools \
       "/opt/ci-tools/node/${NODE_TOOLS_BUNDLE_VERSION}"; \
-    ln -s \
-      "../node/${NODE_TOOLS_BUNDLE_VERSION}/node_modules/.bin/pnpm" \
-      /opt/ci-tools/bin/pnpm; \
-    ln -s \
-      "../node/${NODE_TOOLS_BUNDLE_VERSION}/node_modules/.bin/pnpx" \
-      /opt/ci-tools/bin/pnpx; \
     ln -s \
       "../node/${NODE_TOOLS_BUNDLE_VERSION}/node_modules/.bin/redocly" \
       /opt/ci-tools/bin/redocly

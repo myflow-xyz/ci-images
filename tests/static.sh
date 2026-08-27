@@ -44,6 +44,8 @@ required_files=(
 	images/node/Dockerfile
 	images/node/markdownlint/package.json
 	images/node/markdownlint/package-lock.json
+	images/node/npm/package.json
+	images/node/npm/package-lock.json
 	images/node/npm-runtime/package.json
 	images/node/npm-runtime/package-lock.json
 	images/vite/Dockerfile
@@ -92,7 +94,7 @@ done < <(
       ["govulncheck", .tools.go.govulncheck.version],
       ["Node.js", .tools.node.runtime],
       ["npm", .tools.node.npm.version],
-      ["pnpm", .tools.node.pnpm],
+      ["pnpm", .tools.node.pnpm.version],
       ["markdownlint-cli2", .tools.node.markdownlint_cli2.version],
       ["@redocly/cli", .tools.node.redocly],
       ["@typescript/native", .tools.vite.typescript],
@@ -123,7 +125,7 @@ jq --exit-status '
   (.upstream_images.debian.reference |
     endswith("debian:bookworm-slim")) and
   (.upstream_images.node.reference |
-    endswith("node:24.19.0-bookworm-slim")) and
+    endswith("node:24.20.0-bookworm-slim")) and
   ([.upstream_images[].digest |
     test("^sha256:[0-9a-f]{64}$")] | all) and
   ([.images[].name] | sort) == ([
@@ -179,6 +181,15 @@ jq --exit-status '
     $npm.asset.url ==
       ("https://registry.npmjs.org/npm/-/npm-" +
        $npm.version + ".tgz")) and
+  (.tools.node.pnpm as $pnpm |
+    $pnpm.source == "https://github.com/pnpm/pnpm" and
+    ($pnpm.store_version | test("^[0-9]+$")) and
+    $pnpm.assets.amd64.url ==
+      ("https://github.com/pnpm/pnpm/releases/download/v" +
+       $pnpm.version + "/pnpm-linux-x64.tar.gz") and
+    $pnpm.assets.arm64.url ==
+      ("https://github.com/pnpm/pnpm/releases/download/v" +
+       $pnpm.version + "/pnpm-linux-arm64.tar.gz")) and
   ([.tools.base.gitleaks.dependency_overrides[],
     .tools.base.osv_scanner.dependency_overrides[],
     .tools.base.yq.dependency_overrides[],
@@ -252,10 +263,10 @@ assert_package_version \
 	images/node/npm-runtime/package-lock.json \
 	tar \
 	"$(jq -r '.tools.node.npm.dependency_replacements.tar' "$manifest")"
-assert_package_version \
-	images/node/npm/package-lock.json \
-	pnpm \
-	"$(jq -r '.tools.node.pnpm' "$manifest")"
+jq --exit-status \
+	'.packages | has("node_modules/pnpm") | not' \
+	"${repository_root}/images/node/npm/package-lock.json" >/dev/null ||
+	fail 'pnpm must remain outside the Node npm tool lockfile'
 assert_package_version \
 	images/node/npm/package-lock.json \
 	@redocly/cli \

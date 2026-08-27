@@ -9,30 +9,43 @@ The helper manages only these paths below the selected runner root:
 
 ```text
 <runner-root>/workspace/*/_work
-<runner-root>/shared/cache
+<runner-root>/shared
 ```
 
 The `workspace` directory must already exist as a real directory. The helper
-does not create or move runner installations. It leaves the runner root,
-`workspace`, `shared`, and each runner installation directory outside the
-writable group boundary. Before reporting success or changing a managed path,
-it rejects effective group, other, or named-ACL write access on those unmanaged
-parents. It never repairs them; the runner operator retains their ownership and
-policy. Symbolic links are not followed. Existing named ACL entries below
-managed paths are removed so only each entry's owner, the shared group, and a
-no-access `other` entry remain. FIFOs, sockets, and device nodes are rejected
-before any permission changes.
+does not create or move runner installations. It normalizes `workspace` and
+each runner installation directory containing `_work` as control directories
+owned by the resolved runner owner and shared group, with setgid mode `2755`
+and no extended or default ACL entries. These control directories remain
+readable and traversable, but only the runner owner can change their immediate
+directory entries. Dry-run reports required corrections, apply mode repairs
+them, and check mode rejects mismatches.
 
-When `shared` is absent, the helper creates it as mode `0755`, owned by the
-resolved runner owner and that account's primary group. The shared CI group
-receives write access only from `shared/cache` downward.
+The runner root remains outside the helper-managed boundary. Before reporting
+success or changing a managed path, the helper rejects effective group, other,
+or named-ACL write access on that unmanaged parent. Symbolic links are not
+followed. Existing named ACL entries below managed paths are removed so only
+each entry's owner, the shared group, and read or traversal access for other
+users remain. Other users never receive write access. FIFOs, sockets, and
+device nodes are rejected before any permission changes.
 
-Each managed `_work` or `shared/cache` root remains owned by the resolved runner
+When `shared` is absent, the helper creates it as a group-owned mode `2775`
+managed root. The same recursive policy covers `shared` itself and every tool,
+cache, download, or future shared-data directory below it.
+
+Each managed `_work` or `shared` root remains owned by the resolved runner
 owner. Descendants created later by a job container may retain the container
-UID. Directories remain `2770`; each regular file's group permissions mirror
-its owner permissions. This preserves intentional read-only files such as Git
-objects while the shared GID and inherited ACLs provide equivalent access to
-both identities.
+UID. Directories remain `2775`; each regular file's group permissions mirror
+its owner permissions, while other permissions mirror owner read and execute
+access without write. A normally writable file therefore uses mode `0664`, and
+an executable normally uses `0775`. This preserves intentional read-only files
+such as Git objects while the shared GID and inherited ACLs provide equivalent
+write access to both managed identities.
+
+The other-readable policy intentionally permits unrelated future host accounts
+to inspect checked-out source, caches, artifacts, and temporary GitHub Actions
+file-command channels. Use this policy only when that host-level read boundary
+is acceptable; root access is unaffected by these modes.
 
 ## Requirements
 
@@ -124,16 +137,18 @@ The apply run:
 
 - requires the owner to already belong to the shared group and never changes
   account membership;
-- creates a non-group-writable `shared` parent and `shared/cache` when absent;
+- normalizes `workspace` and runner installation control directories to the
+  resolved owner and group, exact mode `2755`, and a minimal access ACL;
+- creates the group-writable `shared` managed root when absent;
 - initially assigns the resolved owner and group recursively;
 - enforces exact directory access and mirrors each file's owner permissions to
-  the shared group while removing other and unexpected special-mode bits;
+  the shared group, mirrors owner read and execute access to other users, and
+  removes other write and unexpected special-mode bits;
 - replaces existing ACLs and configures setgid inheritance on directories;
 - preserves creator-requested read-only, writable, and executable file modes;
 - verifies managed-root ownership, descendant group ownership, modes, ACLs, and
   group membership;
-- rejects unsafe write access on unmanaged parent directories without changing
-  them.
+- rejects unsafe write access on the unmanaged runner root without changing it.
 
 If membership is missing, the helper stops before changing filesystem state.
 The runner operator must enroll the owner, restart its runner service, and
@@ -156,8 +171,8 @@ ShellCheck, and shfmt before the ShellSpec examples.
 - `tests/setup-runner-permissions_spec.sh` checks the CLI contract through
   ShellSpec.
 - `tests/setup-runner-permissions_integration.sh` checks recursive ownership,
-  modes, ACL inheritance, group writes, Git read-only objects, dry-run behavior,
-  and safety boundaries in disposable directories.
+  modes, ACL inheritance, group writes, host-readable files, Git read-only
+  objects, dry-run behavior, and safety boundaries in disposable directories.
 
 Run ShellSpec from the script project directory:
 

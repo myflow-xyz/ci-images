@@ -228,8 +228,8 @@ Host provisioning is split into three independently verifiable stages:
    creates only the explicit runner skeleton and verifies its ownership and
    modes. It does not recurse through existing contents or apply ACLs.
 3. The [runner permission helper](../scripts/docs/setup-runner-permissions.md)
-   normalizes only `workspace/<repository>/_work` trees and `shared/cache`, then
-   verifies their recursive group and ACL contract.
+   normalizes `workspace/<repository>/_work` trees and the complete `shared`
+   tree, then verifies their recursive group and ACL contract.
 
 For the standard identity and one repository runner:
 
@@ -237,14 +237,14 @@ For the standard identity and one repository runner:
 sudo scripts/setup-runner-user.sh
 sudo scripts/setup-runner-from-scratch.sh \
   --runner-root /opt/actions-runner \
-  --owner ci-runner \
-  --repository repo-example
+  --owner ci-runner
 sudo scripts/setup-runner-permissions.sh
 ```
 
 None of these helpers downloads, registers, or manages the GitHub Actions
-runner service. Unsafe write access on unmanaged parents is rejected for the
-runner operator to fix.
+runner service. The permission helper repairs the `workspace` and runner
+installation control-directory contract. Unsafe write access on the runner
+root is rejected for the runner operator to fix.
 
 An opt-in host preflight may run the helper with `--check` directly from a
 host-side step inherited from the runner service. It verifies the invoking
@@ -253,9 +253,18 @@ filesystem state. It must fail the job rather than repair a runner. The runner
 operator applies changes and restarts the service separately before the
 workflow is rerun.
 
-The runner account owns each managed `_work` or `shared/cache` root. Files and
+The runner account owns each managed `_work` or `shared` root. Files and
 directories created below those roots may retain the container UID; the shared
 GID and inherited permissions provide cross-UID access.
+
+Managed directories use setgid mode `2775`. Group permissions on regular files
+mirror owner permissions, while other permissions mirror owner read and execute
+access without write; a normal writable file therefore uses mode `0664`.
+Default ACLs preserve this behavior for runner-created `_temp` file-command
+channels and container-created descendants even when their UIDs differ. This
+policy intentionally lets unrelated future host accounts read source, caches,
+artifacts, and temporary file-command content, so use it only on hosts where
+that read boundary is acceptable.
 
 Pre-create every exact cache bind source before Docker starts a job. Docker may
 otherwise create a missing source with unsuitable ownership.
