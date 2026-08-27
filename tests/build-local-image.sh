@@ -182,7 +182,15 @@ build_node() {
 		"NPM_SHA256=$(json '.tools.node.npm.asset.sha256')" \
 		--build-arg \
 		"NPM_TAR_VERSION=$(json '.tools.node.npm.dependency_replacements.tar')" \
-		--build-arg "PNPM_VERSION=$(json '.tools.node.pnpm')" \
+		--build-arg \
+		"PNPM_ASSET_URL_AMD64=$(json '.tools.node.pnpm.assets.amd64.url')" \
+		--build-arg \
+		"PNPM_ASSET_URL_ARM64=$(json '.tools.node.pnpm.assets.arm64.url')" \
+		--build-arg \
+		"PNPM_SHA256_AMD64=$(json '.tools.node.pnpm.assets.amd64.sha256')" \
+		--build-arg \
+		"PNPM_SHA256_ARM64=$(json '.tools.node.pnpm.assets.arm64.sha256')" \
+		--build-arg "PNPM_VERSION=$(json '.tools.node.pnpm.version')" \
 		--build-arg "REDOCLY_VERSION=$(json '.tools.node.redocly')" \
 		"$repository_root"
 }
