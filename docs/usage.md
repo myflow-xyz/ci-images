@@ -243,8 +243,9 @@ sudo scripts/setup-runner-permissions.sh
 ```
 
 None of these helpers downloads, registers, or manages the GitHub Actions
-runner service. Unsafe write access on unmanaged parents is rejected for the
-runner operator to fix.
+runner service. The permission helper repairs the `workspace` and runner
+installation control-directory contract. Unsafe write access on the runner
+root or `shared` is rejected for the runner operator to fix.
 
 An opt-in host preflight may run the helper with `--check` directly from a
 host-side step inherited from the runner service. It verifies the invoking

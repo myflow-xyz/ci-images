@@ -13,16 +13,21 @@ The helper manages only these paths below the selected runner root:
 ```
 
 The `workspace` directory must already exist as a real directory. The helper
-does not create or move runner installations. It leaves the runner root,
-`workspace`, `shared`, and each runner installation directory outside the
-writable group boundary. Before reporting success or changing a managed path,
-it rejects effective group, other, or named-ACL write access on those unmanaged
-parents. It never repairs them; the runner operator retains their ownership and
-policy. Symbolic links are not followed. Existing named ACL entries below
-managed paths are removed so only each entry's owner, the shared group, and
-read or traversal access for other users remain. Other users never receive
-write access. FIFOs, sockets, and device nodes are rejected before any
-permission changes.
+does not create or move runner installations. It normalizes `workspace` and
+each runner installation directory containing `_work` as control directories
+owned by the resolved runner owner and shared group, with setgid mode `2755`
+and no extended or default ACL entries. These control directories remain
+readable and traversable, but only the runner owner can change their immediate
+directory entries. Dry-run reports required corrections, apply mode repairs
+them, and check mode rejects mismatches.
+
+The runner root and `shared` remain outside the helper-managed boundary. Before
+reporting success or changing a managed path, the helper rejects effective
+group, other, or named-ACL write access on those unmanaged parents. Symbolic
+links are not followed. Existing named ACL entries below managed paths are
+removed so only each entry's owner, the shared group, and read or traversal
+access for other users remain. Other users never receive write access. FIFOs,
+sockets, and device nodes are rejected before any permission changes.
 
 When `shared` is absent, the helper creates it as mode `0755`, owned by the
 resolved runner owner and that account's primary group. The shared CI group
@@ -132,6 +137,8 @@ The apply run:
 
 - requires the owner to already belong to the shared group and never changes
   account membership;
+- normalizes `workspace` and runner installation control directories to the
+  resolved owner and group, exact mode `2755`, and a minimal access ACL;
 - creates a non-group-writable `shared` parent and `shared/cache` when absent;
 - initially assigns the resolved owner and group recursively;
 - enforces exact directory access and mirrors each file's owner permissions to
@@ -141,8 +148,8 @@ The apply run:
 - preserves creator-requested read-only, writable, and executable file modes;
 - verifies managed-root ownership, descendant group ownership, modes, ACLs, and
   group membership;
-- rejects unsafe write access on unmanaged parent directories without changing
-  them.
+- rejects unsafe write access on the runner root and `shared` without changing
+  those unmanaged parents.
 
 If membership is missing, the helper stops before changing filesystem state.
 The runner operator must enroll the owner, restart its runner service, and
