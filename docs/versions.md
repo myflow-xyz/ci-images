@@ -37,11 +37,11 @@ and upstream image digests.
 
 | Component | Version |
 | --- | --- |
-| `Node.js` | `24.19.0` |
+| `Node.js` | `24.20.0` |
 | `npm` | `12.0.2` |
-| `pnpm` | `11.23.0` |
+| `pnpm` | `12.0.0` |
 | `markdownlint-cli2` | `0.23.2` |
-| `@redocly/cli` | `2.47.0` |
+| `@redocly/cli` | `2.49.0` |
 
 ## `ci-vite`
 
@@ -53,9 +53,9 @@ and upstream image digests.
 | `vite` | `8.2.2` |
 | `vitest` | `4.1.11` |
 | `@vitest/coverage-v8` | `4.1.11` |
-| `oxlint` | `1.79.0` |
+| `oxlint` | `1.80.0` |
 | `oxlint-tsgolint` | `7.0.2001` |
-| `oxfmt` | `0.64.0` |
+| `oxfmt` | `0.65.0` |
 
 ## `ci-playwright`
 

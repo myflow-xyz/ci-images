@@ -20,8 +20,8 @@
       "digest": "sha256:abd67ffcfa541b485a3dff59865ab629aa048a6c613e639d36e7456b0b229241"
     },
     "node": {
-      "reference": "docker.io/library/node:24.19.0-bookworm-slim",
-      "digest": "sha256:3638d9a6fe4030bd716be989438248074489337ba3275657f93595428be4fc03"
+      "reference": "docker.io/library/node:24.20.0-bookworm-slim",
+      "digest": "sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e"
     },
     "pgvector": {
       "reference": "docker.io/pgvector/pgvector:0.8.2-pg18-bookworm",
@@ -198,7 +198,7 @@
       }
     },
     "node": {
-      "runtime": "24.19.0",
+      "runtime": "24.20.0",
       "npm": {
         "version": "12.0.2",
         "asset": {
@@ -218,16 +218,30 @@
         "lockfile": "images/node/markdownlint/package-lock.json",
         "lockfile_sha256": "67ac75155d173347711bf06819067cd0a2dd5407c110b0f14730b3e3c9e3c0b3"
       },
-      "bundle_version": "4",
+      "bundle_version": "5",
       "lockfile": "images/node/npm/package-lock.json",
-      "lockfile_sha256": "ee5f34985fd0dbdf6e7548f5b2686051a7edefa8a440473b0c3ba80bf238b409",
-      "pnpm": "11.23.0",
-      "redocly": "2.47.0"
+      "lockfile_sha256": "0d25e1426dc945e54994b3eec12c6d23ba4f5018c09f615b52ecbe524a2f5024",
+      "pnpm": {
+        "version": "12.0.0",
+        "store_version": "11",
+        "source": "https://github.com/pnpm/pnpm",
+        "assets": {
+          "amd64": {
+            "url": "https://github.com/pnpm/pnpm/releases/download/v12.0.0/pnpm-linux-x64.tar.gz",
+            "sha256": "d93497ba07d5dfc7d527b30905fdd24f55c87618ea23ea3af287cdff061510e0"
+          },
+          "arm64": {
+            "url": "https://github.com/pnpm/pnpm/releases/download/v12.0.0/pnpm-linux-arm64.tar.gz",
+            "sha256": "04ae74abf0f620189f1dd6cbb2586f8f6267e42268f7992e2f9dfaa67e9b323c"
+          }
+        }
+      },
+      "redocly": "2.49.0"
     },
     "vite": {
-      "bundle_version": "6",
+      "bundle_version": "7",
       "lockfile": "images/vite/npm/package-lock.json",
-      "lockfile_sha256": "8df3157163e33f2e5ba5e5eb75488a1f55e1cb2d4f00eb4e671245107b7e2789",
+      "lockfile_sha256": "946d85ec8d8473cd25428be4c69d9bf8f807c1c632ebe2cd09bd39323861877c",
       "typescript": "7.0.2",
       "typescript_source": {
         "repository": "https://github.com/microsoft/typescript-go",
@@ -243,7 +257,7 @@
       "vite": "8.2.2",
       "vitest": "4.1.11",
       "coverage_v8": "4.1.11",
-      "oxlint": "1.79.0",
+      "oxlint": "1.80.0",
       "oxlint_tsgolint": "7.0.2001",
       "oxlint_tsgolint_source": {
         "repository": "https://github.com/oxc-project/tsgolint",
@@ -252,7 +266,7 @@
           "golang.org/x/text": "v0.41.0"
         }
       },
-      "oxfmt": "0.64.0"
+      "oxfmt": "0.65.0"
     },
     "playwright": {
       "version": "1.62.1",
