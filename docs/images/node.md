@@ -9,9 +9,9 @@ The initial image contract includes:
 
 - Node.js 24.20.0 imported from the digest-pinned official Node image;
 - npm and npx 12.0.2 from a hash-verified release artifact;
-- pnpm 12.0.0 from hash-verified native Linux release artifacts;
+- pnpm 12.3.1 from hash-verified native Linux release artifacts;
 - `markdownlint-cli2` 0.23.2;
-- Redocly CLI 2.49.0 for OpenAPI validation;
+- Redocly CLI 2.51.1 for OpenAPI validation;
 - explicit npm and pnpm cache paths.
 
 The npm release artifact is hash-verified, and its reviewed bundled dependency
@@ -52,7 +52,7 @@ pnpm store=/var/cache/pnpm/store
 ```
 
 pnpm creates a store-format directory below the configured store root. pnpm
-12.0.0 retains the compatible `v11` store format; the manifest records the CLI
+12.3.1 retains the compatible `v11` store format; the manifest records the CLI
 and store-format versions independently. The caches contain package content
 only. Do not persist `node_modules`, build output, or a repository workspace.
 

@@ -7,7 +7,7 @@ generation, analysis, test, and release jobs.
 
 The initial image contract includes:
 
-- Go 1.27.0, installed from the official per-architecture archive after
+- Go 1.27.1, installed from the official per-architecture archive after
   SHA-256 verification, with local toolchain selection and the JSON v2
   implementation enabled by default;
 - a C compiler, libc development headers, and native build prerequisites for
@@ -16,8 +16,8 @@ The initial image contract includes:
 - HTTP/API end-to-end testing with Hurl 8.0.1 and request formatting with
   `hurlfmt`;
 - sqlc 1.31.1;
-- Goose 3.27.3;
-- golangci-lint 2.13.1;
+- Goose 3.28.0;
+- golangci-lint 2.13.2;
 - pinned `goimports` and `govulncheck` releases.
 
 External Go executables are built from exact module versions into immutable

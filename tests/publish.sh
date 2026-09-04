@@ -250,12 +250,15 @@ for name in "${names[@]}"; do
 	if [[ $name == base ]]; then
 		for build_arg in \
 			"OSV_SCANNER_VERSION=$(jq -r '.tools.base.osv_scanner.version' "$manifest")" \
+			"OSV_SCANNER_GRPC_VERSION=$(jq -r '.tools.base.osv_scanner.dependency_overrides["google.golang.org/grpc"]' "$manifest")" \
 			"OSV_SCANNER_X_MOD_VERSION=$(jq -r '.tools.base.osv_scanner.dependency_overrides["golang.org/x/mod"]' "$manifest")" \
 			"PYTHON_VERSION=$(jq -r '.tools.base.python.version' "$manifest")" \
 			"PYTHON_SHA256=$(jq -r '.tools.base.python.asset.sha256' "$manifest")" \
 			"TRIVY_VERSION=$(jq -r '.tools.base.trivy.version' "$manifest")" \
-			"TRIVY_SHA256_AMD64=$(jq -r '.tools.base.trivy.assets.amd64.sha256' "$manifest")" \
-			"TRIVY_SHA256_ARM64=$(jq -r '.tools.base.trivy.assets.arm64.sha256' "$manifest")"; do
+			"TRIVY_GO_VERSION=$(jq -r '.tools.base.trivy.build_go.version' "$manifest")" \
+			"TRIVY_GO_SHA256_AMD64=$(jq -r '.tools.base.trivy.build_go.assets.amd64.sha256' "$manifest")" \
+			"TRIVY_GO_SHA256_ARM64=$(jq -r '.tools.base.trivy.build_go.assets.arm64.sha256' "$manifest")" \
+			"TRIVY_GRPC_VERSION=$(jq -r '.tools.base.trivy.dependency_overrides["google.golang.org/grpc"]' "$manifest")"; do
 			grep -Fq -- "--build-arg ${build_arg}" "$fake_log" ||
 				fail "missing base build argument: ${build_arg%%=*}"
 		done
