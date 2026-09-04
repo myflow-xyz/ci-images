@@ -53,10 +53,16 @@ if [[ $target == all || $target == base ]]; then
 		--env \
 		"EXPECTED_OSV_SCANNER_VERSION=$(json '.tools.base.osv_scanner.version')" \
 		--env \
+		"EXPECTED_OSV_SCANNER_GRPC_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["google.golang.org/grpc"]')" \
+		--env \
 		"EXPECTED_OSV_SCANNER_X_MOD_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["golang.org/x/mod"]')" \
 		--env "EXPECTED_PYTHON_VERSION=$(json '.tools.base.python.version')" \
 		--env "EXPECTED_SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
 		--env "EXPECTED_TRIVY_VERSION=$(json '.tools.base.trivy.version')" \
+		--env \
+		"EXPECTED_TRIVY_GO_VERSION=$(json '.tools.base.trivy.build_go.version')" \
+		--env \
+		"EXPECTED_TRIVY_GRPC_VERSION=$(json '.tools.base.trivy.dependency_overrides["google.golang.org/grpc"]')" \
 		--env "EXPECTED_YQ_VERSION=$(json '.tools.base.yq.version')" \
 		--env \
 		"EXPECTED_YQ_X_TEXT_VERSION=$(json '.tools.base.yq.dependency_overrides["golang.org/x/text"]')"

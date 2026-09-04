@@ -52,6 +52,8 @@ done
 
 [[ $(tsc --version) == "Version ${EXPECTED_TYPESCRIPT_VERSION}" ]]
 [[ $(tsc6 --version) == "Version ${EXPECTED_TYPESCRIPT_LEGACY_COMPILER_VERSION}" ]]
+vitest --version |
+	grep --fixed-strings "vitest/${EXPECTED_VITEST_VERSION}" >/dev/null
 
 case "$(uname -m)" in
 x86_64) go_package=linux-x64 ;;
@@ -93,6 +95,18 @@ grep \
 	$'dep\tgolang.org/x/text\t'"${EXPECTED_OXLINT_TSGOLINT_X_TEXT_VERSION}" \
 	"$tsgolint_binary" \
 	>/dev/null
+
+(
+	vitest_smoke_directory=$(mktemp -d /var/tmp/vitest-smoke.XXXXXX)
+	trap 'rm -rf "$vitest_smoke_directory"' EXIT
+	cat >"${vitest_smoke_directory}/arithmetic.test.js" <<'EOF'
+test('adds integers', () => {
+  expect(2 + 3).toBe(5);
+});
+EOF
+	cd "$vitest_smoke_directory"
+	vitest run --globals arithmetic.test.js
+)
 
 smoke_directory=$(mktemp -d /var/tmp/vite-shadow-smoke.XXXXXX)
 trap 'rm -rf "$smoke_directory"' EXIT

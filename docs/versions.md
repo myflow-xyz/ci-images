@@ -17,7 +17,7 @@ and upstream image digests.
 | `gitleaks` | `8.30.1` |
 | `osv-scanner` | `2.5.1` |
 | `shellspec` | `0.28.1` |
-| `shfmt` | `3.13.1` |
+| `shfmt` | `3.14.0` |
 | `Trivy` | `0.74.0` |
 | `yq` | `4.53.6` |
 
@@ -25,11 +25,11 @@ and upstream image digests.
 
 | Component | Version |
 | --- | --- |
-| `Go` | `1.27.0` |
+| `Go` | `1.27.1` |
 | `Hurl` | `8.0.1` |
 | `sqlc` | `1.31.1` |
-| `goose` | `3.27.3` |
-| `golangci-lint` | `2.13.1` |
+| `goose` | `3.28.0` |
+| `golangci-lint` | `2.13.2` |
 | `goimports` | `0.49.0` |
 | `govulncheck` | `1.7.0` |
 
@@ -39,9 +39,9 @@ and upstream image digests.
 | --- | --- |
 | `Node.js` | `24.20.0` |
 | `npm` | `12.0.2` |
-| `pnpm` | `12.0.0` |
+| `pnpm` | `12.3.1` |
 | `markdownlint-cli2` | `0.23.2` |
-| `@redocly/cli` | `2.49.0` |
+| `@redocly/cli` | `2.51.1` |
 
 ## `ci-vite`
 
@@ -51,11 +51,11 @@ and upstream image digests.
 | `TypeScript compatibility package` | `6.0.2` |
 | `TypeScript legacy compiler` | `6.0.3` |
 | `vite` | `8.2.2` |
-| `vitest` | `4.1.11` |
-| `@vitest/coverage-v8` | `4.1.11` |
-| `oxlint` | `1.80.0` |
+| `vitest` | `5.0.0` |
+| `@vitest/coverage-v8` | `5.0.0` |
+| `oxlint` | `1.81.0` |
 | `oxlint-tsgolint` | `7.0.2001` |
-| `oxfmt` | `0.65.0` |
+| `oxfmt` | `0.66.0` |
 
 ## `ci-playwright`
 

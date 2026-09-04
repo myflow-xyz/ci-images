@@ -53,17 +53,16 @@ support, development headers, or third-party Python packages.
 
 Git is built from a checksum-pinned upstream source release so the protected
 system configuration can scope trust to GitHub's workspace tree. actionlint,
-gitleaks, OSV-Scanner, shfmt, and yq are built from exact module releases with
-Go 1.27.0. Narrow dependency overrides used to remove known vulnerabilities
-from released tools are recorded in the version manifest and verified by image
-smoke tests. Go tools are installed into immutable versioned directories and
-exposed through stable links in `/opt/ci-tools/bin`. Compilers are build inputs
-and are not retained in this image.
-
-Trivy is installed from checksum-pinned upstream Linux release archives for
-both supported architectures. Vulnerability data is not embedded in the image;
-online scans by OSV-Scanner and Trivy still query or download their external
-data sources.
+gitleaks, OSV-Scanner, shfmt, and yq are built from exact module releases with Go
+1.27.1. Trivy 0.74.0 is built from its exact module release with a separately
+pinned Go 1.26.8 toolchain and the `jsonv2` build mode required by that release.
+Narrow dependency overrides used to remove known vulnerabilities from released
+tools are recorded in the version manifest and verified by image smoke tests.
+Go tools are installed into immutable versioned directories and exposed through
+stable links in `/opt/ci-tools/bin`. Compilers are build inputs and are not
+retained in this image. Vulnerability data is not embedded in the image; online
+scans by OSV-Scanner and Trivy still query or download their external data
+sources.
 
 ## Runtime contract
 

@@ -5,6 +5,7 @@ set -euo pipefail
 expected_uid=${EXPECTED_CI_UID:?EXPECTED_CI_UID is not set}
 expected_gid=${EXPECTED_CI_GID:?EXPECTED_CI_GID is not set}
 expected_go=${EXPECTED_TOOLCHAIN_GO_VERSION:?EXPECTED_TOOLCHAIN_GO_VERSION is not set}
+expected_trivy_go=${EXPECTED_TRIVY_GO_VERSION:?EXPECTED_TRIVY_GO_VERSION is not set}
 expected_python=${EXPECTED_PYTHON_VERSION:?EXPECTED_PYTHON_VERSION is not set}
 : "${EXPECTED_ACTIONLINT_VERSION:?EXPECTED_ACTIONLINT_VERSION is not set}"
 : "${EXPECTED_GIT_VERSION:?EXPECTED_GIT_VERSION is not set}"
@@ -12,9 +13,11 @@ expected_python=${EXPECTED_PYTHON_VERSION:?EXPECTED_PYTHON_VERSION is not set}
 : "${EXPECTED_GITLEAKS_XZ_VERSION:?EXPECTED_GITLEAKS_XZ_VERSION is not set}"
 : "${EXPECTED_GITLEAKS_VERSION:?EXPECTED_GITLEAKS_VERSION is not set}"
 : "${EXPECTED_OSV_SCANNER_VERSION:?EXPECTED_OSV_SCANNER_VERSION is not set}"
+: "${EXPECTED_OSV_SCANNER_GRPC_VERSION:?EXPECTED_OSV_SCANNER_GRPC_VERSION is not set}"
 : "${EXPECTED_OSV_SCANNER_X_MOD_VERSION:?EXPECTED_OSV_SCANNER_X_MOD_VERSION is not set}"
 : "${EXPECTED_SHFMT_VERSION:?EXPECTED_SHFMT_VERSION is not set}"
 : "${EXPECTED_TRIVY_VERSION:?EXPECTED_TRIVY_VERSION is not set}"
+: "${EXPECTED_TRIVY_GRPC_VERSION:?EXPECTED_TRIVY_GRPC_VERSION is not set}"
 : "${EXPECTED_YQ_VERSION:?EXPECTED_YQ_VERSION is not set}"
 : "${EXPECTED_YQ_X_TEXT_VERSION:?EXPECTED_YQ_X_TEXT_VERSION is not set}"
 
@@ -117,12 +120,30 @@ grep \
 	$'dep\tgolang.org/x/mod\t'"${EXPECTED_OSV_SCANNER_X_MOD_VERSION}" \
 	"$(command -v osv-scanner)" \
 	>/dev/null
+grep \
+	--binary-files=text \
+	--fixed-strings \
+	$'dep\tgoogle.golang.org/grpc\t'"${EXPECTED_OSV_SCANNER_GRPC_VERSION}" \
+	"$(command -v osv-scanner)" \
+	>/dev/null
 trivy --version |
 	grep \
 		--line-regexp \
 		--fixed-strings \
 		"Version: ${EXPECTED_TRIVY_VERSION}" \
 		>/dev/null
+grep \
+	--binary-files=text \
+	--fixed-strings \
+	$'dep\tgoogle.golang.org/grpc\t'"${EXPECTED_TRIVY_GRPC_VERSION}" \
+	"$(command -v trivy)" \
+	>/dev/null
+grep \
+	--binary-files=text \
+	--fixed-strings \
+	"go${expected_trivy_go}" \
+	"$(command -v trivy)" \
+	>/dev/null
 grep \
 	--binary-files=text \
 	--fixed-strings \

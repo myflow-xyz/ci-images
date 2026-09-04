@@ -206,12 +206,15 @@ ARG GITLEAKS_XZ_VERSION
 ARG GO_SHA256_AMD64
 ARG GO_SHA256_ARM64
 ARG GO_VERSION
+ARG OSV_SCANNER_GRPC_VERSION
 ARG OSV_SCANNER_X_MOD_VERSION
 ARG OSV_SCANNER_VERSION
 ARG SHFMT_VERSION
 ARG TARGETARCH
-ARG TRIVY_SHA256_AMD64
-ARG TRIVY_SHA256_ARM64
+ARG TRIVY_GO_SHA256_AMD64
+ARG TRIVY_GO_SHA256_ARM64
+ARG TRIVY_GO_VERSION
+ARG TRIVY_GRPC_VERSION
 ARG TRIVY_VERSION
 ARG YQ_VERSION
 ARG YQ_X_TEXT_VERSION
@@ -256,8 +259,31 @@ RUN set -eu; \
     test "$(/usr/local/go/bin/go version | awk '{print $3}')" \
       = "go${GO_VERSION}"
 
+RUN set -eu; \
+    case "${TARGETARCH}" in \
+      amd64) trivy_go_sha256="${TRIVY_GO_SHA256_AMD64}" ;; \
+      arm64) trivy_go_sha256="${TRIVY_GO_SHA256_ARM64}" ;; \
+      *) \
+        printf 'unsupported target architecture: %s\n' "${TARGETARCH}" >&2; \
+        exit 1 \
+        ;; \
+    esac; \
+    /usr/local/libexec/ci/fetch-verified \
+      "https://go.dev/dl/go${TRIVY_GO_VERSION}.linux-${TARGETARCH}.tar.gz" \
+      "${trivy_go_sha256}" \
+      /var/tmp/trivy-go.tar.gz; \
+    install -d /opt/trivy-go; \
+    tar -xzf /var/tmp/trivy-go.tar.gz \
+      --strip-components=1 \
+      -C /opt/trivy-go; \
+    rm -f /var/tmp/trivy-go.tar.gz; \
+    test "$(/opt/trivy-go/bin/go version | awk '{print $3}')" \
+      = "go${TRIVY_GO_VERSION}"
+
 RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
     --mount=type=cache,target=/var/cache/go/build,sharing=locked \
+    --mount=type=cache,target=/var/cache/go/trivy-mod,sharing=locked \
+    --mount=type=cache,target=/var/cache/go/trivy-build,sharing=locked \
     set -eu; \
     build_tool() { \
       name=$1; \
@@ -267,6 +293,33 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       build_directory="/var/tmp/build/${name}"; \
       output_directory="/out/${name}/${version#v}"; \
       install -d "${build_directory}" "${output_directory}"; \
+      if [ "${name}" = trivy ]; then \
+        source_directory="/var/cache/go/trivy-mod/github.com/aquasecurity/trivy@${version}"; \
+        cd "${build_directory}"; \
+        GOCACHE=/var/cache/go/trivy-build \
+          GOMODCACHE=/var/cache/go/trivy-mod \
+          /opt/trivy-go/bin/go mod download \
+          "github.com/aquasecurity/trivy@${version}"; \
+        cp -R "${source_directory}/." "${build_directory}/"; \
+        chmod -R u+w "${build_directory}"; \
+        for dependency in "$@"; do \
+          GOCACHE=/var/cache/go/trivy-build \
+            GOMODCACHE=/var/cache/go/trivy-mod \
+            /opt/trivy-go/bin/go get "${dependency}"; \
+        done; \
+        CGO_ENABLED=0 \
+          GOEXPERIMENT=jsonv2 \
+          GOCACHE=/var/cache/go/trivy-build \
+          GOMODCACHE=/var/cache/go/trivy-mod \
+          /opt/trivy-go/bin/go build \
+          -buildvcs=false \
+          -ldflags \
+          "-s -w -X=github.com/aquasecurity/trivy/pkg/version/app.ver=${TRIVY_VERSION}" \
+          -trimpath \
+          -o "${output_directory}/${name}" \
+          ./cmd/trivy; \
+        return; \
+      fi; \
       cd "${build_directory}"; \
       /usr/local/go/bin/go mod init "ci.invalid/${name}"; \
       /usr/local/go/bin/go get "${package}@${version}"; \
@@ -308,45 +361,22 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       osv-scanner \
       github.com/google/osv-scanner/v2/cmd/osv-scanner \
       "v${OSV_SCANNER_VERSION}" \
-      "golang.org/x/mod@${OSV_SCANNER_X_MOD_VERSION}"; \
+      "golang.org/x/mod@${OSV_SCANNER_X_MOD_VERSION}" \
+      "google.golang.org/grpc@${OSV_SCANNER_GRPC_VERSION}"; \
     build_tool \
       shfmt \
       mvdan.cc/sh/v3/cmd/shfmt \
       "v${SHFMT_VERSION}"; \
     build_tool \
+      trivy \
+      github.com/aquasecurity/trivy/cmd/trivy \
+      "v${TRIVY_VERSION}" \
+      "google.golang.org/grpc@${TRIVY_GRPC_VERSION}"; \
+    build_tool \
       yq \
       github.com/mikefarah/yq/v4 \
       "v${YQ_VERSION}" \
       "golang.org/x/text@${YQ_X_TEXT_VERSION}"
-
-RUN set -eu; \
-    case "${TARGETARCH}" in \
-      amd64) \
-        trivy_architecture=64bit; \
-        trivy_sha256="${TRIVY_SHA256_AMD64}" \
-        ;; \
-      arm64) \
-        trivy_architecture=ARM64; \
-        trivy_sha256="${TRIVY_SHA256_ARM64}" \
-        ;; \
-      *) \
-        printf 'unsupported target architecture: %s\n' "${TARGETARCH}" >&2; \
-        exit 1 \
-        ;; \
-    esac; \
-    trivy_directory="/out/trivy/${TRIVY_VERSION}"; \
-    install -d "${trivy_directory}"; \
-    /usr/local/libexec/ci/fetch-verified \
-      "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-${trivy_architecture}.tar.gz" \
-      "${trivy_sha256}" \
-      /var/tmp/trivy.tar.gz; \
-    tar -xzf /var/tmp/trivy.tar.gz \
-      -C "${trivy_directory}" \
-      trivy; \
-    rm -f /var/tmp/trivy.tar.gz; \
-    chmod 0755 "${trivy_directory}/trivy"; \
-    test "$("${trivy_directory}/trivy" --version | awk '/^Version:/ { print $2 }')" \
-      = "${TRIVY_VERSION}"
 
 FROM ${BASE_IMAGE}
 

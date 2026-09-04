@@ -86,6 +86,8 @@ build_base() {
 		--build-arg \
 		"OSV_SCANNER_VERSION=$(json '.tools.base.osv_scanner.version')" \
 		--build-arg \
+		"OSV_SCANNER_GRPC_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["google.golang.org/grpc"]')" \
+		--build-arg \
 		"OSV_SCANNER_X_MOD_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["golang.org/x/mod"]')" \
 		--build-arg \
 		"PYTHON_VERSION=$(json '.tools.base.python.version')" \
@@ -104,9 +106,13 @@ build_base() {
 		--build-arg "SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
 		--build-arg "TRIVY_VERSION=$(json '.tools.base.trivy.version')" \
 		--build-arg \
-		"TRIVY_SHA256_AMD64=$(json '.tools.base.trivy.assets.amd64.sha256')" \
+		"TRIVY_GO_VERSION=$(json '.tools.base.trivy.build_go.version')" \
 		--build-arg \
-		"TRIVY_SHA256_ARM64=$(json '.tools.base.trivy.assets.arm64.sha256')" \
+		"TRIVY_GO_SHA256_AMD64=$(json '.tools.base.trivy.build_go.assets.amd64.sha256')" \
+		--build-arg \
+		"TRIVY_GO_SHA256_ARM64=$(json '.tools.base.trivy.build_go.assets.arm64.sha256')" \
+		--build-arg \
+		"TRIVY_GRPC_VERSION=$(json '.tools.base.trivy.dependency_overrides["google.golang.org/grpc"]')" \
 		--build-arg "YQ_VERSION=$(json '.tools.base.yq.version')" \
 		--build-arg \
 		"YQ_X_TEXT_VERSION=$(json '.tools.base.yq.dependency_overrides["golang.org/x/text"]')" \

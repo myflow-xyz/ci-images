@@ -160,14 +160,14 @@ jq --exit-status '
     $osv.module ==
       "github.com/google/osv-scanner/v2/cmd/osv-scanner") and
   (.tools.base.trivy as $trivy |
-    $trivy.assets.amd64.url ==
-      ("https://github.com/aquasecurity/trivy/releases/download/v" +
-       $trivy.version + "/trivy_" + $trivy.version +
-       "_Linux-64bit.tar.gz") and
-    $trivy.assets.arm64.url ==
-      ("https://github.com/aquasecurity/trivy/releases/download/v" +
-       $trivy.version + "/trivy_" + $trivy.version +
-       "_Linux-ARM64.tar.gz")) and
+    $trivy.module == "github.com/aquasecurity/trivy/cmd/trivy" and
+    ($trivy.build_go.version | test("^1\\.26\\.[0-9]+$")) and
+    $trivy.build_go.assets.amd64.url ==
+      ("https://go.dev/dl/go" + $trivy.build_go.version +
+       ".linux-amd64.tar.gz") and
+    $trivy.build_go.assets.arm64.url ==
+      ("https://go.dev/dl/go" + $trivy.build_go.version +
+       ".linux-arm64.tar.gz")) and
   (.tools.go.hurl as $hurl |
     $hurl.assets.amd64.url ==
       ("https://github.com/Orange-OpenSource/hurl/releases/download/" +
@@ -192,6 +192,7 @@ jq --exit-status '
        $pnpm.version + "/pnpm-linux-arm64.tar.gz")) and
   ([.tools.base.gitleaks.dependency_overrides[],
     .tools.base.osv_scanner.dependency_overrides[],
+    .tools.base.trivy.dependency_overrides[],
     .tools.base.yq.dependency_overrides[],
     .tools.go.golangci_lint.dependency_overrides[],
     .tools.go.goimports.dependency_overrides[],
