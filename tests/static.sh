@@ -324,6 +324,18 @@ while IFS= read -r dockerfile; do
 		fail "${dockerfile#"$repository_root/"} has an unpinned frontend"
 done < <(find "${repository_root}/images" -name Dockerfile -type f | sort)
 
+base_dockerfile="${repository_root}/images/base/Dockerfile"
+grep \
+	--fixed-strings \
+	--line-regexp \
+	"FROM --platform=\${BUILDPLATFORM} \${BASE_IMAGE} AS base-go-tools-builder" \
+	"$base_dockerfile" \
+	>/dev/null ||
+	fail 'base Go tools must build on the native build platform'
+[[ $(grep -c "CGO_ENABLED=0 GOARCH=\"\${TARGETARCH}\" GOOS=linux" \
+	"$base_dockerfile") == 3 ]] ||
+	fail 'base Go tools must compile all binaries for the target platform'
+
 while IFS= read -r cache_mount; do
 	[[ $cache_mount == *,sharing=locked* ]] ||
 		fail "unlocked Go build cache mount: ${cache_mount}"
