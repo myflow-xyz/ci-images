@@ -196,9 +196,10 @@ RUN set -eu; \
       | sort -u \
       > /out/python-runtime-packages
 
-FROM ${BASE_IMAGE} AS base-go-tools-builder
+FROM --platform=${BUILDPLATFORM} ${BASE_IMAGE} AS base-go-tools-builder
 
 ARG ACTIONLINT_VERSION
+ARG BUILDARCH
 ARG DEBIAN_SNAPSHOT
 ARG GITLEAKS_VERSION
 ARG GITLEAKS_X_CRYPTO_VERSION
@@ -242,16 +243,16 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
     && chmod 0755 /usr/local/libexec/ci/fetch-verified
 
 RUN set -eu; \
-    case "${TARGETARCH}" in \
+    case "${BUILDARCH}" in \
       amd64) go_sha256="${GO_SHA256_AMD64}" ;; \
       arm64) go_sha256="${GO_SHA256_ARM64}" ;; \
       *) \
-        printf 'unsupported target architecture: %s\n' "${TARGETARCH}" >&2; \
+        printf 'unsupported build architecture: %s\n' "${BUILDARCH}" >&2; \
         exit 1 \
         ;; \
     esac; \
     /usr/local/libexec/ci/fetch-verified \
-      "https://go.dev/dl/go${GO_VERSION}.linux-${TARGETARCH}.tar.gz" \
+      "https://go.dev/dl/go${GO_VERSION}.linux-${BUILDARCH}.tar.gz" \
       "${go_sha256}" \
       /var/tmp/go.tar.gz; \
     tar -xzf /var/tmp/go.tar.gz -C /usr/local; \
@@ -260,16 +261,16 @@ RUN set -eu; \
       = "go${GO_VERSION}"
 
 RUN set -eu; \
-    case "${TARGETARCH}" in \
+    case "${BUILDARCH}" in \
       amd64) trivy_go_sha256="${TRIVY_GO_SHA256_AMD64}" ;; \
       arm64) trivy_go_sha256="${TRIVY_GO_SHA256_ARM64}" ;; \
       *) \
-        printf 'unsupported target architecture: %s\n' "${TARGETARCH}" >&2; \
+        printf 'unsupported build architecture: %s\n' "${BUILDARCH}" >&2; \
         exit 1 \
         ;; \
     esac; \
     /usr/local/libexec/ci/fetch-verified \
-      "https://go.dev/dl/go${TRIVY_GO_VERSION}.linux-${TARGETARCH}.tar.gz" \
+      "https://go.dev/dl/go${TRIVY_GO_VERSION}.linux-${BUILDARCH}.tar.gz" \
       "${trivy_go_sha256}" \
       /var/tmp/trivy-go.tar.gz; \
     install -d /opt/trivy-go; \
@@ -307,7 +308,7 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
             GOMODCACHE=/var/cache/go/trivy-mod \
             /opt/trivy-go/bin/go get "${dependency}"; \
         done; \
-        CGO_ENABLED=0 \
+        CGO_ENABLED=0 GOARCH="${TARGETARCH}" GOOS=linux \
           GOEXPERIMENT=jsonv2 \
           GOCACHE=/var/cache/go/trivy-build \
           GOMODCACHE=/var/cache/go/trivy-mod \
@@ -327,7 +328,8 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
         /usr/local/go/bin/go get "${dependency}"; \
       done; \
       if [ "${name}" = gitleaks ]; then \
-        CGO_ENABLED=0 /usr/local/go/bin/go build \
+        CGO_ENABLED=0 GOARCH="${TARGETARCH}" GOOS=linux \
+          /usr/local/go/bin/go build \
           -buildvcs=false \
           -ldflags \
           "-s -w -X=github.com/zricethezav/gitleaks/v8/version.Version=${GITLEAKS_VERSION}" \
@@ -335,7 +337,8 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
           -o "${output_directory}/${name}" \
           "${package}"; \
       else \
-        CGO_ENABLED=0 /usr/local/go/bin/go build \
+        CGO_ENABLED=0 GOARCH="${TARGETARCH}" GOOS=linux \
+          /usr/local/go/bin/go build \
           -buildvcs=false \
           -trimpath \
           -o "${output_directory}/${name}" \

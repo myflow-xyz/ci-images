@@ -60,9 +60,11 @@ Narrow dependency overrides used to remove known vulnerabilities from released
 tools are recorded in the version manifest and verified by image smoke tests.
 Go tools are installed into immutable versioned directories and exposed through
 stable links in `/opt/ci-tools/bin`. Compilers are build inputs and are not
-retained in this image. Vulnerability data is not embedded in the image; online
-scans by OSV-Scanner and Trivy still query or download their external data
-sources.
+retained in this image. Their pure-Go binaries are compiled on the native build
+platform for each target architecture, avoiding emulation during
+multi-architecture publication. Vulnerability data is not embedded in the
+image; online scans by OSV-Scanner and Trivy still query or download their
+external data sources.
 
 ## Runtime contract
 
