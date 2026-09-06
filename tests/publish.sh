@@ -6,6 +6,7 @@ repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 collector="${repository_root}/.github/scripts/collect-published-images.sh"
 manifest="${repository_root}/manifests/versions.json"
 publisher="${repository_root}/.github/scripts/publish-image.sh"
+merger="${repository_root}/.github/scripts/merge-image.sh"
 temporary_directory=$(mktemp -d)
 trap 'rm -rf "$temporary_directory"' EXIT
 
@@ -144,6 +145,9 @@ set -euo pipefail
 
 log=${FAKE_DOCKER_LOG:?}
 digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+if [[ ${CI_IMAGES_PLATFORM:-} == linux/arm64 ]]; then
+	digest=sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+fi
 
 if [[ ${1-} == buildx && ${2-} == build ]]; then
 	shift 2
@@ -169,24 +173,43 @@ if [[ ${1-} == buildx && ${2-} == imagetools &&
 	${3-} == inspect && ${5-} == --raw ]]; then
 	printf 'inspect %s\n' "$*" >>"$log"
 	jq --null-input \
-		'{
-			manifests: [
-				{platform: {os: "linux", architecture: "amd64"}},
-				{platform: {os: "linux", architecture: "arm64"}},
-				{
-					platform: {os: "unknown", architecture: "unknown"},
-					annotations: {
-						"vnd.docker.reference.type": "attestation-manifest"
+		--arg platforms "${FAKE_INDEX_PLATFORMS:-$CI_IMAGES_PLATFORM}" \
+		--arg fault "${FAKE_INDEX_FAULT:-}" \
+		'
+			$platforms | split(",") | map(ltrimstr("linux/")) |
+			map(. as $arch |
+				("sha256:" + (if . == "amd64" then "b" else "c" end) * 64) as $digest |
+				[
+					{platform: {os: "linux", architecture: $arch}, digest: $digest},
+					{
+						platform: {os: "unknown", architecture: "unknown"},
+						annotations: {
+							"vnd.docker.reference.type": "attestation-manifest",
+							"vnd.docker.reference.digest": $digest
+						}
 					}
-				},
-				{
-					platform: {os: "unknown", architecture: "unknown"},
-					annotations: {
-						"vnd.docker.reference.type": "attestation-manifest"
-					}
-				}
-			]
-		}'
+				]
+			) | add |
+			if $fault == "missing-attestation" then
+				map(select(.platform.os != "unknown"))
+			elif $fault == "wrong-attestation" then
+				map(if .platform.os == "unknown" then
+					.annotations["vnd.docker.reference.digest"] = "sha256:wrong"
+				else . end)
+			else . end |
+			{manifests: .}
+		'
+	exit 0
+fi
+
+if [[ ${1-} == buildx && ${2-} == imagetools && ${3-} == create ]]; then
+	printf 'create %s\n' "$*" >>"$log"
+	exit 0
+fi
+
+if [[ ${1-} == buildx && ${2-} == imagetools &&
+	${3-} == inspect && ${5-} == --format ]]; then
+	printf '%s\n' "$digest"
 	exit 0
 fi
 
@@ -206,7 +229,11 @@ GITHUB_SHA=$(git -C "$repository_root" rev-parse HEAD)
 export GITHUB_SHA
 export PATH="${fake_bin}:${PATH}"
 
-for name in "${names[@]}"; do
+for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
+	name=${target%-*}
+	architecture=${target##*-}
+	platform="linux/${architecture}"
+	export CI_IMAGES_PLATFORM="$platform"
 	case "$name" in
 	go | node)
 		parent="ghcr.io/myflow-xyz/ci-base@${base_digest}"
@@ -227,20 +254,25 @@ for name in "${names[@]}"; do
 
 	jq --exit-status \
 		--arg name "$name" \
+		--arg platform "$platform" \
+		--arg architecture "$architecture" \
 		'
-			.name == $name and
-			.image == ("ghcr.io/myflow-xyz/ci-" + $name) and
-			.ref == (.image + "@" + .digest) and
-			.candidate == (.image + ":candidate-123-1")
-		' \
+		.name == $name and
+		.image == ("ghcr.io/myflow-xyz/ci-" + $name) and
+		.ref == (.image + "@" + .digest) and
+		.candidate == (.image + ":candidate-123-1-" + $architecture) and
+		.platform == $platform
+	' \
 		"$output_file" >/dev/null ||
 		fail "invalid ${name} publication record"
 	[[ $(grep -c '^build ' "$fake_log") == 1 ]] ||
 		fail "unexpected ${name} build count"
-	grep -Fq -- "type=gha,scope=${name}" "$fake_log" ||
+	grep -Fq -- "type=gha,scope=${name}-${architecture}" "$fake_log" ||
 		fail "missing ${name} cache scope"
+	grep -Fq -- "--platform ${platform} " "$fake_log" ||
+		fail "incorrect ${name} build platform"
 	grep -Fq -- \
-		"ghcr.io/myflow-xyz/ci-${name}:candidate-123-1" \
+		"ghcr.io/myflow-xyz/ci-${name}:candidate-123-1-${architecture}" \
 		"$fake_log" ||
 		fail "missing ${name} candidate tag"
 	if [[ -n $parent ]]; then
@@ -248,12 +280,13 @@ for name in "${names[@]}"; do
 			fail "missing ${name} parent reference"
 	fi
 	if [[ $name == base ]]; then
+		cp "$output_file" "${temporary_directory}/base-${architecture}.json"
 		for build_arg in \
 			"OSV_SCANNER_VERSION=$(jq -r '.tools.base.osv_scanner.version' "$manifest")" \
 			"OSV_SCANNER_GRPC_VERSION=$(jq -r '.tools.base.osv_scanner.dependency_overrides["google.golang.org/grpc"]' "$manifest")" \
 			"OSV_SCANNER_X_MOD_VERSION=$(jq -r '.tools.base.osv_scanner.dependency_overrides["golang.org/x/mod"]' "$manifest")" \
 			"PYTHON_VERSION=$(jq -r '.tools.base.python.version' "$manifest")" \
-			"PYTHON_SHA256=$(jq -r '.tools.base.python.asset.sha256' "$manifest")" \
+			"PYTHON_IMAGE=$(jq -r '.upstream_images.python | .reference + "@" + .digest' "$manifest")" \
 			"TRIVY_VERSION=$(jq -r '.tools.base.trivy.version' "$manifest")" \
 			"TRIVY_GO_VERSION=$(jq -r '.tools.base.trivy.build_go.version' "$manifest")" \
 			"TRIVY_GO_SHA256_AMD64=$(jq -r '.tools.base.trivy.build_go.assets.amd64.sha256' "$manifest")" \
@@ -292,6 +325,67 @@ for name in "${names[@]}"; do
 				fail "missing vite build argument: ${build_arg%%=*}"
 		done
 	fi
+done
+
+if CI_IMAGES_PLATFORM=linux/ppc64le "$publisher" base "$output_file" "" \
+	>"$failure_output" 2>&1; then
+	fail 'unsupported publication platform was accepted'
+fi
+grep -q 'unsupported publication platform' "$failure_output" ||
+	fail 'unsupported platform diagnostic'
+
+amd64_record="${temporary_directory}/base-amd64.json"
+arm64_record="${temporary_directory}/base-arm64.json"
+export FAKE_INDEX_PLATFORMS=linux/amd64,linux/arm64
+
+# Successful platform jobs from an earlier attempt remain valid on retry.
+jq '.candidate = "ghcr.io/myflow-xyz/ci-base:candidate-123-2-arm64"' \
+	"$arm64_record" >"${temporary_directory}/retry.json"
+mv "${temporary_directory}/retry.json" "$arm64_record"
+
+: >"$fake_log"
+"$merger" base "$output_file" "$arm64_record" "$amd64_record"
+jq --exit-status '
+	.name == "base" and
+	.ref == (.image + "@" + .digest) and
+	.candidate == (.image + ":candidate-123-1") and
+	(has("platform") | not)
+' "$output_file" >/dev/null || fail 'invalid merged publication record'
+grep -Fq -- "$(jq -r .ref "$amd64_record")" "$fake_log" ||
+	fail 'merge did not use immutable platform references'
+grep -Fq -- "$(jq -r .ref "$arm64_record")" "$fake_log" ||
+	fail 'merge omitted the ARM64 platform reference'
+
+for fault in duplicate wrong-image wrong-run wrong-digest wrong-architecture; do
+	case "$fault" in
+	duplicate) filter='.platform = "linux/amd64"' ;;
+	wrong-image) filter='.image = "ghcr.io/myflow-xyz/ci-node"' ;;
+	wrong-run) filter='.candidate = "ghcr.io/myflow-xyz/ci-base:candidate-999-1-arm64"' ;;
+	wrong-digest) filter='.digest = "sha256:invalid"' ;;
+	wrong-architecture) filter='.candidate = "ghcr.io/myflow-xyz/ci-base:candidate-123-1-amd64"' ;;
+	esac
+	jq "$filter" "$arm64_record" >"${temporary_directory}/invalid.json"
+	: >"$fake_log"
+	if "$merger" base "$output_file" "$amd64_record" "${temporary_directory}/invalid.json" \
+		>"$failure_output" 2>&1; then
+		fail "invalid platform record was accepted: ${fault}"
+	fi
+	grep -q 'platform records violate' "$failure_output" ||
+		fail "invalid platform record diagnostic: ${fault}"
+	[[ ! -s $fake_log ]] || fail 'invalid platform records reached the registry'
+done
+
+for fault in missing-attestation wrong-attestation missing-platform; do
+	export FAKE_INDEX_FAULT="$fault"
+	if [[ $fault == missing-platform ]]; then
+		export FAKE_INDEX_PLATFORMS=linux/amd64
+	fi
+	if "$merger" base "$output_file" "$amd64_record" "$arm64_record" \
+		>"$failure_output" 2>&1; then
+		fail "invalid merged index was accepted: ${fault}"
+	fi
+	grep -q 'missing target platforms or their attestations' "$failure_output" ||
+		fail "invalid merged index diagnostic: ${fault}"
 done
 
 printf 'publication verification passed\n'

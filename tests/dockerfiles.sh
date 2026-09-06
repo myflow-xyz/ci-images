@@ -14,6 +14,7 @@ image_reference() {
 }
 
 debian_image=$(image_reference debian)
+python_image=$(image_reference python)
 node_image=$(image_reference node)
 pgvector_image=$(image_reference pgvector)
 
@@ -21,6 +22,7 @@ docker buildx build \
 	--call=check \
 	--file "${repository_root}/images/base/Dockerfile" \
 	--build-arg "BASE_IMAGE=${debian_image}" \
+	--build-arg "PYTHON_IMAGE=${python_image}" \
 	"$repository_root"
 
 docker buildx build \

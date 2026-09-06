@@ -46,10 +46,12 @@ The base image includes:
   shfmt, ShellCheck, and ShellSpec;
 - `tini` for descendants that require subprocess reaping.
 
-Python is built from the checksum-pinned CPython 3.14.7 source release against
-the reviewed Debian snapshot. It is intentionally limited to the interpreter
-and standard library: the image does not include pip, virtual-environment
-support, development headers, or third-party Python packages.
+Python is imported from the digest-pinned official
+`python:3.14.7-slim-bookworm` image. Its shared-library dependencies are
+installed from the reviewed Debian snapshot. The runtime is limited to the
+interpreter and standard library: the image does not include pip,
+virtual-environment support, development headers, or third-party Python
+packages.
 
 Git is built from a checksum-pinned upstream source release so the protected
 system configuration can scope trust to GitHub's workspace tree. actionlint,
@@ -61,8 +63,9 @@ tools are recorded in the version manifest and verified by image smoke tests.
 Go tools are installed into immutable versioned directories and exposed through
 stable links in `/opt/ci-tools/bin`. Compilers are build inputs and are not
 retained in this image. Their pure-Go binaries are compiled on the native build
-platform for each target architecture, avoiding emulation during
-multi-architecture publication. Vulnerability data is not embedded in the
+platform for each target architecture. Publication uses native AMD64 and ARM64
+runners for all image stages, avoiding emulated Git and Go compilation.
+Vulnerability data is not embedded in the
 image; online scans by OSV-Scanner and Trivy still query or download their
 external data sources.
 

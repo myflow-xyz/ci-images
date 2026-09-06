@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 
 ARG BASE_IMAGE
+ARG PYTHON_IMAGE
 FROM ${BASE_IMAGE} AS base-git-builder
 
 ARG DEBIAN_SNAPSHOT
@@ -73,83 +74,24 @@ RUN set -eu; \
     test "$(/out/usr/local/bin/git version)" = "git version ${GIT_VERSION}"; \
     rm -rf /var/tmp/git /var/tmp/git.tar.xz
 
-FROM ${BASE_IMAGE} AS base-python-builder
+FROM ${PYTHON_IMAGE} AS base-python-runtime
 
-ARG DEBIAN_SNAPSHOT
-ARG PYTHON_SHA256
 ARG PYTHON_VERSION
 
 USER root
 
-COPY images/common/fetch-verified /usr/local/libexec/ci/fetch-verified
-
-RUN test -n "${DEBIAN_SNAPSHOT}" \
-    && sed -ri \
-      "s|URIs: http://deb.debian.org/debian$|URIs: http://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}/|" \
-      /etc/apt/sources.list.d/debian.sources \
-    && sed -ri \
-      "s|URIs: http://deb.debian.org/debian-security$|URIs: http://snapshot.debian.org/archive/debian-security/${DEBIAN_SNAPSHOT}/|" \
-      /etc/apt/sources.list.d/debian.sources \
-    && printf '%s\n' \
-      'Acquire::Check-Valid-Until "false";' \
-      'Acquire::Retries "5";' \
-      > /etc/apt/apt.conf.d/99-ci-snapshot \
-    && apt-get update \
-    && apt-get install --yes --no-install-recommends \
-      build-essential \
-      ca-certificates \
-      curl \
-      dpkg-dev \
-      libbluetooth-dev \
-      libbz2-dev \
-      libc6-dev \
-      libdb-dev \
-      libffi-dev \
-      libgdbm-dev \
-      liblzma-dev \
-      libncursesw5-dev \
-      libreadline-dev \
-      libsqlite3-dev \
-      libssl-dev \
-      libzstd-dev \
-      uuid-dev \
-      xz-utils \
-      zlib1g-dev \
-    && rm -rf /var/lib/apt/lists/* \
-    && chmod 0755 /usr/local/libexec/ci/fetch-verified
-
 RUN set -eu; \
-    /usr/local/libexec/ci/fetch-verified \
-      "https://www.python.org/ftp/python/${PYTHON_VERSION}/Python-${PYTHON_VERSION}.tar.xz" \
-      "${PYTHON_SHA256}" \
-      /var/tmp/python.tar.xz; \
-    install -d /var/tmp/python /out; \
-    tar -xJf /var/tmp/python.tar.xz \
-      --strip-components=1 \
-      -C /var/tmp/python; \
-    cd /var/tmp/python; \
-    gnu_arch=$(dpkg-architecture --query DEB_BUILD_GNU_TYPE); \
-    ./configure \
-      --build="${gnu_arch}" \
-      --enable-loadable-sqlite-extensions \
-      --enable-option-checking=fatal \
-      --without-ensurepip; \
-    extra_cflags=$(dpkg-buildflags --get CFLAGS); \
-    ldflags=$(dpkg-buildflags --get LDFLAGS); \
-    make \
-      -j2 \
-      "EXTRA_CFLAGS=${extra_cflags}" \
-      "LDFLAGS=${ldflags} -Wl,--strip-all"; \
-    make \
-      DESTDIR=/out \
-      "EXTRA_CFLAGS=${extra_cflags}" \
-      "LDFLAGS=${ldflags} -Wl,--strip-all" \
-      install; \
+    test "$(python3 --version)" = "Python ${PYTHON_VERSION}"; \
+    install -d /out/usr; \
+    cp -a /usr/local /out/usr/; \
     python_series=${PYTHON_VERSION%.*}; \
     rm -f \
       /out/usr/local/bin/idle \
       /out/usr/local/bin/idle3 \
       "/out/usr/local/bin/idle${python_series}" \
+      /out/usr/local/bin/pip \
+      /out/usr/local/bin/pip3 \
+      "/out/usr/local/bin/pip${python_series}" \
       /out/usr/local/bin/python \
       /out/usr/local/bin/python-config \
       /out/usr/local/bin/python3-config \
@@ -167,7 +109,7 @@ RUN set -eu; \
       "/out/usr/local/lib/python${python_series}/site-packages" \
       "/out/usr/local/share/licenses/python-${PYTHON_VERSION}"; \
     install -m 0644 \
-      LICENSE \
+      "/usr/local/lib/python${python_series}/LICENSE.txt" \
       "/out/usr/local/share/licenses/python-${PYTHON_VERSION}/LICENSE"; \
     find /out/usr/local -depth \
       \( \
@@ -179,14 +121,14 @@ RUN set -eu; \
       PYTHONHOME=/out/usr/local \
       /out/usr/local/bin/python3 \
       -c 'import bz2, compression.zstd, ctypes, dbm.gnu, lzma, readline, sqlite3, ssl, sys, uuid, zlib; assert sys.version.split()[0] == sys.argv[1]' \
-      "${PYTHON_VERSION}"; \
-    rm -rf /var/tmp/python /var/tmp/python.tar.xz
+      "${PYTHON_VERSION}"
 
 RUN set -eu; \
     find /out/usr/local -type f -executable -exec ldd '{}' ';' \
       | awk '/=>/ { \
           so = $(NF - 1); \
-          if (index(so, "/out/usr/local/") == 1) next; \
+          if (index(so, "/out/usr/local/") == 1 || \
+              index(so, "/usr/local/") == 1) next; \
           gsub("^/(usr/)?", "", so); \
           printf "*%s\n", so \
         }' \
@@ -410,7 +352,7 @@ ENV CI=true \
 
 COPY images/common/fetch-verified /usr/local/libexec/ci/fetch-verified
 
-RUN --mount=from=base-python-builder,source=/out/python-runtime-packages,target=/var/tmp/python-runtime-packages,ro \
+RUN --mount=from=base-python-runtime,source=/out/python-runtime-packages,target=/var/tmp/python-runtime-packages,ro \
     test -n "${DEBIAN_SNAPSHOT}" \
     && sed -ri \
       "s|URIs: http://deb.debian.org/debian$|URIs: http://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}/|" \
@@ -467,9 +409,10 @@ ENV LANG=en_US.utf8 \
 
 COPY --from=base-go-tools-builder /out/ /opt/ci-tools/
 COPY --from=base-git-builder /out/ /
-COPY --from=base-python-builder /out/usr/local/ /usr/local/
+COPY --from=base-python-runtime /out/usr/local/ /usr/local/
 
 RUN set -eu; \
+    ldconfig; \
     test "$(python3 --version)" = "Python ${PYTHON_VERSION}"; \
     install -d /opt/ci-tools/bin; \
     ln -s \

@@ -22,6 +22,7 @@ command -v jq >/dev/null 2>&1 || fail 'jq is required'
 
 required_files=(
 	.github/scripts/collect-published-images.sh
+	.github/scripts/merge-image.sh
 	.github/scripts/next-version.sh
 	.github/scripts/publish-image.sh
 	.github/scripts/release-images.sh
@@ -151,11 +152,10 @@ jq --exit-status '
     $git.asset.url ==
       ("https://www.kernel.org/pub/software/scm/git/git-" +
        $git.version + ".tar.xz")) and
-  (.tools.base.python as $python |
-    ($python.version | test("^3\\.14\\.[0-9]+$")) and
-    $python.asset.url ==
-      ("https://www.python.org/ftp/python/" +
-       $python.version + "/Python-" + $python.version + ".tar.xz")) and
+  (.tools.base.python.version | test("^3\\.14\\.[0-9]+$")) and
+  .upstream_images.python.reference ==
+    ("docker.io/library/python:" + .tools.base.python.version +
+     "-slim-bookworm") and
   (.tools.base.osv_scanner as $osv |
     $osv.module ==
       "github.com/google/osv-scanner/v2/cmd/osv-scanner") and

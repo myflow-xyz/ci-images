@@ -41,6 +41,7 @@ build_created=$(git -C "$repository_root" show -s --format=%cI HEAD)
 build_revision=$(git -C "$repository_root" rev-parse HEAD)
 manifest_sha=$(sha256_file "$manifest")
 debian_image=$(image_reference debian)
+python_image=$(image_reference python)
 node_image=$(image_reference node)
 pgvector_image=$(image_reference pgvector)
 
@@ -68,6 +69,7 @@ build_base() {
 		--tag ci-base:test \
 		"${common_labels[@]}" \
 		--build-arg "BASE_IMAGE=${debian_image}" \
+		--build-arg "PYTHON_IMAGE=${python_image}" \
 		--build-arg "CI_GID=$(json '.ci_user.gid')" \
 		--build-arg "CI_UID=$(json '.ci_user.uid')" \
 		--build-arg "DEBIAN_SNAPSHOT=$(json '.debian_snapshot')" \
@@ -91,8 +93,6 @@ build_base() {
 		"OSV_SCANNER_X_MOD_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["golang.org/x/mod"]')" \
 		--build-arg \
 		"PYTHON_VERSION=$(json '.tools.base.python.version')" \
-		--build-arg \
-		"PYTHON_SHA256=$(json '.tools.base.python.asset.sha256')" \
 		--build-arg \
 		"GO_VERSION=$(json '.tools.go.runtime')" \
 		--build-arg \
