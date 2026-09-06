@@ -74,6 +74,11 @@ done
 
 git lfs version >/dev/null
 
+# Debian fixes CVE-2026-58050 and CVE-2026-7598 in this revision.
+dpkg --compare-versions \
+	"$(dpkg-query --show --showformat='${Version}' libssh2-1)" \
+	ge '1.10.0-3+deb12u1'
+
 [[ $(command -v python3) == /usr/local/bin/python3 ]]
 [[ $(python3 --version) == "Python ${expected_python}" ]]
 
