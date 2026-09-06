@@ -19,6 +19,10 @@
       "reference": "docker.io/library/debian:bookworm-slim",
       "digest": "sha256:88200866dfff7ea7f5cbcb6ec7c8a701889efe6fe859fe64d6990e4b07ea4171"
     },
+    "python": {
+      "reference": "docker.io/library/python:3.14.7-slim-bookworm",
+      "digest": "sha256:9ab8d9c8514b44f90cf0029dd42fdd7e9e211e639c8b995304cc04568dee900f"
+    },
     "node": {
       "reference": "docker.io/library/node:24.20.0-bookworm-slim",
       "digest": "sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e"
@@ -110,11 +114,7 @@
       },
       "python": {
         "version": "3.14.7",
-        "source": "https://www.python.org/",
-        "asset": {
-          "url": "https://www.python.org/ftp/python/3.14.7/Python-3.14.7.tar.xz",
-          "sha256": "3b48dac8fb59f62eaa67ac83c1eb12bda1b7a08406dd286e252c11a66be27f81"
-        }
+        "source": "https://www.python.org/"
       },
       "shellspec": {
         "version": "0.28.1",

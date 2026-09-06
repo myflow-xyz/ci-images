@@ -69,6 +69,16 @@ revision=${GITHUB_SHA:?GITHUB_SHA is not set}
 run_attempt=${GITHUB_RUN_ATTEMPT:?GITHUB_RUN_ATTEMPT is not set}
 run_id=${GITHUB_RUN_ID:?GITHUB_RUN_ID is not set}
 sbom_generator=${CI_IMAGES_SBOM_GENERATOR:?CI_IMAGES_SBOM_GENERATOR is not set}
+platform=${CI_IMAGES_PLATFORM:?CI_IMAGES_PLATFORM is not set}
+
+case "$platform" in
+linux/amd64 | linux/arm64) ;;
+*)
+	printf 'unsupported publication platform: %s\n' "$platform" >&2
+	exit 1
+	;;
+esac
+architecture=${platform#linux/}
 
 if [[ ! $revision =~ ^[0-9a-f]{40}$ ]]; then
 	printf 'invalid source revision: %s\n' "$revision" >&2
@@ -105,7 +115,7 @@ assert_published_index() {
 			join(",")
 		' <<<"$raw_index"
 	)
-	if [[ $actual_platforms != linux/amd64,linux/arm64 ]]; then
+	if [[ $actual_platforms != "$platform" ]]; then
 		printf \
 			'published index has unexpected platforms: %s (%s)\n' \
 			"$reference" \
@@ -128,7 +138,7 @@ assert_published_index() {
 			length
 		' <<<"$raw_index"
 	)
-	if ((attestation_count < 2)); then
+	if ((attestation_count < 1)); then
 		printf 'published index has no per-platform attestations: %s\n' \
 			"$reference" >&2
 		exit 1
@@ -140,7 +150,6 @@ trap 'rm -rf "$temporary_directory"' EXIT
 
 build_created=$(git -C "$repository_root" show -s --format=%cI "$revision")
 manifest_sha=$(sha256_file "$manifest")
-platforms=$(json '.platforms | join(",")')
 candidate_image=$(json ".images.${name}.name")
 expected_image="ghcr.io/myflow-xyz/ci-${name}"
 
@@ -149,7 +158,7 @@ if [[ $candidate_image != "$expected_image" ]]; then
 	exit 1
 fi
 
-candidate_tag="${candidate_image}:candidate-${run_id}-${run_attempt}"
+candidate_tag="${candidate_image}:candidate-${run_id}-${run_attempt}-${architecture}"
 metadata_file="${temporary_directory}/${name}-metadata.json"
 common_build_args=(
 	--build-arg "BUILD_CREATED=${build_created}"
@@ -160,13 +169,13 @@ common_build_args=(
 publish_image() {
 	docker buildx build \
 		--pull \
-		--platform "$platforms" \
+		--platform "$platform" \
 		--file "${repository_root}/images/${name}/Dockerfile" \
 		--tag "$candidate_tag" \
 		--push \
 		--metadata-file "$metadata_file" \
-		--cache-from "type=gha,scope=${name}" \
-		--cache-to "type=gha,mode=max,scope=${name}" \
+		--cache-from "type=gha,scope=${name}-${architecture}" \
+		--cache-to "type=gha,mode=max,scope=${name}-${architecture}" \
 		--provenance mode=max,version=v1 \
 		--attest "type=sbom,generator=${sbom_generator}" \
 		"${common_build_args[@]}" \
@@ -177,8 +186,10 @@ publish_image() {
 case "$name" in
 base)
 	debian_image=$(image_reference debian)
+	python_image=$(image_reference python)
 	publish_image \
 		--build-arg "BASE_IMAGE=${debian_image}" \
+		--build-arg "PYTHON_IMAGE=${python_image}" \
 		--build-arg "CI_GID=$(json '.ci_user.gid')" \
 		--build-arg "CI_UID=$(json '.ci_user.uid')" \
 		--build-arg "DEBIAN_SNAPSHOT=$(json '.debian_snapshot')" \
@@ -202,8 +213,6 @@ base)
 		"OSV_SCANNER_X_MOD_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["golang.org/x/mod"]')" \
 		--build-arg \
 		"PYTHON_VERSION=$(json '.tools.base.python.version')" \
-		--build-arg \
-		"PYTHON_SHA256=$(json '.tools.base.python.asset.sha256')" \
 		--build-arg \
 		"GO_VERSION=$(json '.tools.go.runtime')" \
 		--build-arg \
@@ -378,11 +387,13 @@ jq -n \
 	--arg digest "$digest" \
 	--arg ref "$reference" \
 	--arg candidate "$candidate_tag" \
+	--arg platform "$platform" \
 	'{
 		name: $name,
 		image: $image,
 		digest: $digest,
 		ref: $ref,
-		candidate: $candidate
+		candidate: $candidate,
+		platform: $platform
 	}' \
 	>"$output_file"

@@ -65,6 +65,7 @@ completed registry promotion can be retried safely.
 | Tag | Created by | Contract |
 | --- | --- | --- |
 | `candidate-<run>-<attempt>` | image publication | Internal only. |
+| `candidate-<run>-<attempt>-<arch>` | native platform build | Internal only. |
 | `sha-<full-commit>` | verified publication | Immutable source revision. |
 | `edge` | optional `develop` push | Integration pointer; off by default. |
 | `latest` | verified `main` push | Moving stable-branch pointer. |
@@ -93,6 +94,11 @@ tests, standard GitHub-hosted job-container write compatibility, and
 vulnerability policy before creating the immutable revision tags. The release
 workflow verifies and retags those exact indexes rather than repeating the
 build.
+
+Image publication builds AMD64 and ARM64 on separate native runners with
+architecture-specific caches and a 60-minute job limit. A separate job combines
+the immutable platform digests and verifies both architectures and their
+attestations before exposing the candidate index to descendants and scans.
 
 See [the usage guide](usage.md#pulling-and-pinning) for registry authentication,
 digest inspection, and pull examples.
