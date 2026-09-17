@@ -41,7 +41,8 @@ required_files=(
 	docs/images/playwright.md
 	docs/images/postgres.md
 	images/base/Dockerfile
-	images/base/debian-packages.lock
+	images/base/debian-packages.amd64.lock
+	images/base/debian-packages.arm64.lock
 	images/go/Dockerfile
 	images/node/Dockerfile
 	images/node/markdownlint/package.json
@@ -81,8 +82,13 @@ done < <(
       ["Git", .tools.base.git.version],
       ["CPython", .tools.base.python.version],
       ["actionlint", .tools.base.actionlint.version],
+      ["GitHub CLI", .tools.base.gh.version],
+      ["Git LFS", .tools.base.git_lfs.version],
       ["gitleaks", .tools.base.gitleaks.version],
+      ["jq", .tools.base.jq.version],
       ["osv-scanner", .tools.base.osv_scanner.version],
+      ["ripgrep", .tools.base.ripgrep.version],
+      ["ShellCheck", .tools.base.shellcheck.version],
       ["shellspec", .tools.base.shellspec.version],
       ["shfmt", .tools.base.shfmt.version],
       ["Trivy", .tools.base.trivy.version],
@@ -117,14 +123,26 @@ done < <(
   ' "$manifest"
 )
 
-debian_package_lock=$(
-	jq -r '.tools.base.debian_packages.lockfile' "$manifest"
+debian_package_lock_amd64=$(
+	jq -r '.tools.base.debian_packages.lockfiles.amd64.lockfile' "$manifest"
 )
-while IFS='=' read -r package version; do
+debian_package_lock_arm64=$(
+	jq -r '.tools.base.debian_packages.lockfiles.arm64.lockfile' "$manifest"
+)
+while IFS='=' read -r package amd64_version arm64_version; do
+	version=$amd64_version
+	if [[ $amd64_version != "$arm64_version" ]]; then
+		version="${amd64_version} (amd64) / ${arm64_version} (arm64)"
+	fi
 	row="| \`${package}\` | \`${version}\` |"
 	grep --fixed-strings --line-regexp "$row" "$versions_doc" >/dev/null ||
-		fail "missing Debian package inventory row: ${package} ${version}"
-done <"${repository_root}/${debian_package_lock}"
+		fail "missing Debian package inventory row: ${package}"
+done < <(
+	join \
+		-t '=' \
+		"${repository_root}/${debian_package_lock_amd64}" \
+		"${repository_root}/${debian_package_lock_arm64}"
+)
 
 jq --exit-status '
   .schema_version == 1 and
@@ -134,9 +152,11 @@ jq --exit-status '
   .ci_user.gid == 2001 and
   (.debian_snapshot | test("^[0-9]{8}T[0-9]{6}Z$")) and
   (.upstream_images.debian.reference |
-    endswith("debian:bookworm-slim")) and
+    endswith("debian:trixie-slim")) and
   (.upstream_images.node.reference |
-    endswith("node:24.21.0-bookworm-slim")) and
+    endswith("node:24.21.0-trixie-slim")) and
+  (.upstream_images.pgvector.reference |
+    endswith("pgvector:0.8.6-pg18-trixie")) and
   ([.upstream_images[].digest |
     test("^sha256:[0-9a-f]{64}$")] | all) and
   ([.images[].name] | sort) == ([
@@ -162,15 +182,50 @@ jq --exit-status '
     $git.asset.url ==
       ("https://www.kernel.org/pub/software/scm/git/git-" +
        $git.version + ".tar.xz")) and
+  (.tools.base.gh as $gh |
+    $gh.assets.amd64.url ==
+      ("https://github.com/cli/cli/releases/download/v" +
+       $gh.version + "/gh_" + $gh.version + "_linux_amd64.tar.gz") and
+    $gh.assets.arm64.url ==
+      ("https://github.com/cli/cli/releases/download/v" +
+       $gh.version + "/gh_" + $gh.version + "_linux_arm64.tar.gz")) and
+  .tools.base.git_lfs.module == "github.com/git-lfs/git-lfs/v3" and
+  (.tools.base.jq as $jq |
+    $jq.assets.amd64.url ==
+      ("https://github.com/jqlang/jq/releases/download/jq-" +
+       $jq.version + "/jq-linux-amd64") and
+    $jq.assets.arm64.url ==
+      ("https://github.com/jqlang/jq/releases/download/jq-" +
+       $jq.version + "/jq-linux-arm64")) and
   (.tools.base.python.version | test("^3\\.14\\.[0-9]+$")) and
   .upstream_images.python.reference ==
     ("docker.io/library/python:" + .tools.base.python.version +
-     "-slim-bookworm") and
+     "-slim-trixie") and
   (.tools.base.osv_scanner as $osv |
     $osv.module ==
       "github.com/google/osv-scanner/v2/cmd/osv-scanner") and
-  .tools.base.debian_packages.lockfile ==
-    "images/base/debian-packages.lock" and
+  (.tools.base.ripgrep as $ripgrep |
+    $ripgrep.assets.amd64.url ==
+      ("https://github.com/BurntSushi/ripgrep/releases/download/" +
+       $ripgrep.version + "/ripgrep-" + $ripgrep.version +
+       "-x86_64-unknown-linux-musl.tar.gz") and
+    $ripgrep.assets.arm64.url ==
+      ("https://github.com/BurntSushi/ripgrep/releases/download/" +
+       $ripgrep.version + "/ripgrep-" + $ripgrep.version +
+       "-aarch64-unknown-linux-musl.tar.gz")) and
+  (.tools.base.shellcheck as $shellcheck |
+    $shellcheck.assets.amd64.url ==
+      ("https://github.com/koalaman/shellcheck/releases/download/v" +
+       $shellcheck.version + "/shellcheck-v" + $shellcheck.version +
+       ".linux.x86_64.tar.gz") and
+    $shellcheck.assets.arm64.url ==
+      ("https://github.com/koalaman/shellcheck/releases/download/v" +
+       $shellcheck.version + "/shellcheck-v" + $shellcheck.version +
+       ".linux.aarch64.tar.gz")) and
+  .tools.base.debian_packages.lockfiles.amd64.lockfile ==
+    "images/base/debian-packages.amd64.lock" and
+  .tools.base.debian_packages.lockfiles.arm64.lockfile ==
+    "images/base/debian-packages.arm64.lock" and
   (.tools.base.trivy as $trivy |
     $trivy.module == "github.com/aquasecurity/trivy/cmd/trivy" and
     ($trivy.build_go.version | test("^1\\.26\\.[0-9]+$")) and
@@ -202,7 +257,8 @@ jq --exit-status '
     $pnpm.assets.arm64.url ==
       ("https://github.com/pnpm/pnpm/releases/download/v" +
        $pnpm.version + "/pnpm-linux-arm64.tar.gz")) and
-  ([.tools.base.gitleaks.dependency_overrides[],
+  ([.tools.base.git_lfs.dependency_overrides[],
+    .tools.base.gitleaks.dependency_overrides[],
     .tools.base.trivy.dependency_overrides[],
     .tools.base.yq.dependency_overrides[],
     .tools.go.golangci_lint.dependency_overrides[],
@@ -236,13 +292,22 @@ done < <(
   ' "$manifest"
 )
 
-debian_package_lock_path="${repository_root}/${debian_package_lock}"
-LC_ALL=C sort -c -u "$debian_package_lock_path" ||
-	fail 'Debian package lock must be sorted and unique'
-while IFS= read -r package; do
-	[[ $package =~ ^[a-z0-9][a-z0-9+.-]*=[0-9A-Za-z][0-9A-Za-z.+:~_-]*$ ]] ||
-		fail "invalid Debian package lock entry: ${package}"
-done <"$debian_package_lock_path"
+while IFS= read -r debian_package_lock; do
+	debian_package_lock_path="${repository_root}/${debian_package_lock}"
+	LC_ALL=C sort -c -u "$debian_package_lock_path" ||
+		fail "Debian package lock must be sorted and unique: ${debian_package_lock}"
+	while IFS= read -r package; do
+		[[ $package =~ ^[a-z0-9][a-z0-9+.-]*=[0-9A-Za-z][0-9A-Za-z.+:~_-]*$ ]] ||
+			fail "invalid Debian package lock entry: ${package}"
+	done <"$debian_package_lock_path"
+done < <(
+	jq -r '.tools.base.debian_packages.lockfiles[].lockfile' "$manifest"
+)
+
+cmp \
+	<(cut -d= -f1 "${repository_root}/${debian_package_lock_amd64}") \
+	<(cut -d= -f1 "${repository_root}/${debian_package_lock_arm64}") \
+	>/dev/null || fail 'Debian package locks must contain the same package names'
 
 package_version() {
 	local lockfile=$1

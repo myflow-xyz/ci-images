@@ -16,20 +16,20 @@
       "digest": "sha256:bde3983e9c939224420ddaf6b784cc30e09b035a4dea01f581230c50809f372e"
     },
     "debian": {
-      "reference": "docker.io/library/debian:bookworm-slim",
-      "digest": "sha256:88200866dfff7ea7f5cbcb6ec7c8a701889efe6fe859fe64d6990e4b07ea4171"
+      "reference": "docker.io/library/debian:trixie-slim",
+      "digest": "sha256:d7e12182ce18b85b93007c1dedf31f2d29e01ccf3182cc4017c709b6259bc132"
     },
     "python": {
-      "reference": "docker.io/library/python:3.14.7-slim-bookworm",
-      "digest": "sha256:9ab8d9c8514b44f90cf0029dd42fdd7e9e211e639c8b995304cc04568dee900f"
+      "reference": "docker.io/library/python:3.14.7-slim-trixie",
+      "digest": "sha256:cad9a2c871761c413caa6fdd6441c783451e740a48aaeba60ae62a8b53525ef6"
     },
     "node": {
-      "reference": "docker.io/library/node:24.21.0-bookworm-slim",
-      "digest": "sha256:2fe369e969550cde8e867afc3fe370b260140cab4a23d467074295b42163d553"
+      "reference": "docker.io/library/node:24.21.0-trixie-slim",
+      "digest": "sha256:db3ae80f5d8df06e04dabdf7b44cbf008d32de168205fa0294444aabbc08c590"
     },
     "pgvector": {
-      "reference": "docker.io/pgvector/pgvector:0.8.6-pg18-bookworm",
-      "digest": "sha256:2ba9ca5f2e7daa0f0e7723cba1ee9167bab54efd3640516a44ac1a928dd67e7a"
+      "reference": "docker.io/pgvector/pgvector:0.8.6-pg18-trixie",
+      "digest": "sha256:78bf48b801e792f99e3ac62b5036fd3876e9be48afda16c1e331af1c75ceb2ff"
     }
   },
   "images": {
@@ -66,8 +66,30 @@
         "module": "github.com/rhysd/actionlint/cmd/actionlint"
       },
       "debian_packages": {
-        "lockfile": "images/base/debian-packages.lock",
-        "lockfile_sha256": "e3201bc9dedfe48ba344a464ef358f5d1df94b8f2638934f224f40e9308b28b1"
+        "lockfiles": {
+          "amd64": {
+            "lockfile": "images/base/debian-packages.amd64.lock",
+            "lockfile_sha256": "7c2bd58908367d3d1b175e9f488f69c412e4b3153ef6771f2d0e2a544e46d257"
+          },
+          "arm64": {
+            "lockfile": "images/base/debian-packages.arm64.lock",
+            "lockfile_sha256": "cd947145864dde6632050374b100369ec409665db616d2a987091c37e63a243c"
+          }
+        }
+      },
+      "gh": {
+        "version": "2.101.0",
+        "source": "https://github.com/cli/cli",
+        "assets": {
+          "amd64": {
+            "url": "https://github.com/cli/cli/releases/download/v2.101.0/gh_2.101.0_linux_amd64.tar.gz",
+            "sha256": "9bca2d1c16825f109907a23307628a2f0698fbf99662b73a5cf0b020293072b8"
+          },
+          "arm64": {
+            "url": "https://github.com/cli/cli/releases/download/v2.101.0/gh_2.101.0_linux_arm64.tar.gz",
+            "sha256": "b57e8063f18862647c9d22727c32e9da1b963f8bf9db648fe123a6975695640f"
+          }
+        }
       },
       "git": {
         "version": "2.55.0",
@@ -77,6 +99,14 @@
           "sha256": "457fdb04dc8728e007d4688695e6912e6f680727920f2a40bf11eacc17505357"
         }
       },
+      "git_lfs": {
+        "version": "3.8.0",
+        "source": "https://github.com/git-lfs/git-lfs",
+        "module": "github.com/git-lfs/git-lfs/v3",
+        "dependency_overrides": {
+          "golang.org/x/crypto": "v0.57.0"
+        }
+      },
       "gitleaks": {
         "version": "8.30.1",
         "source": "https://github.com/gitleaks/gitleaks",
@@ -84,6 +114,20 @@
         "dependency_overrides": {
           "github.com/ulikunitz/xz": "v0.5.16",
           "golang.org/x/crypto": "v0.57.0"
+        }
+      },
+      "jq": {
+        "version": "1.8.2",
+        "source": "https://github.com/jqlang/jq",
+        "assets": {
+          "amd64": {
+            "url": "https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-linux-amd64",
+            "sha256": "b1c22172dd303f3be49e935aa56aa48a8b7a46e0bc838b4997d3bb451495870f"
+          },
+          "arm64": {
+            "url": "https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-linux-arm64",
+            "sha256": "8b85c817833814ddca00a144c33705546355afccf0cf39b188f3cdb48b852309"
+          }
         }
       },
       "osv_scanner": {
@@ -115,6 +159,34 @@
       "python": {
         "version": "3.14.7",
         "source": "https://www.python.org/"
+      },
+      "ripgrep": {
+        "version": "15.2.0",
+        "source": "https://github.com/BurntSushi/ripgrep",
+        "assets": {
+          "amd64": {
+            "url": "https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-x86_64-unknown-linux-musl.tar.gz",
+            "sha256": "33e15bcf1624b25cdd2a55813a47a2f95dbe126268203e76aa6a585d1e7b149c"
+          },
+          "arm64": {
+            "url": "https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-aarch64-unknown-linux-musl.tar.gz",
+            "sha256": "800b1e7206afe799dfb5a6901f23147cfaabe0e52210538100f61e86e1740915"
+          }
+        }
+      },
+      "shellcheck": {
+        "version": "0.11.0",
+        "source": "https://github.com/koalaman/shellcheck",
+        "assets": {
+          "amd64": {
+            "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.gz",
+            "sha256": "b7af85e41cc99489dcc21d66c6d5f3685138f06d34651e6d34b42ec6d54fe6f6"
+          },
+          "arm64": {
+            "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.aarch64.tar.gz",
+            "sha256": "68a8133197a50beb8803f8d42f9908d1af1c5540d4bb05fdfca8c1fa47decefc"
+          }
+        }
       },
       "shellspec": {
         "version": "0.28.1",

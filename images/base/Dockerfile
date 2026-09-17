@@ -24,6 +24,9 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
       'Acquire::Check-Valid-Until "false";' \
       'Acquire::Retries "5";' \
       > /etc/apt/apt.conf.d/99-ci-snapshot \
+    && printf '%s\n' \
+      'path-include /usr/share/man/man7/bash-builtins.7.gz' \
+      > /etc/dpkg/dpkg.cfg.d/zz-ci-bash-builtins \
     && apt-get update \
     && apt-get install --yes --no-install-recommends \
       build-essential \
@@ -144,13 +147,35 @@ FROM --platform=${BUILDPLATFORM} ${BASE_IMAGE} AS base-go-tools-builder
 ARG ACTIONLINT_VERSION
 ARG BUILDARCH
 ARG DEBIAN_SNAPSHOT
+ARG GH_ASSET_URL_AMD64
+ARG GH_ASSET_URL_ARM64
+ARG GH_SHA256_AMD64
+ARG GH_SHA256_ARM64
+ARG GH_VERSION
+ARG GIT_LFS_VERSION
+ARG GIT_LFS_X_CRYPTO_VERSION
 ARG GITLEAKS_VERSION
 ARG GITLEAKS_X_CRYPTO_VERSION
 ARG GITLEAKS_XZ_VERSION
 ARG GO_SHA256_AMD64
 ARG GO_SHA256_ARM64
 ARG GO_VERSION
+ARG JQ_ASSET_URL_AMD64
+ARG JQ_ASSET_URL_ARM64
+ARG JQ_SHA256_AMD64
+ARG JQ_SHA256_ARM64
+ARG JQ_VERSION
 ARG OSV_SCANNER_VERSION
+ARG RIPGREP_ASSET_URL_AMD64
+ARG RIPGREP_ASSET_URL_ARM64
+ARG RIPGREP_SHA256_AMD64
+ARG RIPGREP_SHA256_ARM64
+ARG RIPGREP_VERSION
+ARG SHELLCHECK_ASSET_URL_AMD64
+ARG SHELLCHECK_ASSET_URL_ARM64
+ARG SHELLCHECK_SHA256_AMD64
+ARG SHELLCHECK_SHA256_ARM64
+ARG SHELLCHECK_VERSION
 ARG SHFMT_VERSION
 ARG TARGETARCH
 ARG TRIVY_GO_SHA256_AMD64
@@ -296,6 +321,11 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       github.com/rhysd/actionlint/cmd/actionlint \
       "v${ACTIONLINT_VERSION}"; \
     build_tool \
+      git-lfs \
+      github.com/git-lfs/git-lfs/v3 \
+      "v${GIT_LFS_VERSION}" \
+      "golang.org/x/crypto@${GIT_LFS_X_CRYPTO_VERSION}"; \
+    build_tool \
       gitleaks \
       github.com/zricethezav/gitleaks/v8 \
       "v${GITLEAKS_VERSION}" \
@@ -320,6 +350,99 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       "v${YQ_VERSION}" \
       "golang.org/x/text@${YQ_X_TEXT_VERSION}"
 
+RUN set -eu; \
+    case "${TARGETARCH}" in \
+      amd64) \
+        gh_asset_url="${GH_ASSET_URL_AMD64}"; \
+        gh_sha256="${GH_SHA256_AMD64}"; \
+        jq_asset_url="${JQ_ASSET_URL_AMD64}"; \
+        jq_sha256="${JQ_SHA256_AMD64}"; \
+        ripgrep_asset_url="${RIPGREP_ASSET_URL_AMD64}"; \
+        ripgrep_root="ripgrep-${RIPGREP_VERSION}-x86_64-unknown-linux-musl"; \
+        ripgrep_sha256="${RIPGREP_SHA256_AMD64}"; \
+        shellcheck_asset_url="${SHELLCHECK_ASSET_URL_AMD64}"; \
+        shellcheck_sha256="${SHELLCHECK_SHA256_AMD64}" \
+        ;; \
+      arm64) \
+        gh_asset_url="${GH_ASSET_URL_ARM64}"; \
+        gh_sha256="${GH_SHA256_ARM64}"; \
+        jq_asset_url="${JQ_ASSET_URL_ARM64}"; \
+        jq_sha256="${JQ_SHA256_ARM64}"; \
+        ripgrep_asset_url="${RIPGREP_ASSET_URL_ARM64}"; \
+        ripgrep_root="ripgrep-${RIPGREP_VERSION}-aarch64-unknown-linux-musl"; \
+        ripgrep_sha256="${RIPGREP_SHA256_ARM64}"; \
+        shellcheck_asset_url="${SHELLCHECK_ASSET_URL_ARM64}"; \
+        shellcheck_sha256="${SHELLCHECK_SHA256_ARM64}" \
+        ;; \
+      *) \
+        printf 'unsupported target architecture: %s\n' "${TARGETARCH}" >&2; \
+        exit 1 \
+        ;; \
+    esac; \
+    install -d \
+      "/out/gh/${GH_VERSION}" \
+      "/out/jq/${JQ_VERSION}" \
+      "/out/ripgrep/${RIPGREP_VERSION}" \
+      "/out/shellcheck/${SHELLCHECK_VERSION}"; \
+    /usr/local/libexec/ci/fetch-verified \
+      "${gh_asset_url}" \
+      "${gh_sha256}" \
+      /var/tmp/gh.tar.gz; \
+    tar -xzf /var/tmp/gh.tar.gz \
+      --strip-components=2 \
+      -C "/out/gh/${GH_VERSION}" \
+      "gh_${GH_VERSION}_linux_${TARGETARCH}/bin/gh"; \
+    if [ "${BUILDARCH}" = "${TARGETARCH}" ]; then \
+      "/out/gh/${GH_VERSION}/gh" --version \
+        | grep --fixed-strings "gh version ${GH_VERSION}" >/dev/null; \
+    fi; \
+    printf 'verified GitHub CLI %s for %s\n' "${GH_VERSION}" "${TARGETARCH}"; \
+    /usr/local/libexec/ci/fetch-verified \
+      "${jq_asset_url}" \
+      "${jq_sha256}" \
+      "/out/jq/${JQ_VERSION}/jq"; \
+    chmod 0755 "/out/jq/${JQ_VERSION}/jq"; \
+    if [ "${BUILDARCH}" = "${TARGETARCH}" ]; then \
+      test "$("/out/jq/${JQ_VERSION}/jq" --version)" \
+        = "jq-${JQ_VERSION}"; \
+    fi; \
+    printf 'verified jq %s for %s\n' "${JQ_VERSION}" "${TARGETARCH}"; \
+    /usr/local/libexec/ci/fetch-verified \
+      "${ripgrep_asset_url}" \
+      "${ripgrep_sha256}" \
+      /var/tmp/ripgrep.tar.gz; \
+    tar -xzf /var/tmp/ripgrep.tar.gz \
+      --strip-components=1 \
+      -C "/out/ripgrep/${RIPGREP_VERSION}" \
+      "${ripgrep_root}/rg"; \
+    if [ "${BUILDARCH}" = "${TARGETARCH}" ]; then \
+      "/out/ripgrep/${RIPGREP_VERSION}/rg" --version \
+        | head -n 1 \
+        | grep --fixed-strings "ripgrep ${RIPGREP_VERSION}" >/dev/null; \
+    fi; \
+    printf 'verified ripgrep %s for %s\n' \
+      "${RIPGREP_VERSION}" \
+      "${TARGETARCH}"; \
+    /usr/local/libexec/ci/fetch-verified \
+      "${shellcheck_asset_url}" \
+      "${shellcheck_sha256}" \
+      /var/tmp/shellcheck.tar.gz; \
+    tar -xzf /var/tmp/shellcheck.tar.gz \
+      --strip-components=1 \
+      -C "/out/shellcheck/${SHELLCHECK_VERSION}" \
+      "shellcheck-v${SHELLCHECK_VERSION}/shellcheck"; \
+    if [ "${BUILDARCH}" = "${TARGETARCH}" ]; then \
+      "/out/shellcheck/${SHELLCHECK_VERSION}/shellcheck" --version \
+        | grep --fixed-strings "version: ${SHELLCHECK_VERSION}" >/dev/null; \
+    fi; \
+    printf 'verified ShellCheck %s for %s\n' \
+      "${SHELLCHECK_VERSION}" \
+      "${TARGETARCH}"; \
+    rm -f \
+      /var/tmp/gh.tar.gz \
+      /var/tmp/ripgrep.tar.gz \
+      /var/tmp/shellcheck.tar.gz
+
 FROM ${BASE_IMAGE}
 
 USER root
@@ -330,13 +453,19 @@ ARG BUILD_REVISION=unknown
 ARG CI_GID=2001
 ARG CI_UID=1001
 ARG DEBIAN_SNAPSHOT
+ARG GH_VERSION
+ARG GIT_LFS_VERSION
 ARG GITLEAKS_VERSION
+ARG JQ_VERSION
 ARG MANIFEST_SHA=unknown
 ARG OSV_SCANNER_VERSION
 ARG PYTHON_VERSION
+ARG RIPGREP_VERSION
+ARG SHELLCHECK_VERSION
 ARG SHELLSPEC_SHA256
 ARG SHELLSPEC_VERSION
 ARG SHFMT_VERSION
+ARG TARGETARCH
 ARG TRIVY_VERSION
 ARG YQ_VERSION
 
@@ -348,7 +477,7 @@ ENV CI=true \
     TZ=UTC
 
 COPY images/common/fetch-verified /usr/local/libexec/ci/fetch-verified
-COPY images/base/debian-packages.lock /usr/local/share/ci/debian-packages.lock
+COPY images/base/debian-packages.*.lock /usr/local/share/ci/
 
 RUN --mount=from=base-python-runtime,source=/out/python-runtime-packages,target=/var/tmp/python-runtime-packages,ro \
     test -n "${DEBIAN_SNAPSHOT}" \
@@ -362,8 +491,23 @@ RUN --mount=from=base-python-runtime,source=/out/python-runtime-packages,target=
       'Acquire::Check-Valid-Until "false";' \
       'Acquire::Retries "5";' \
       > /etc/apt/apt.conf.d/99-ci-snapshot \
+    && printf '%s\n' \
+      'path-include /usr/share/man/man7/bash-builtins.7.gz' \
+      > /etc/dpkg/dpkg.cfg.d/zz-ci-bash-builtins \
     && apt-get update \
     && apt-get upgrade --yes --no-install-recommends \
+    && case "${TARGETARCH}" in \
+      amd64|arm64) \
+        debian_package_lock="/usr/local/share/ci/debian-packages.${TARGETARCH}.lock" \
+        ;; \
+      *) \
+        printf 'unsupported target architecture: %s\n' "${TARGETARCH}" >&2; \
+        exit 1 \
+        ;; \
+    esac \
+    && install -m 0644 \
+      "${debian_package_lock}" \
+      /usr/local/share/ci/debian-packages.lock \
     && xargs -r \
       apt-get install --yes --no-install-recommends \
       < /usr/local/share/ci/debian-packages.lock \
@@ -372,6 +516,7 @@ RUN --mount=from=base-python-runtime,source=/out/python-runtime-packages,target=
       < /var/tmp/python-runtime-packages \
     && sed -ri 's/^# (en_US.UTF-8 UTF-8)$/\1/' /etc/locale.gen \
     && locale-gen \
+    && rm -f /usr/local/share/ci/debian-packages.*.lock \
     && rm -rf /var/lib/apt/lists/* \
     && chmod 0755 /usr/local/libexec/ci/fetch-verified
 
@@ -390,11 +535,26 @@ RUN set -eu; \
       "../actionlint/${ACTIONLINT_VERSION}/actionlint" \
       /opt/ci-tools/bin/actionlint; \
     ln -s \
+      "../gh/${GH_VERSION}/gh" \
+      /opt/ci-tools/bin/gh; \
+    ln -s \
+      "../git-lfs/${GIT_LFS_VERSION}/git-lfs" \
+      /opt/ci-tools/bin/git-lfs; \
+    ln -s \
       "../gitleaks/${GITLEAKS_VERSION}/gitleaks" \
       /opt/ci-tools/bin/gitleaks; \
     ln -s \
+      "../jq/${JQ_VERSION}/jq" \
+      /opt/ci-tools/bin/jq; \
+    ln -s \
       "../osv-scanner/${OSV_SCANNER_VERSION}/osv-scanner" \
       /opt/ci-tools/bin/osv-scanner; \
+    ln -s \
+      "../ripgrep/${RIPGREP_VERSION}/rg" \
+      /opt/ci-tools/bin/rg; \
+    ln -s \
+      "../shellcheck/${SHELLCHECK_VERSION}/shellcheck" \
+      /opt/ci-tools/bin/shellcheck; \
     ln -s \
       "../shfmt/${SHFMT_VERSION}/shfmt" \
       /opt/ci-tools/bin/shfmt; \

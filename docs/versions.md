@@ -13,10 +13,15 @@ revisions, checksums, and upstream image digests.
 | Component | Version |
 | --- | --- |
 | `Git` | `2.55.0` |
+| `Git LFS` | `3.8.0` |
+| `GitHub CLI` | `2.101.0` |
 | `CPython` | `3.14.7` |
 | `actionlint` | `1.7.12` |
 | `gitleaks` | `8.30.1` |
+| `jq` | `1.8.2` |
 | `osv-scanner` | `2.6.0` |
+| `ripgrep` | `15.2.0` |
+| `ShellCheck` | `0.11.0` |
 | `shellspec` | `0.28.1` |
 | `shfmt` | `3.14.1` |
 | `Trivy` | `0.74.0` |
@@ -32,36 +37,31 @@ listed above.
 
 | Package | Version |
 | --- | --- |
-| `bash` | `5.2.15-2+b13` |
-| `ca-certificates` | `20250419~deb12u1` |
-| `coreutils` | `9.1-1` |
-| `curl` | `7.88.1-10+deb12u15` |
-| `dash` | `0.5.12-2` |
-| `diffutils` | `1:3.8-4` |
-| `findutils` | `4.9.0-4` |
-| `gawk` | `1:5.2.1-2` |
-| `gh` | `2.23.0+dfsg1-1` |
-| `git` | `1:2.39.5-0+deb12u3` |
-| `git-lfs` | `3.3.0-1+deb12u1` |
-| `grep` | `3.8-5` |
-| `gzip` | `1.12-1` |
-| `jq` | `1.6-2.1+deb12u2` |
-| `locales` | `2.36-9+deb12u14` |
-| `make` | `4.3-4.1` |
-| `media-types` | `10.0.0` |
-| `netbase` | `6.4` |
-| `openssl` | `3.0.20-1~deb12u2` |
-| `procps` | `2:4.0.2-3` |
-| `ripgrep` | `13.0.0-4+b2` |
-| `sed` | `4.9-1+deb12u1` |
-| `shellcheck` | `0.9.0-1` |
-| `tar` | `1.34+dfsg-1.2+deb12u1` |
-| `tini` | `0.19.0-1+b3` |
-| `tzdata` | `2026b-0+deb12u1` |
-| `unzip` | `6.0-28+deb12u1` |
-| `wget` | `1.21.3-1+deb12u1` |
-| `xz-utils` | `5.4.1-1+deb12u1` |
-| `zip` | `3.0-13` |
+| `bash` | `5.2.37-2+b10` |
+| `ca-certificates` | `20250419` |
+| `coreutils` | `9.7-3` |
+| `curl` | `8.14.1-2+deb13u5` |
+| `dash` | `0.5.12-12` |
+| `diffutils` | `1:3.10-4` |
+| `findutils` | `4.10.0-3` |
+| `gawk` | `1:5.2.1-2+b1 (amd64) / 1:5.2.1-2+b2 (arm64)` |
+| `git` | `1:2.47.3-0+deb13u1` |
+| `grep` | `3.11-4 (amd64) / 3.11-4+b1 (arm64)` |
+| `gzip` | `1.13-1+deb13u1` |
+| `locales` | `2.41-12+deb13u4` |
+| `make` | `4.4.1-2` |
+| `media-types` | `13.0.0` |
+| `netbase` | `6.5` |
+| `openssl` | `3.5.7-1~deb13u2` |
+| `procps` | `2:4.0.4-9` |
+| `sed` | `4.9-2+deb13u1` |
+| `tar` | `1.35+dfsg-3.1` |
+| `tini` | `0.19.0-3+b8` |
+| `tzdata` | `2026c-0+deb13u1` |
+| `unzip` | `6.0-29+deb13u1` |
+| `wget` | `1.25.0-2` |
+| `xz-utils` | `5.8.1-1+deb13u1` |
+| `zip` | `3.0-15+deb13u1` |
 
 ## `ci-go`
 

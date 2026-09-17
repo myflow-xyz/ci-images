@@ -2,7 +2,7 @@
 
 `ghcr.io/myflow-xyz/ci-postgres` is a GitHub Actions service image. It is built
 from a digest-pinned
-`pgvector/pgvector:0.8.6-pg18-bookworm` image and does not inherit from a job
+`pgvector/pgvector:0.8.6-pg18-trixie` image and does not inherit from a job
 image.
 
 ## Included service contract
