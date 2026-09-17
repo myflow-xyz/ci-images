@@ -1,4 +1,5 @@
-# syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
+# syntax=docker/dockerfile:1.27.0@sha256:bde3983e9c939224420ddaf6b784cc30e09b035a4dea01f581230c50809f372e
+# check=skip=InvalidDefaultArgInFrom
 
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
@@ -7,14 +8,12 @@ ARG BUILD_CREATED=unknown
 ARG BUILD_REVISION=unknown
 ARG GOLANGCI_LINT_VERSION
 ARG GOLANGCI_LINT_X_TEXT_VERSION
-ARG GOIMPORTS_X_MOD_VERSION
 ARG GOIMPORTS_VERSION
 ARG GOOSE_VERSION
 ARG GOOSE_X_CRYPTO_VERSION
 ARG GOOSE_GRPC_VERSION
 ARG GOOSE_MODERNC_LIBC_VERSION
 ARG GOOSE_X_NET_VERSION
-ARG GOVULNCHECK_X_MOD_VERSION
 ARG GOVULNCHECK_VERSION
 ARG GO_SHA256_AMD64
 ARG GO_SHA256_ARM64
@@ -143,13 +142,11 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
     build_tool \
       goimports \
       golang.org/x/tools/cmd/goimports \
-      "${GOIMPORTS_VERSION}" \
-      "golang.org/x/mod@${GOIMPORTS_X_MOD_VERSION}"; \
+      "${GOIMPORTS_VERSION}"; \
     build_tool \
       govulncheck \
       golang.org/x/vuln/cmd/govulncheck \
-      "${GOVULNCHECK_VERSION}" \
-      "golang.org/x/mod@${GOVULNCHECK_X_MOD_VERSION}"
+      "${GOVULNCHECK_VERSION}"
 
 ENV GOBIN=/opt/ci-tools/bin \
     GOCACHE=/var/cache/go/build \

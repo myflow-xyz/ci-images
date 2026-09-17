@@ -42,21 +42,27 @@ if [[ $target == all || $target == base ]]; then
 		--env "EXPECTED_TOOLCHAIN_GO_VERSION=$(json '.tools.go.runtime')" \
 		--env \
 		"EXPECTED_ACTIONLINT_VERSION=$(json '.tools.base.actionlint.version')" \
+		--env "EXPECTED_GH_VERSION=$(json '.tools.base.gh.version')" \
 		--env \
 		"EXPECTED_GIT_VERSION=$(json '.tools.base.git.version')" \
+		--env \
+		"EXPECTED_GIT_LFS_VERSION=$(json '.tools.base.git_lfs.version')" \
+		--env \
+		"EXPECTED_GIT_LFS_X_CRYPTO_VERSION=$(json '.tools.base.git_lfs.dependency_overrides["golang.org/x/crypto"]')" \
 		--env \
 		"EXPECTED_GITLEAKS_VERSION=$(json '.tools.base.gitleaks.version')" \
 		--env \
 		"EXPECTED_GITLEAKS_X_CRYPTO_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["golang.org/x/crypto"]')" \
 		--env \
 		"EXPECTED_GITLEAKS_XZ_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["github.com/ulikunitz/xz"]')" \
+		--env "EXPECTED_JQ_VERSION=$(json '.tools.base.jq.version')" \
 		--env \
 		"EXPECTED_OSV_SCANNER_VERSION=$(json '.tools.base.osv_scanner.version')" \
-		--env \
-		"EXPECTED_OSV_SCANNER_GRPC_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["google.golang.org/grpc"]')" \
-		--env \
-		"EXPECTED_OSV_SCANNER_X_MOD_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["golang.org/x/mod"]')" \
 		--env "EXPECTED_PYTHON_VERSION=$(json '.tools.base.python.version')" \
+		--env \
+		"EXPECTED_RIPGREP_VERSION=$(json '.tools.base.ripgrep.version')" \
+		--env \
+		"EXPECTED_SHELLCHECK_VERSION=$(json '.tools.base.shellcheck.version')" \
 		--env "EXPECTED_SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
 		--env "EXPECTED_TRIVY_VERSION=$(json '.tools.base.trivy.version')" \
 		--env \
@@ -96,11 +102,7 @@ if [[ $target == all || $target == go ]]; then
 		--env \
 		"EXPECTED_GOIMPORTS_VERSION=$(json '.tools.go.goimports.version')" \
 		--env \
-		"EXPECTED_GOIMPORTS_X_MOD_VERSION=$(json '.tools.go.goimports.dependency_overrides["golang.org/x/mod"]')" \
-		--env \
 		"EXPECTED_GOVULNCHECK_VERSION=$(json '.tools.go.govulncheck.version')" \
-		--env \
-		"EXPECTED_GOVULNCHECK_X_MOD_VERSION=$(json '.tools.go.govulncheck.dependency_overrides["golang.org/x/mod"]')" \
 		--env "EXPECTED_HURL_VERSION=$(json '.tools.go.hurl.version')" \
 		--env \
 		"EXPECTED_SQLC_X_NET_VERSION=$(json '.tools.go.sqlc.dependency_overrides["golang.org/x/net"]')" \
@@ -115,6 +117,8 @@ if [[ $target == all || $target == node ]]; then
 		--env "EXPECTED_NODE_VERSION=$(json '.tools.node.runtime')" \
 		--env \
 		"EXPECTED_MARKDOWNLINT_VERSION=$(json '.tools.node.markdownlint_cli2.version')" \
+		--env \
+		"EXPECTED_MARKDOWNLINT_SMOL_TOML_VERSION=$(json '.tools.node.markdownlint_cli2.dependency_overrides["smol-toml"]')" \
 		--env \
 		"EXPECTED_NODE_BUNDLE_VERSION=$(json '.tools.node.bundle_version')" \
 		--env \

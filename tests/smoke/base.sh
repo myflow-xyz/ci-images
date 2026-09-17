@@ -8,13 +8,17 @@ expected_go=${EXPECTED_TOOLCHAIN_GO_VERSION:?EXPECTED_TOOLCHAIN_GO_VERSION is no
 expected_trivy_go=${EXPECTED_TRIVY_GO_VERSION:?EXPECTED_TRIVY_GO_VERSION is not set}
 expected_python=${EXPECTED_PYTHON_VERSION:?EXPECTED_PYTHON_VERSION is not set}
 : "${EXPECTED_ACTIONLINT_VERSION:?EXPECTED_ACTIONLINT_VERSION is not set}"
+: "${EXPECTED_GH_VERSION:?EXPECTED_GH_VERSION is not set}"
 : "${EXPECTED_GIT_VERSION:?EXPECTED_GIT_VERSION is not set}"
+: "${EXPECTED_GIT_LFS_VERSION:?EXPECTED_GIT_LFS_VERSION is not set}"
+: "${EXPECTED_GIT_LFS_X_CRYPTO_VERSION:?EXPECTED_GIT_LFS_X_CRYPTO_VERSION is not set}"
 : "${EXPECTED_GITLEAKS_X_CRYPTO_VERSION:?EXPECTED_GITLEAKS_X_CRYPTO_VERSION is not set}"
 : "${EXPECTED_GITLEAKS_XZ_VERSION:?EXPECTED_GITLEAKS_XZ_VERSION is not set}"
 : "${EXPECTED_GITLEAKS_VERSION:?EXPECTED_GITLEAKS_VERSION is not set}"
+: "${EXPECTED_JQ_VERSION:?EXPECTED_JQ_VERSION is not set}"
 : "${EXPECTED_OSV_SCANNER_VERSION:?EXPECTED_OSV_SCANNER_VERSION is not set}"
-: "${EXPECTED_OSV_SCANNER_GRPC_VERSION:?EXPECTED_OSV_SCANNER_GRPC_VERSION is not set}"
-: "${EXPECTED_OSV_SCANNER_X_MOD_VERSION:?EXPECTED_OSV_SCANNER_X_MOD_VERSION is not set}"
+: "${EXPECTED_RIPGREP_VERSION:?EXPECTED_RIPGREP_VERSION is not set}"
+: "${EXPECTED_SHELLCHECK_VERSION:?EXPECTED_SHELLCHECK_VERSION is not set}"
 : "${EXPECTED_SHFMT_VERSION:?EXPECTED_SHFMT_VERSION is not set}"
 : "${EXPECTED_TRIVY_VERSION:?EXPECTED_TRIVY_VERSION is not set}"
 : "${EXPECTED_TRIVY_GRPC_VERSION:?EXPECTED_TRIVY_GRPC_VERSION is not set}"
@@ -62,9 +66,7 @@ for package in \
 	coreutils \
 	curl \
 	git \
-	git-lfs \
 	grep \
-	jq \
 	openssl \
 	sed \
 	tar \
@@ -72,12 +74,27 @@ for package in \
 	[[ $(dpkg-query --show --showformat='${db:Status-Status}' "$package") == installed ]]
 done
 
+for package in gh git-lfs jq ripgrep shellcheck; do
+	if [[ $(dpkg-query --show --showformat='${db:Status-Status}' "$package" \
+		2>/dev/null || true) == installed ]]; then
+		printf 'upstream-managed tool installed from Debian: %s\n' "$package" >&2
+		exit 1
+	fi
+done
+
+debian_package_lock=/usr/local/share/ci/debian-packages.lock
+[[ -r $debian_package_lock ]]
+while IFS='=' read -r package expected_version; do
+	[[ -n $package && -n $expected_version ]]
+	[[ $(dpkg-query --show --showformat='${Version}' "$package") == "$expected_version" ]]
+done <"$debian_package_lock"
+
 git lfs version >/dev/null
 
-# Debian fixes CVE-2026-58050 and CVE-2026-7598 in this revision.
+# Retain the reviewed libssh2 security update from the Trixie snapshot.
 dpkg --compare-versions \
-	"$(dpkg-query --show --showformat='${Version}' libssh2-1)" \
-	ge '1.10.0-3+deb12u1'
+	"$(dpkg-query --show --showformat='${Version}' libssh2-1t64)" \
+	ge '1.11.1-1+deb13u2'
 
 [[ $(command -v python3) == /usr/local/bin/python3 ]]
 [[ $(python3 --version) == "Python ${expected_python}" ]]
@@ -111,26 +128,30 @@ PY
 
 actionlint --version 2>&1 |
 	grep --fixed-strings "$EXPECTED_ACTIONLINT_VERSION" >/dev/null
+gh --version |
+	grep --fixed-strings "gh version ${EXPECTED_GH_VERSION}" >/dev/null
 [[ $(git version) == "git version ${EXPECTED_GIT_VERSION}" ]]
+git lfs version |
+	grep --fixed-strings "git-lfs/${EXPECTED_GIT_LFS_VERSION}" >/dev/null
+grep \
+	--binary-files=text \
+	--fixed-strings \
+	$'dep\tgolang.org/x/crypto\t'"${EXPECTED_GIT_LFS_X_CRYPTO_VERSION}" \
+	"$(command -v git-lfs)" \
+	>/dev/null
 [[ $(gitleaks version) == "$EXPECTED_GITLEAKS_VERSION" ]]
+[[ $(jq --version) == "jq-${EXPECTED_JQ_VERSION}" ]]
 osv-scanner --version |
 	grep \
 		--line-regexp \
 		--fixed-strings \
 		"osv-scanner version: ${EXPECTED_OSV_SCANNER_VERSION}" \
 		>/dev/null
-grep \
-	--binary-files=text \
-	--fixed-strings \
-	$'dep\tgolang.org/x/mod\t'"${EXPECTED_OSV_SCANNER_X_MOD_VERSION}" \
-	"$(command -v osv-scanner)" \
-	>/dev/null
-grep \
-	--binary-files=text \
-	--fixed-strings \
-	$'dep\tgoogle.golang.org/grpc\t'"${EXPECTED_OSV_SCANNER_GRPC_VERSION}" \
-	"$(command -v osv-scanner)" \
-	>/dev/null
+rg --version |
+	head -n 1 |
+	grep --fixed-strings "ripgrep ${EXPECTED_RIPGREP_VERSION}" >/dev/null
+shellcheck --version |
+	grep --fixed-strings "version: ${EXPECTED_SHELLCHECK_VERSION}" >/dev/null
 trivy --version |
 	grep \
 		--line-regexp \
@@ -172,7 +193,7 @@ grep \
 	"$(command -v yq)" \
 	>/dev/null
 
-for command in actionlint gitleaks osv-scanner shfmt yq; do
+for command in actionlint git-lfs gitleaks osv-scanner shfmt yq; do
 	grep \
 		--binary-files=text \
 		--fixed-strings \
@@ -183,8 +204,13 @@ done
 
 for command in \
 	actionlint \
+	gh \
+	git-lfs \
 	gitleaks \
+	jq \
 	osv-scanner \
+	rg \
+	shellcheck \
 	shellspec \
 	shfmt \
 	trivy \

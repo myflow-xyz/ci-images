@@ -7,14 +7,15 @@ language-specific images.
 
 ## Base and runtime
 
-The image starts from a digest-pinned `debian:bookworm-slim` OCI index. Debian
-Bookworm preserves the existing glibc and apt package contract without carrying
-an application build toolchain.
+The image starts from a digest-pinned `debian:trixie-slim` OCI index.
 
-The environment is non-interactive, UTF-8, glibc-based Debian Bookworm. Debian
-packages are resolved from a reviewed, Debian-signed snapshot. The slim parent
-omits CA certificates, so the snapshot bootstrap uses HTTP with apt's signature
-verification; CA certificates are installed before any HTTPS source download.
+The environment is non-interactive, UTF-8, glibc-based Debian Trixie. Debian
+packages are resolved from a reviewed, Debian-signed snapshot. Direct packages
+are installed at the exact architecture-specific revisions in
+`images/base/debian-packages.*.lock`, and smoke tests compare every locked
+revision with the built image. The slim parent omits CA certificates, so the
+snapshot bootstrap uses HTTP with apt's signature verification; CA certificates
+are installed before any HTTPS source download.
 
 ## Runtime environment
 
@@ -42,22 +43,24 @@ The base image includes:
 - CPython 3.14.7 and its standard-library modules for repository-owned CI
   automation;
 - structured-data and diagnosis tools: `jq`, `yq`, ripgrep, and GitHub CLI;
-- shared policy tools: OSV-Scanner 2.5.1, Trivy 0.74.0, gitleaks, actionlint,
+- shared policy tools: OSV-Scanner 2.6.0, Trivy 0.74.0, gitleaks, actionlint,
   shfmt, ShellCheck, and ShellSpec;
 - `tini` for descendants that require subprocess reaping.
 
 Python is imported from the digest-pinned official
-`python:3.14.7-slim-bookworm` image. Its shared-library dependencies are
+`python:3.14.7-slim-trixie` image. Its shared-library dependencies are
 installed from the reviewed Debian snapshot. The runtime is limited to the
 interpreter and standard library: the image does not include pip,
 virtual-environment support, development headers, or third-party Python
 packages.
 
 Git is built from a checksum-pinned upstream source release so the protected
-system configuration can scope trust to GitHub's workspace tree. actionlint,
-gitleaks, OSV-Scanner, shfmt, and yq are built from exact module releases with Go
-1.27.1. Trivy 0.74.0 is built from its exact module release with a separately
-pinned Go 1.26.8 toolchain and the `jsonv2` build mode required by that release.
+system configuration can scope trust to GitHub's workspace tree. GitHub CLI,
+jq, ripgrep, and ShellCheck use checksum-pinned upstream release artifacts for
+each supported architecture. Git LFS, actionlint, gitleaks, OSV-Scanner, shfmt,
+and yq are built from exact module releases with Go 1.27.1. Trivy 0.74.0 is
+built from its exact module release with a separately pinned Go 1.26.8
+toolchain and the `jsonv2` build mode required by that release.
 Narrow dependency overrides used to remove known vulnerabilities from released
 tools are recorded in the version manifest and verified by image smoke tests.
 Go tools are installed into immutable versioned directories and exposed through

@@ -7,21 +7,21 @@ without making them authoritative for application dependencies.
 ## Image hierarchy
 
 ```text
-debian:bookworm-slim@<digest>
+debian:trixie-slim@<digest>
 └── ci-base
     ├── ci-go
     └── ci-node
         └── ci-vite
             └── ci-playwright
 
-pgvector/pgvector:0.8.2-pg18-bookworm@<digest>
+pgvector/pgvector:0.8.6-pg18-trixie@<digest>
 └── ci-postgres
 ```
 
 `ci-base` imports CPython 3.14.7 from the digest-pinned official
-`python:3.14.7-slim-bookworm` image.
+`python:3.14.7-slim-trixie` image.
 `ci-node` imports its Node runtime from the digest-pinned
-`node:24.20.0-bookworm-slim` image without adding Node to `ci-base`.
+`node:24.21.0-trixie-slim` image without adding Node to `ci-base`.
 
 - `ghcr.io/myflow-xyz/ci-base`: operating-system utilities, Python 3.14.7
   standard-library scripting, OSV-Scanner, Trivy, and runtime-independent
@@ -77,9 +77,9 @@ the host platform; CI remains responsible for both published architectures.
 
 - Application lockfiles and Go modules remain authoritative.
 - Published images and upstream base images are consumed by immutable digest.
-- Direct downloads are checksum-verified. npm dependency graphs use committed
-  lockfiles, and Go executables are built from exact module versions or source
-  commits with reviewed security overrides.
+- Direct downloads are checksum-verified. Direct Debian packages and npm
+  dependency graphs use committed lockfiles, and Go executables are built from
+  exact module versions or source commits with reviewed security overrides.
 - Images contain no application source, credentials, generated output, or
   mutable service data.
 - Job images run as the non-root `ci` user with UID `1001` for GitHub-hosted

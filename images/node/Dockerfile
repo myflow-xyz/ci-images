@@ -1,4 +1,5 @@
-# syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
+# syntax=docker/dockerfile:1.27.0@sha256:bde3983e9c939224420ddaf6b784cc30e09b035a4dea01f581230c50809f372e
+# check=skip=InvalidDefaultArgInFrom
 
 ARG BASE_IMAGE
 ARG NODE_IMAGE
@@ -10,6 +11,7 @@ ARG BUILD_CREATED=unknown
 ARG BUILD_REVISION=unknown
 ARG MANIFEST_SHA=unknown
 ARG MARKDOWNLINT_CLI2_VERSION
+ARG MARKDOWNLINT_SMOL_TOML_VERSION
 ARG NODE_TOOLS_BUNDLE_VERSION
 ARG NODE_VERSION
 ARG NPM_ASSET_URL
@@ -170,6 +172,9 @@ RUN --mount=type=cache,target=/var/cache/npm \
     test "$(node --print \
       "require('/var/tmp/markdownlint-tools/node_modules/markdownlint-cli2/package.json').version")" \
       = "${MARKDOWNLINT_CLI2_VERSION}"; \
+    test "$(node --print \
+      "require('/var/tmp/markdownlint-tools/node_modules/smol-toml/package.json').version")" \
+      = "${MARKDOWNLINT_SMOL_TOML_VERSION}"; \
     install -d /opt/ci-tools/markdownlint-cli2; \
     mv \
       /var/tmp/markdownlint-tools \

@@ -1,4 +1,5 @@
-# syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
+# syntax=docker/dockerfile:1.27.0@sha256:bde3983e9c939224420ddaf6b784cc30e09b035a4dea01f581230c50809f372e
+# check=skip=InvalidDefaultArgInFrom
 
 ARG PGVECTOR_IMAGE
 FROM ${PGVECTOR_IMAGE} AS gosu-builder
@@ -24,6 +25,9 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
       'Acquire::Check-Valid-Until "false";' \
       'Acquire::Retries "5";' \
       > /etc/apt/apt.conf.d/99-ci-snapshot \
+    && printf '%s\n' \
+      'path-include /usr/share/man/man7/bash-builtins.7.gz' \
+      > /etc/dpkg/dpkg.cfg.d/zz-ci-bash-builtins \
     && apt-get update \
     && apt-get install --yes --no-install-recommends \
       ca-certificates \
@@ -92,6 +96,9 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
       'Acquire::Check-Valid-Until "false";' \
       'Acquire::Retries "5";' \
       > /etc/apt/apt.conf.d/99-ci-snapshot \
+    && printf '%s\n' \
+      'path-include /usr/share/man/man7/bash-builtins.7.gz' \
+      > /etc/dpkg/dpkg.cfg.d/zz-ci-bash-builtins \
     && apt-get update \
     && apt-get upgrade --yes --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \

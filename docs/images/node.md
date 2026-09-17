@@ -7,15 +7,16 @@ CI tasks that do not require the Vite frontend toolchain.
 
 The initial image contract includes:
 
-- Node.js 24.20.0 imported from the digest-pinned official Node image;
+- Node.js 24.21.0 imported from the digest-pinned official Node image;
 - npm and npx 12.0.2 from a hash-verified release artifact;
-- pnpm 12.3.1 from hash-verified native Linux release artifacts;
+- pnpm 12.4.2 from hash-verified native Linux release artifacts;
 - `markdownlint-cli2` 0.23.2;
-- Redocly CLI 2.51.1 for OpenAPI validation;
+- Redocly CLI 2.53.3 for OpenAPI validation;
 - explicit npm and pnpm cache paths.
 
 The npm release artifact is hash-verified, and its reviewed bundled dependency
-replacements are installed from a committed lockfile. The architecture-matched
+replacements are installed from a committed lockfile. The Markdown tool
+lockfile overrides `smol-toml` with its fixed release. The architecture-matched
 pnpm archive is installed independently of npm and includes its native
 executable. Other Node tool dependency trees are installed from committed
 lockfiles into immutable versioned directories. Stable command links are
@@ -27,7 +28,7 @@ This image adds these variables to the
 [`ci-base` environment](base.md#runtime-environment):
 
 ```text
-NODE_VERSION=24.20.0
+NODE_VERSION=24.21.0
 NPM_CONFIG_CACHE=/var/cache/npm
 PNPM_CONFIG_STORE_DIR=/var/cache/pnpm/store
 ```
@@ -52,7 +53,7 @@ pnpm store=/var/cache/pnpm/store
 ```
 
 pnpm creates a store-format directory below the configured store root. pnpm
-12.3.1 retains the compatible `v11` store format; the manifest records the CLI
+12.4.2 retains the compatible `v11` store format; the manifest records the CLI
 and store-format versions independently. The caches contain package content
 only. Do not persist `node_modules`, build output, or a repository workspace.
 

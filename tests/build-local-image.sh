@@ -75,22 +75,40 @@ build_base() {
 		--build-arg "DEBIAN_SNAPSHOT=$(json '.debian_snapshot')" \
 		--build-arg \
 		"ACTIONLINT_VERSION=$(json '.tools.base.actionlint.version')" \
+		--build-arg "GH_VERSION=$(json '.tools.base.gh.version')" \
+		--build-arg \
+		"GH_ASSET_URL_AMD64=$(json '.tools.base.gh.assets.amd64.url')" \
+		--build-arg \
+		"GH_ASSET_URL_ARM64=$(json '.tools.base.gh.assets.arm64.url')" \
+		--build-arg \
+		"GH_SHA256_AMD64=$(json '.tools.base.gh.assets.amd64.sha256')" \
+		--build-arg \
+		"GH_SHA256_ARM64=$(json '.tools.base.gh.assets.arm64.sha256')" \
 		--build-arg \
 		"GIT_VERSION=$(json '.tools.base.git.version')" \
 		--build-arg \
 		"GIT_SHA256=$(json '.tools.base.git.asset.sha256')" \
+		--build-arg \
+		"GIT_LFS_VERSION=$(json '.tools.base.git_lfs.version')" \
+		--build-arg \
+		"GIT_LFS_X_CRYPTO_VERSION=$(json '.tools.base.git_lfs.dependency_overrides["golang.org/x/crypto"]')" \
 		--build-arg \
 		"GITLEAKS_VERSION=$(json '.tools.base.gitleaks.version')" \
 		--build-arg \
 		"GITLEAKS_X_CRYPTO_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["golang.org/x/crypto"]')" \
 		--build-arg \
 		"GITLEAKS_XZ_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["github.com/ulikunitz/xz"]')" \
+		--build-arg "JQ_VERSION=$(json '.tools.base.jq.version')" \
+		--build-arg \
+		"JQ_ASSET_URL_AMD64=$(json '.tools.base.jq.assets.amd64.url')" \
+		--build-arg \
+		"JQ_ASSET_URL_ARM64=$(json '.tools.base.jq.assets.arm64.url')" \
+		--build-arg \
+		"JQ_SHA256_AMD64=$(json '.tools.base.jq.assets.amd64.sha256')" \
+		--build-arg \
+		"JQ_SHA256_ARM64=$(json '.tools.base.jq.assets.arm64.sha256')" \
 		--build-arg \
 		"OSV_SCANNER_VERSION=$(json '.tools.base.osv_scanner.version')" \
-		--build-arg \
-		"OSV_SCANNER_GRPC_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["google.golang.org/grpc"]')" \
-		--build-arg \
-		"OSV_SCANNER_X_MOD_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["golang.org/x/mod"]')" \
 		--build-arg \
 		"PYTHON_VERSION=$(json '.tools.base.python.version')" \
 		--build-arg \
@@ -103,6 +121,26 @@ build_base() {
 		"SHELLSPEC_VERSION=$(json '.tools.base.shellspec.version')" \
 		--build-arg \
 		"SHELLSPEC_SHA256=$(json '.tools.base.shellspec.asset.sha256')" \
+		--build-arg \
+		"RIPGREP_VERSION=$(json '.tools.base.ripgrep.version')" \
+		--build-arg \
+		"RIPGREP_ASSET_URL_AMD64=$(json '.tools.base.ripgrep.assets.amd64.url')" \
+		--build-arg \
+		"RIPGREP_ASSET_URL_ARM64=$(json '.tools.base.ripgrep.assets.arm64.url')" \
+		--build-arg \
+		"RIPGREP_SHA256_AMD64=$(json '.tools.base.ripgrep.assets.amd64.sha256')" \
+		--build-arg \
+		"RIPGREP_SHA256_ARM64=$(json '.tools.base.ripgrep.assets.arm64.sha256')" \
+		--build-arg \
+		"SHELLCHECK_VERSION=$(json '.tools.base.shellcheck.version')" \
+		--build-arg \
+		"SHELLCHECK_ASSET_URL_AMD64=$(json '.tools.base.shellcheck.assets.amd64.url')" \
+		--build-arg \
+		"SHELLCHECK_ASSET_URL_ARM64=$(json '.tools.base.shellcheck.assets.arm64.url')" \
+		--build-arg \
+		"SHELLCHECK_SHA256_AMD64=$(json '.tools.base.shellcheck.assets.amd64.sha256')" \
+		--build-arg \
+		"SHELLCHECK_SHA256_ARM64=$(json '.tools.base.shellcheck.assets.arm64.sha256')" \
 		--build-arg "SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
 		--build-arg "TRIVY_VERSION=$(json '.tools.base.trivy.version')" \
 		--build-arg \
@@ -156,11 +194,7 @@ build_go() {
 		--build-arg \
 		"GOIMPORTS_VERSION=$(json '.tools.go.goimports.version')" \
 		--build-arg \
-		"GOIMPORTS_X_MOD_VERSION=$(json '.tools.go.goimports.dependency_overrides["golang.org/x/mod"]')" \
-		--build-arg \
 		"GOVULNCHECK_VERSION=$(json '.tools.go.govulncheck.version')" \
-		--build-arg \
-		"GOVULNCHECK_X_MOD_VERSION=$(json '.tools.go.govulncheck.dependency_overrides["golang.org/x/mod"]')" \
 		"$repository_root"
 }
 
@@ -173,6 +207,8 @@ build_node() {
 		--build-arg "NODE_IMAGE=${node_image}" \
 		--build-arg \
 		"MARKDOWNLINT_CLI2_VERSION=$(json '.tools.node.markdownlint_cli2.version')" \
+		--build-arg \
+		"MARKDOWNLINT_SMOL_TOML_VERSION=$(json '.tools.node.markdownlint_cli2.dependency_overrides["smol-toml"]')" \
 		--build-arg \
 		"NODE_TOOLS_BUNDLE_VERSION=$(json '.tools.node.bundle_version')" \
 		--build-arg "NODE_VERSION=$(json '.tools.node.runtime')" \
