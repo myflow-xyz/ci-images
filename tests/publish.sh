@@ -283,8 +283,6 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 		cp "$output_file" "${temporary_directory}/base-${architecture}.json"
 		for build_arg in \
 			"OSV_SCANNER_VERSION=$(jq -r '.tools.base.osv_scanner.version' "$manifest")" \
-			"OSV_SCANNER_GRPC_VERSION=$(jq -r '.tools.base.osv_scanner.dependency_overrides["google.golang.org/grpc"]' "$manifest")" \
-			"OSV_SCANNER_X_MOD_VERSION=$(jq -r '.tools.base.osv_scanner.dependency_overrides["golang.org/x/mod"]' "$manifest")" \
 			"PYTHON_VERSION=$(jq -r '.tools.base.python.version' "$manifest")" \
 			"PYTHON_IMAGE=$(jq -r '.upstream_images.python | .reference + "@" + .digest' "$manifest")" \
 			"TRIVY_VERSION=$(jq -r '.tools.base.trivy.version' "$manifest")" \
@@ -299,14 +297,15 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 	if [[ $name == go ]]; then
 		for build_arg in \
 			"GOOSE_MODERNC_LIBC_VERSION=$(jq -r '.tools.go.goose.dependency_overrides["modernc.org/libc"]' "$manifest")" \
-			"GOIMPORTS_X_MOD_VERSION=$(jq -r '.tools.go.goimports.dependency_overrides["golang.org/x/mod"]' "$manifest")" \
-			"GOVULNCHECK_X_MOD_VERSION=$(jq -r '.tools.go.govulncheck.dependency_overrides["golang.org/x/mod"]' "$manifest")"; do
+			"GOIMPORTS_VERSION=$(jq -r '.tools.go.goimports.version' "$manifest")" \
+			"GOVULNCHECK_VERSION=$(jq -r '.tools.go.govulncheck.version' "$manifest")"; do
 			grep -Fq -- "--build-arg ${build_arg}" "$fake_log" ||
 				fail "missing go build argument: ${build_arg%%=*}"
 		done
 	fi
 	if [[ $name == node ]]; then
 		for build_arg in \
+			"MARKDOWNLINT_SMOL_TOML_VERSION=$(jq -r '.tools.node.markdownlint_cli2.dependency_overrides["smol-toml"]' "$manifest")" \
 			"PNPM_ASSET_URL_AMD64=$(jq -r '.tools.node.pnpm.assets.amd64.url' "$manifest")" \
 			"PNPM_ASSET_URL_ARM64=$(jq -r '.tools.node.pnpm.assets.arm64.url' "$manifest")" \
 			"PNPM_SHA256_AMD64=$(jq -r '.tools.node.pnpm.assets.amd64.sha256' "$manifest")" \

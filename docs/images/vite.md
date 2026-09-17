@@ -9,12 +9,12 @@ The compatibility bundle includes:
 
 - TypeScript 7.0.2 (`tsc`), with TypeScript 6.0.3 available as `tsc6` for
   tools that still require its API;
-- Vite 8.2.2;
-- Vitest 5.0.0;
-- `@vitest/coverage-v8` 5.0.0;
-- Oxlint 1.81.0;
+- Vite 8.3.0;
+- Vitest 5.0.1;
+- `@vitest/coverage-v8` 5.0.1;
+- Oxlint 1.83.0;
 - `oxlint-tsgolint` 7.0.2001;
-- Oxfmt 0.66.0.
+- Oxfmt 0.68.0.
 
 The bundle and its transitive dependencies are installed from a committed npm
 lockfile into an immutable versioned directory. The platform-specific `tsc`

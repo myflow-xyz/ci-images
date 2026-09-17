@@ -13,8 +13,6 @@ expected_python=${EXPECTED_PYTHON_VERSION:?EXPECTED_PYTHON_VERSION is not set}
 : "${EXPECTED_GITLEAKS_XZ_VERSION:?EXPECTED_GITLEAKS_XZ_VERSION is not set}"
 : "${EXPECTED_GITLEAKS_VERSION:?EXPECTED_GITLEAKS_VERSION is not set}"
 : "${EXPECTED_OSV_SCANNER_VERSION:?EXPECTED_OSV_SCANNER_VERSION is not set}"
-: "${EXPECTED_OSV_SCANNER_GRPC_VERSION:?EXPECTED_OSV_SCANNER_GRPC_VERSION is not set}"
-: "${EXPECTED_OSV_SCANNER_X_MOD_VERSION:?EXPECTED_OSV_SCANNER_X_MOD_VERSION is not set}"
 : "${EXPECTED_SHFMT_VERSION:?EXPECTED_SHFMT_VERSION is not set}"
 : "${EXPECTED_TRIVY_VERSION:?EXPECTED_TRIVY_VERSION is not set}"
 : "${EXPECTED_TRIVY_GRPC_VERSION:?EXPECTED_TRIVY_GRPC_VERSION is not set}"
@@ -119,18 +117,6 @@ osv-scanner --version |
 		--fixed-strings \
 		"osv-scanner version: ${EXPECTED_OSV_SCANNER_VERSION}" \
 		>/dev/null
-grep \
-	--binary-files=text \
-	--fixed-strings \
-	$'dep\tgolang.org/x/mod\t'"${EXPECTED_OSV_SCANNER_X_MOD_VERSION}" \
-	"$(command -v osv-scanner)" \
-	>/dev/null
-grep \
-	--binary-files=text \
-	--fixed-strings \
-	$'dep\tgoogle.golang.org/grpc\t'"${EXPECTED_OSV_SCANNER_GRPC_VERSION}" \
-	"$(command -v osv-scanner)" \
-	>/dev/null
 trivy --version |
 	grep \
 		--line-regexp \

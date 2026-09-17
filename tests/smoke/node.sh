@@ -6,6 +6,7 @@ expected_node=${EXPECTED_NODE_VERSION:?EXPECTED_NODE_VERSION is not set}
 expected_pnpm=${EXPECTED_PNPM_VERSION:?EXPECTED_PNPM_VERSION is not set}
 : "${EXPECTED_PNPM_STORE_VERSION:?EXPECTED_PNPM_STORE_VERSION is not set}"
 : "${EXPECTED_MARKDOWNLINT_VERSION:?EXPECTED_MARKDOWNLINT_VERSION is not set}"
+: "${EXPECTED_MARKDOWNLINT_SMOL_TOML_VERSION:?EXPECTED_MARKDOWNLINT_SMOL_TOML_VERSION is not set}"
 : "${EXPECTED_NODE_BUNDLE_VERSION:?EXPECTED_NODE_BUNDLE_VERSION is not set}"
 : "${EXPECTED_NPM_BRACE_EXPANSION_VERSION:?EXPECTED_NPM_BRACE_EXPANSION_VERSION is not set}"
 : "${EXPECTED_NPM_IP_ADDRESS_VERSION:?EXPECTED_NPM_IP_ADDRESS_VERSION is not set}"
@@ -38,6 +39,8 @@ dpkg-query --status libatomic1 |
 	grep --line-regexp 'Status: install ok installed' >/dev/null
 markdownlint-cli2 --version 2>&1 |
 	grep --fixed-strings "markdownlint-cli2 v${expected_markdownlint}" >/dev/null
+[[ $(node --print \
+	"require('/opt/ci-tools/markdownlint-cli2/${expected_markdownlint}/node_modules/smol-toml/package.json').version") == "$EXPECTED_MARKDOWNLINT_SMOL_TOML_VERSION" ]]
 [[ $(node --print \
 	"require('${bundle_root}/@redocly/cli/package.json').version") == "$expected_redocly" ]]
 [[ ! -e ${bundle_root}/pnpm ]]

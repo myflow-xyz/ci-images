@@ -208,10 +208,6 @@ base)
 		--build-arg \
 		"OSV_SCANNER_VERSION=$(json '.tools.base.osv_scanner.version')" \
 		--build-arg \
-		"OSV_SCANNER_GRPC_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["google.golang.org/grpc"]')" \
-		--build-arg \
-		"OSV_SCANNER_X_MOD_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["golang.org/x/mod"]')" \
-		--build-arg \
 		"PYTHON_VERSION=$(json '.tools.base.python.version')" \
 		--build-arg \
 		"GO_VERSION=$(json '.tools.go.runtime')" \
@@ -271,11 +267,7 @@ go)
 		--build-arg \
 		"GOIMPORTS_VERSION=$(json '.tools.go.goimports.version')" \
 		--build-arg \
-		"GOIMPORTS_X_MOD_VERSION=$(json '.tools.go.goimports.dependency_overrides["golang.org/x/mod"]')" \
-		--build-arg \
-		"GOVULNCHECK_VERSION=$(json '.tools.go.govulncheck.version')" \
-		--build-arg \
-		"GOVULNCHECK_X_MOD_VERSION=$(json '.tools.go.govulncheck.dependency_overrides["golang.org/x/mod"]')"
+		"GOVULNCHECK_VERSION=$(json '.tools.go.govulncheck.version')"
 	;;
 node)
 	node_image=$(image_reference node)
@@ -284,6 +276,8 @@ node)
 		--build-arg "NODE_IMAGE=${node_image}" \
 		--build-arg \
 		"MARKDOWNLINT_CLI2_VERSION=$(json '.tools.node.markdownlint_cli2.version')" \
+		--build-arg \
+		"MARKDOWNLINT_SMOL_TOML_VERSION=$(json '.tools.node.markdownlint_cli2.dependency_overrides["smol-toml"]')" \
 		--build-arg \
 		"NODE_TOOLS_BUNDLE_VERSION=$(json '.tools.node.bundle_version')" \
 		--build-arg "NODE_VERSION=$(json '.tools.node.runtime')" \

@@ -2,7 +2,7 @@
 
 `ghcr.io/myflow-xyz/ci-postgres` is a GitHub Actions service image. It is built
 from a digest-pinned
-`pgvector/pgvector:0.8.2-pg18-bookworm` image and does not inherit from a job
+`pgvector/pgvector:0.8.6-pg18-bookworm` image and does not inherit from a job
 image.
 
 ## Included service contract
@@ -11,7 +11,7 @@ The image provides:
 
 - PostgreSQL 18 server and client utilities;
 - `pg_isready`, `psql`, `pg_dump`, and `pg_restore`;
-- pgvector 0.8.2 and the `vector` extension files;
+- pgvector 0.8.6 and the `vector` extension files;
 - PostgreSQL contrib support required by `pgcrypto`;
 - a health check driven by the runtime database name and user.
 
@@ -38,7 +38,7 @@ LC_ALL=en_US.utf8
 PATH=/opt/ci-tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib/postgresql/18/bin
 PGDATA=/var/lib/postgresql/18/docker
 PG_MAJOR=18
-PGVECTOR_VERSION=0.8.2
+PGVECTOR_VERSION=0.8.6
 ```
 
 This independent service lineage defines the same locale as `ci-base`, adds the

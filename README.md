@@ -14,14 +14,14 @@ debian:bookworm-slim@<digest>
         └── ci-vite
             └── ci-playwright
 
-pgvector/pgvector:0.8.2-pg18-bookworm@<digest>
+pgvector/pgvector:0.8.6-pg18-bookworm@<digest>
 └── ci-postgres
 ```
 
 `ci-base` imports CPython 3.14.7 from the digest-pinned official
 `python:3.14.7-slim-bookworm` image.
 `ci-node` imports its Node runtime from the digest-pinned
-`node:24.20.0-bookworm-slim` image without adding Node to `ci-base`.
+`node:24.21.0-bookworm-slim` image without adding Node to `ci-base`.
 
 - `ghcr.io/myflow-xyz/ci-base`: operating-system utilities, Python 3.14.7
   standard-library scripting, OSV-Scanner, Trivy, and runtime-independent

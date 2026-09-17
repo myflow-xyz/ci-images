@@ -42,7 +42,7 @@ The base image includes:
 - CPython 3.14.7 and its standard-library modules for repository-owned CI
   automation;
 - structured-data and diagnosis tools: `jq`, `yq`, ripgrep, and GitHub CLI;
-- shared policy tools: OSV-Scanner 2.5.1, Trivy 0.74.0, gitleaks, actionlint,
+- shared policy tools: OSV-Scanner 2.6.0, Trivy 0.74.0, gitleaks, actionlint,
   shfmt, ShellCheck, and ShellSpec;
 - `tini` for descendants that require subprocess reaping.
 

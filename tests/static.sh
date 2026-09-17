@@ -126,7 +126,7 @@ jq --exit-status '
   (.upstream_images.debian.reference |
     endswith("debian:bookworm-slim")) and
   (.upstream_images.node.reference |
-    endswith("node:24.20.0-bookworm-slim")) and
+    endswith("node:24.21.0-bookworm-slim")) and
   ([.upstream_images[].digest |
     test("^sha256:[0-9a-f]{64}$")] | all) and
   ([.images[].name] | sort) == ([
@@ -191,18 +191,17 @@ jq --exit-status '
       ("https://github.com/pnpm/pnpm/releases/download/v" +
        $pnpm.version + "/pnpm-linux-arm64.tar.gz")) and
   ([.tools.base.gitleaks.dependency_overrides[],
-    .tools.base.osv_scanner.dependency_overrides[],
     .tools.base.trivy.dependency_overrides[],
     .tools.base.yq.dependency_overrides[],
     .tools.go.golangci_lint.dependency_overrides[],
-    .tools.go.goimports.dependency_overrides[],
-    .tools.go.govulncheck.dependency_overrides[],
     .tools.go.sqlc.dependency_overrides[],
     .tools.go.goose.dependency_overrides[],
     .tools.vite.typescript_source.dependency_overrides[],
     .tools.vite.oxlint_tsgolint_source.dependency_overrides[]] |
     map(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$")) |
     all) and
+  (.tools.node.markdownlint_cli2.dependency_overrides["smol-toml"] |
+    test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) and
   ([.. | objects |
     select(has("url") or has("sha256")) |
     (.url | startswith("https://")) and
@@ -248,6 +247,10 @@ assert_package_version \
 	images/node/markdownlint/package-lock.json \
 	markdownlint-cli2 \
 	"$(jq -r '.tools.node.markdownlint_cli2.version' "$manifest")"
+assert_package_version \
+	images/node/markdownlint/package-lock.json \
+	smol-toml \
+	"$(jq -r '.tools.node.markdownlint_cli2.dependency_overrides["smol-toml"]' "$manifest")"
 jq --exit-status \
 	'.packages | has("node_modules/npm") | not' \
 	"${repository_root}/images/node/npm-runtime/package-lock.json" >/dev/null ||
