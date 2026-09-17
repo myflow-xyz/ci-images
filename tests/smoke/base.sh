@@ -70,6 +70,13 @@ for package in \
 	[[ $(dpkg-query --show --showformat='${db:Status-Status}' "$package") == installed ]]
 done
 
+debian_package_lock=/usr/local/share/ci/debian-packages.lock
+[[ -r $debian_package_lock ]]
+while IFS='=' read -r package expected_version; do
+	[[ -n $package && -n $expected_version ]]
+	[[ $(dpkg-query --show --showformat='${Version}' "$package") == "$expected_version" ]]
+done <"$debian_package_lock"
+
 git lfs version >/dev/null
 
 # Debian fixes CVE-2026-58050 and CVE-2026-7598 in this revision.

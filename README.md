@@ -77,9 +77,9 @@ the host platform; CI remains responsible for both published architectures.
 
 - Application lockfiles and Go modules remain authoritative.
 - Published images and upstream base images are consumed by immutable digest.
-- Direct downloads are checksum-verified. npm dependency graphs use committed
-  lockfiles, and Go executables are built from exact module versions or source
-  commits with reviewed security overrides.
+- Direct downloads are checksum-verified. Direct Debian packages and npm
+  dependency graphs use committed lockfiles, and Go executables are built from
+  exact module versions or source commits with reviewed security overrides.
 - Images contain no application source, credentials, generated output, or
   mutable service data.
 - Job images run as the non-root `ci` user with UID `1001` for GitHub-hosted

@@ -12,7 +12,9 @@ Bookworm preserves the existing glibc and apt package contract without carrying
 an application build toolchain.
 
 The environment is non-interactive, UTF-8, glibc-based Debian Bookworm. Debian
-packages are resolved from a reviewed, Debian-signed snapshot. The slim parent
+packages are resolved from a reviewed, Debian-signed snapshot. Direct packages
+are installed at the exact revisions in `images/base/debian-packages.lock`, and
+smoke tests compare every locked revision with the built image. The slim parent
 omits CA certificates, so the snapshot bootstrap uses HTTP with apt's signature
 verification; CA certificates are installed before any HTTPS source download.
 

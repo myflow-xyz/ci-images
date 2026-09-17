@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:1.27.0@sha256:bde3983e9c939224420ddaf6b784cc30e09b035a4dea01f581230c50809f372e
+# check=skip=InvalidDefaultArgInFrom
 
 ARG BASE_IMAGE
 ARG PYTHON_IMAGE
@@ -347,6 +348,7 @@ ENV CI=true \
     TZ=UTC
 
 COPY images/common/fetch-verified /usr/local/libexec/ci/fetch-verified
+COPY images/base/debian-packages.lock /usr/local/share/ci/debian-packages.lock
 
 RUN --mount=from=base-python-runtime,source=/out/python-runtime-packages,target=/var/tmp/python-runtime-packages,ro \
     test -n "${DEBIAN_SNAPSHOT}" \
@@ -362,36 +364,9 @@ RUN --mount=from=base-python-runtime,source=/out/python-runtime-packages,target=
       > /etc/apt/apt.conf.d/99-ci-snapshot \
     && apt-get update \
     && apt-get upgrade --yes --no-install-recommends \
-    && apt-get install --yes --no-install-recommends \
-      bash \
-      ca-certificates \
-      coreutils \
-      curl \
-      diffutils \
-      findutils \
-      gawk \
-      gh \
-      git \
-      git-lfs \
-      grep \
-      gzip \
-      jq \
-      locales \
-      make \
-      media-types \
-      netbase \
-      openssl \
-      procps \
-      ripgrep \
-      sed \
-      shellcheck \
-      tar \
-      tini \
-      tzdata \
-      unzip \
-      wget \
-      xz-utils \
-      zip \
+    && xargs -r \
+      apt-get install --yes --no-install-recommends \
+      < /usr/local/share/ci/debian-packages.lock \
     && xargs -r \
       apt-get install --yes --no-install-recommends \
       < /var/tmp/python-runtime-packages \

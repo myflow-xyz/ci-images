@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:1.27.0@sha256:bde3983e9c939224420ddaf6b784cc30e09b035a4dea01f581230c50809f372e
+# check=skip=InvalidDefaultArgInFrom
 
 ARG BASE_IMAGE
 FROM --platform=${BUILDPLATFORM} ${BASE_IMAGE} AS go-tools-builder

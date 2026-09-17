@@ -65,6 +65,10 @@
         "source": "https://github.com/rhysd/actionlint",
         "module": "github.com/rhysd/actionlint/cmd/actionlint"
       },
+      "debian_packages": {
+        "lockfile": "images/base/debian-packages.lock",
+        "lockfile_sha256": "e3201bc9dedfe48ba344a464ef358f5d1df94b8f2638934f224f40e9308b28b1"
+      },
       "git": {
         "version": "2.55.0",
         "source": "https://git-scm.com",

@@ -41,6 +41,7 @@ required_files=(
 	docs/images/playwright.md
 	docs/images/postgres.md
 	images/base/Dockerfile
+	images/base/debian-packages.lock
 	images/go/Dockerfile
 	images/node/Dockerfile
 	images/node/markdownlint/package.json
@@ -116,6 +117,15 @@ done < <(
   ' "$manifest"
 )
 
+debian_package_lock=$(
+	jq -r '.tools.base.debian_packages.lockfile' "$manifest"
+)
+while IFS='=' read -r package version; do
+	row="| \`${package}\` | \`${version}\` |"
+	grep --fixed-strings --line-regexp "$row" "$versions_doc" >/dev/null ||
+		fail "missing Debian package inventory row: ${package} ${version}"
+done <"${repository_root}/${debian_package_lock}"
+
 jq --exit-status '
   .schema_version == 1 and
   .platforms == ["linux/amd64", "linux/arm64"] and
@@ -159,6 +169,8 @@ jq --exit-status '
   (.tools.base.osv_scanner as $osv |
     $osv.module ==
       "github.com/google/osv-scanner/v2/cmd/osv-scanner") and
+  .tools.base.debian_packages.lockfile ==
+    "images/base/debian-packages.lock" and
   (.tools.base.trivy as $trivy |
     $trivy.module == "github.com/aquasecurity/trivy/cmd/trivy" and
     ($trivy.build_go.version | test("^1\\.26\\.[0-9]+$")) and
@@ -223,6 +235,14 @@ done < <(
     @tsv
   ' "$manifest"
 )
+
+debian_package_lock_path="${repository_root}/${debian_package_lock}"
+LC_ALL=C sort -c -u "$debian_package_lock_path" ||
+	fail 'Debian package lock must be sorted and unique'
+while IFS= read -r package; do
+	[[ $package =~ ^[a-z0-9][a-z0-9+.-]*=[0-9A-Za-z][0-9A-Za-z.+:~_-]*$ ]] ||
+		fail "invalid Debian package lock entry: ${package}"
+done <"$debian_package_lock_path"
 
 package_version() {
 	local lockfile=$1
@@ -328,6 +348,10 @@ while IFS= read -r dockerfile; do
 done < <(find "${repository_root}/images" -name Dockerfile -type f | sort)
 
 base_dockerfile="${repository_root}/images/base/Dockerfile"
+[[ $(grep -c --fixed-strings \
+	'/usr/local/share/ci/debian-packages.lock' \
+	"$base_dockerfile") == 2 ]] ||
+	fail 'base image must install and retain its Debian package lock'
 grep \
 	--fixed-strings \
 	--line-regexp \
