@@ -5,9 +5,9 @@
   "description": "Locked Markdown policy tools for the MyFlow CI Node image",
   "license": "AGPL-3.0-only",
   "dependencies": {
-    "markdownlint-cli2": "0.23.2"
+    "markdownlint-cli2": "0.23.3"
   },
   "overrides": {
-    "smol-toml": "1.8.0"
+    "smol-toml": "1.9.0"
   }
 }

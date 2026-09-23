@@ -12,6 +12,7 @@ revisions, checksums, and upstream image digests.
 
 | Component | Version |
 | --- | --- |
+| `Bash` | `5.3.20` |
 | `Git` | `2.55.0` |
 | `Git LFS` | `3.8.0` |
 | `GitHub CLI` | `2.101.0` |
@@ -33,7 +34,9 @@ These packages are installed at exact revisions from the pinned Debian
 snapshot. Transitive packages remain snapshot-controlled and are covered by
 the image vulnerability scan. The Debian `git` package supplies system
 integration files; the exposed Git executable is the source-built version
-listed above.
+listed above. The Debian `bash` package remains installed for package
+management, with its binary diverted; the exposed Bash is the patched upstream
+version listed above.
 
 | Package | Version |
 | --- | --- |
@@ -79,11 +82,11 @@ listed above.
 
 | Component | Version |
 | --- | --- |
-| `Node.js` | `24.21.0` |
-| `npm` | `12.0.2` |
-| `pnpm` | `12.4.2` |
-| `markdownlint-cli2` | `0.23.2` |
-| `@redocly/cli` | `2.53.3` |
+| `Node.js` | `26.10.0` |
+| `npm` | `12.1.0` |
+| `pnpm` | `12.6.0` |
+| `markdownlint-cli2` | `0.23.3` |
+| `@redocly/cli` | `2.54.2` |
 
 ## `ci-vite`
 
@@ -95,9 +98,9 @@ listed above.
 | `vite` | `8.3.0` |
 | `vitest` | `5.0.1` |
 | `@vitest/coverage-v8` | `5.0.1` |
-| `oxlint` | `1.83.0` |
-| `oxlint-tsgolint` | `7.0.2001` |
-| `oxfmt` | `0.68.0` |
+| `oxlint` | `1.85.0` |
+| `oxlint-tsgolint` | `7.0.2002` |
+| `oxfmt` | `0.70.0` |
 
 ## `ci-playwright`
 

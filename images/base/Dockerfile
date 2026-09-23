@@ -3,8 +3,11 @@
 
 ARG BASE_IMAGE
 ARG PYTHON_IMAGE
-FROM ${BASE_IMAGE} AS base-git-builder
+FROM ${BASE_IMAGE} AS base-source-builder
 
+ARG BASH_PATCHLEVEL
+ARG BASH_RELEASE
+ARG BASH_SHA256
 ARG DEBIAN_SNAPSHOT
 ARG GIT_SHA256
 ARG GIT_VERSION
@@ -12,6 +15,7 @@ ARG GIT_VERSION
 USER root
 
 COPY images/common/fetch-verified /usr/local/libexec/ci/fetch-verified
+COPY images/base/bash-5.3-patches.sha256 /usr/local/share/ci/bash-patches.sha256
 
 RUN test -n "${DEBIAN_SNAPSHOT}" \
     && sed -ri \
@@ -37,11 +41,42 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
       libexpat1-dev \
       libpcre2-dev \
       libssl-dev \
+      patch \
       perl \
       xz-utils \
       zlib1g-dev \
     && rm -rf /var/lib/apt/lists/* \
     && chmod 0755 /usr/local/libexec/ci/fetch-verified
+
+RUN set -eu; \
+    /usr/local/libexec/ci/fetch-verified \
+      "https://ftp.gnu.org/gnu/bash/bash-${BASH_RELEASE}.tar.gz" \
+      "${BASH_SHA256}" \
+      /var/tmp/bash.tar.gz; \
+    install -d /var/tmp/bash /out/usr/local/bin; \
+    tar -xzf /var/tmp/bash.tar.gz \
+      --strip-components=1 \
+      -C /var/tmp/bash; \
+    patch_number=0; \
+    while IFS='=' read -r patch_name patch_sha256; do \
+      patch_number=$((patch_number + 1)); \
+      test "${patch_name}" \
+        = "$(printf 'bash53-%03d' "${patch_number}")"; \
+      /usr/local/libexec/ci/fetch-verified \
+        "https://ftp.gnu.org/gnu/bash/bash-${BASH_RELEASE}-patches/${patch_name}" \
+        "${patch_sha256}" \
+        "/var/tmp/${patch_name}"; \
+      patch -d /var/tmp/bash -p0 < "/var/tmp/${patch_name}"; \
+      rm -f "/var/tmp/${patch_name}"; \
+    done < /usr/local/share/ci/bash-patches.sha256; \
+    test "${patch_number}" -eq "${BASH_PATCHLEVEL}"; \
+    cd /var/tmp/bash; \
+    ./configure --prefix=/usr/local --without-bash-malloc; \
+    make -j2 bash; \
+    install -m 0755 bash /out/usr/local/bin/bash; \
+    test "$(/out/usr/local/bin/bash -c 'printf "%s.%s.%s" "${BASH_VERSINFO[0]}" "${BASH_VERSINFO[1]}" "${BASH_VERSINFO[2]}"')" \
+      = "${BASH_RELEASE}.${BASH_PATCHLEVEL}"; \
+    rm -rf /var/tmp/bash /var/tmp/bash.tar.gz
 
 RUN set -eu; \
     /usr/local/libexec/ci/fetch-verified \
@@ -448,6 +483,8 @@ FROM ${BASE_IMAGE}
 USER root
 
 ARG ACTIONLINT_VERSION
+ARG BASH_PATCHLEVEL
+ARG BASH_RELEASE
 ARG BUILD_CREATED=unknown
 ARG BUILD_REVISION=unknown
 ARG CI_GID=2001
@@ -524,11 +561,20 @@ ENV LANG=en_US.utf8 \
     LC_ALL=en_US.utf8
 
 COPY --from=base-go-tools-builder /out/ /opt/ci-tools/
-COPY --from=base-git-builder /out/ /
+COPY --from=base-source-builder /out/ /
 COPY --from=base-python-runtime /out/usr/local/ /usr/local/
 
 RUN set -eu; \
     ldconfig; \
+    dpkg-divert \
+      --local \
+      --add \
+      --rename \
+      --divert /usr/bin/bash.debian \
+      /usr/bin/bash; \
+    ln -s /usr/local/bin/bash /usr/bin/bash; \
+    test "$(/bin/bash -c 'printf "%s.%s.%s" "${BASH_VERSINFO[0]}" "${BASH_VERSINFO[1]}" "${BASH_VERSINFO[2]}"')" \
+      = "${BASH_RELEASE}.${BASH_PATCHLEVEL}"; \
     test "$(python3 --version)" = "Python ${PYTHON_VERSION}"; \
     install -d /opt/ci-tools/bin; \
     ln -s \

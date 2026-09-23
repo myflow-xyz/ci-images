@@ -41,6 +41,7 @@ required_files=(
 	docs/images/playwright.md
 	docs/images/postgres.md
 	images/base/Dockerfile
+	images/base/bash-5.3-patches.sha256
 	images/base/debian-packages.amd64.lock
 	images/base/debian-packages.arm64.lock
 	images/go/Dockerfile
@@ -80,6 +81,7 @@ done < <(
 	jq -r '
     [
       ["Git", .tools.base.git.version],
+      ["Bash", .tools.base.bash.version],
       ["CPython", .tools.base.python.version],
       ["actionlint", .tools.base.actionlint.version],
       ["GitHub CLI", .tools.base.gh.version],
@@ -154,7 +156,7 @@ jq --exit-status '
   (.upstream_images.debian.reference |
     endswith("debian:trixie-slim")) and
   (.upstream_images.node.reference |
-    endswith("node:24.21.0-trixie-slim")) and
+    endswith("node:26.10.0-trixie-slim")) and
   (.upstream_images.pgvector.reference |
     endswith("pgvector:0.8.6-pg18-trixie")) and
   ([.upstream_images[].digest |
@@ -182,6 +184,13 @@ jq --exit-status '
     $git.asset.url ==
       ("https://www.kernel.org/pub/software/scm/git/git-" +
        $git.version + ".tar.xz")) and
+  (.tools.base.bash as $bash |
+    ($bash.release | test("^5\\.[3-9]$")) and
+    $bash.version == ($bash.release + "." + ($bash.patchlevel | tostring)) and
+    $bash.asset.url ==
+      ("https://ftp.gnu.org/gnu/bash/bash-" +
+       $bash.release + ".tar.gz") and
+    $bash.patches.lockfile == "images/base/bash-5.3-patches.sha256") and
   (.tools.base.gh as $gh |
     $gh.assets.amd64.url ==
       ("https://github.com/cli/cli/releases/download/v" +
@@ -308,6 +317,15 @@ cmp \
 	<(cut -d= -f1 "${repository_root}/${debian_package_lock_amd64}") \
 	<(cut -d= -f1 "${repository_root}/${debian_package_lock_arm64}") \
 	>/dev/null || fail 'Debian package locks must contain the same package names'
+
+bash_patch_lock="${repository_root}/images/base/bash-5.3-patches.sha256"
+[[ $(wc -l <"$bash_patch_lock") -eq $(jq -r '.tools.base.bash.patchlevel' "$manifest") ]] ||
+	fail 'Bash patch lock must match the pinned patchlevel'
+awk -F= '
+  $1 != sprintf("bash53-%03d", NR) || $2 !~ /^[0-9a-f]{64}$/ {
+    exit 1
+  }
+' "$bash_patch_lock" || fail 'Bash patch lock has an invalid entry'
 
 package_version() {
 	local lockfile=$1

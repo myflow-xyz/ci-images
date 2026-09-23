@@ -75,6 +75,11 @@ build_base() {
 		--build-arg "DEBIAN_SNAPSHOT=$(json '.debian_snapshot')" \
 		--build-arg \
 		"ACTIONLINT_VERSION=$(json '.tools.base.actionlint.version')" \
+		--build-arg "BASH_RELEASE=$(json '.tools.base.bash.release')" \
+		--build-arg \
+		"BASH_PATCHLEVEL=$(json '.tools.base.bash.patchlevel')" \
+		--build-arg \
+		"BASH_SHA256=$(json '.tools.base.bash.asset.sha256')" \
 		--build-arg "GH_VERSION=$(json '.tools.base.gh.version')" \
 		--build-arg \
 		"GH_ASSET_URL_AMD64=$(json '.tools.base.gh.assets.amd64.url')" \
