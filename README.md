@@ -21,7 +21,7 @@ pgvector/pgvector:0.8.6-pg18-trixie@<digest>
 `ci-base` imports CPython 3.14.7 from the digest-pinned official
 `python:3.14.7-slim-trixie` image.
 `ci-node` imports its Node runtime from the digest-pinned
-`node:24.21.0-trixie-slim` image without adding Node to `ci-base`.
+`node:26.10.0-trixie-slim` image without adding Node to `ci-base`.
 
 - `ghcr.io/myflow-xyz/ci-base`: operating-system utilities, Python 3.14.7
   standard-library scripting, OSV-Scanner, Trivy, and runtime-independent
@@ -40,6 +40,9 @@ pgvector/pgvector:0.8.6-pg18-trixie@<digest>
 The five job images support GitHub Actions `jobs.<job_id>.container`.
 `ci-postgres` is an independent service-image lineage and never inherits from a
 job image.
+
+Repository-owned Bash scripts require Bash 5.0 or newer. `ci-base` and its job
+image descendants provide Bash 5.3.20.
 
 ## Repository structure
 

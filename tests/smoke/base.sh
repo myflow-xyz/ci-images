@@ -7,6 +7,7 @@ expected_gid=${EXPECTED_CI_GID:?EXPECTED_CI_GID is not set}
 expected_go=${EXPECTED_TOOLCHAIN_GO_VERSION:?EXPECTED_TOOLCHAIN_GO_VERSION is not set}
 expected_trivy_go=${EXPECTED_TRIVY_GO_VERSION:?EXPECTED_TRIVY_GO_VERSION is not set}
 expected_python=${EXPECTED_PYTHON_VERSION:?EXPECTED_PYTHON_VERSION is not set}
+expected_bash=${EXPECTED_BASH_VERSION:?EXPECTED_BASH_VERSION is not set}
 : "${EXPECTED_ACTIONLINT_VERSION:?EXPECTED_ACTIONLINT_VERSION is not set}"
 : "${EXPECTED_GH_VERSION:?EXPECTED_GH_VERSION is not set}"
 : "${EXPECTED_GIT_VERSION:?EXPECTED_GIT_VERSION is not set}"
@@ -40,6 +41,15 @@ expected_python=${EXPECTED_PYTHON_VERSION:?EXPECTED_PYTHON_VERSION is not set}
 [[ -z ${XDG_STATE_HOME+x} ]]
 [[ $(locale charmap) == UTF-8 ]]
 locale -a | grep --line-regexp en_US.utf8 >/dev/null
+
+for bash_path in "$(command -v bash)" /bin/bash /usr/bin/bash; do
+	"$bash_path" --version |
+		grep --fixed-strings \
+			"GNU bash, version ${expected_bash}(" \
+			>/dev/null
+done
+[[ $(getent passwd ci | cut -d: -f7) == /bin/bash ]]
+[[ $(dpkg-divert --list /usr/bin/bash) == *'/usr/bin/bash.debian'* ]]
 
 for command in \
 	actionlint \

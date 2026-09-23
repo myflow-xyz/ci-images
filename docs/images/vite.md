@@ -12,9 +12,9 @@ The compatibility bundle includes:
 - Vite 8.3.0;
 - Vitest 5.0.1;
 - `@vitest/coverage-v8` 5.0.1;
-- Oxlint 1.83.0;
-- `oxlint-tsgolint` 7.0.2001;
-- Oxfmt 0.68.0.
+- Oxlint 1.85.0;
+- `oxlint-tsgolint` 7.0.2002;
+- Oxfmt 0.70.0.
 
 The bundle and its transitive dependencies are installed from a committed npm
 lockfile into an immutable versioned directory. The platform-specific `tsc`

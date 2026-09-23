@@ -36,7 +36,7 @@ TZ=UTC
 
 The base image includes:
 
-- shell and build utilities: `sh`, Bash, Make, coreutils, findutils, diffutils,
+- shell and build utilities: `sh`, Bash 5.3.20, Make, coreutils, findutils, diffutils,
   grep, sed, awk, and `procps`;
 - source and transfer utilities: Git, Git LFS, CA certificates, curl, wget,
   OpenSSL, tar, gzip, xz, zip, and unzip;
@@ -71,6 +71,13 @@ runners for all image stages, avoiding emulated Git and Go compilation.
 Vulnerability data is not embedded in the
 image; online scans by OSV-Scanner and Trivy still query or download their
 external data sources.
+
+Bash is built from the checksum-pinned GNU 5.3 source release with its twenty
+reviewed upstream patches. The image's `bash`, `/bin/bash`, `/usr/bin/bash`, and
+`ci` login shell use this build. Debian's Bash package remains installed for
+package management, with its binary diverted so later package upgrades do not
+replace the image-managed shell. Repository-owned Bash scripts require Bash 5.0
+or newer; the base image exceeds that minimum.
 
 ## Runtime contract
 
