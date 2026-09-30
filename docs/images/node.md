@@ -9,14 +9,15 @@ The initial image contract includes:
 
 - Node.js 26.10.0 imported from the digest-pinned official Node image;
 - npm and npx 12.1.0 from a hash-verified release artifact;
-- pnpm 12.6.0 from hash-verified native Linux release artifacts;
+- pnpm 12.8.1 from hash-verified native Linux release artifacts;
 - `markdownlint-cli2` 0.23.3;
-- Redocly CLI 2.54.2 for OpenAPI validation;
+- Redocly CLI 2.56.0 for OpenAPI validation;
 - explicit npm and pnpm cache paths.
 
 The npm release artifact is hash-verified, and its reviewed bundled dependency
-replacements are installed from a committed lockfile. The Markdown tool
-lockfile overrides `smol-toml` with its fixed release. The architecture-matched
+replacements are installed from a committed lockfile. They include the current
+compatible `undici` 6.x release to fix the older copy bundled with npm. The
+Markdown tool lockfile overrides `smol-toml` with its fixed release. The architecture-matched
 pnpm archive is installed independently of npm and includes its native
 executable. Other Node tool dependency trees are installed from committed
 lockfiles into immutable versioned directories. Stable command links are
@@ -53,7 +54,7 @@ pnpm store=/var/cache/pnpm/store
 ```
 
 pnpm creates a store-format directory below the configured store root. pnpm
-12.6.0 retains the compatible `v11` store format; the manifest records the CLI
+12.8.1 retains the compatible `v11` store format; the manifest records the CLI
 and store-format versions independently. The caches contain package content
 only. Do not persist `node_modules`, build output, or a repository workspace.
 

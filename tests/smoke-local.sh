@@ -128,6 +128,8 @@ if [[ $target == all || $target == node ]]; then
 		"EXPECTED_NPM_IP_ADDRESS_VERSION=$(json '.tools.node.npm.dependency_replacements["ip-address"]')" \
 		--env \
 		"EXPECTED_NPM_TAR_VERSION=$(json '.tools.node.npm.dependency_replacements.tar')" \
+		--env \
+		"EXPECTED_NPM_UNDICI_VERSION=$(json '.tools.node.npm.dependency_replacements.undici')" \
 		--env "EXPECTED_NPM_VERSION=$(json '.tools.node.npm.version')" \
 		--env "EXPECTED_PNPM_VERSION=$(json '.tools.node.pnpm.version')" \
 		--env \

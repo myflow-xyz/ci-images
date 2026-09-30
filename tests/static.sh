@@ -370,6 +370,10 @@ assert_package_version \
 	images/node/npm-runtime/package-lock.json \
 	tar \
 	"$(jq -r '.tools.node.npm.dependency_replacements.tar' "$manifest")"
+assert_package_version \
+	images/node/npm-runtime/package-lock.json \
+	undici \
+	"$(jq -r '.tools.node.npm.dependency_replacements.undici' "$manifest")"
 jq --exit-status \
 	'.packages | has("node_modules/pnpm") | not' \
 	"${repository_root}/images/node/npm/package-lock.json" >/dev/null ||
