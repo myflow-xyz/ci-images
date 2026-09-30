@@ -341,6 +341,8 @@ node)
 		--build-arg \
 		"NPM_TAR_VERSION=$(json '.tools.node.npm.dependency_replacements.tar')" \
 		--build-arg \
+		"NPM_UNDICI_VERSION=$(json '.tools.node.npm.dependency_replacements.undici')" \
+		--build-arg \
 		"PNPM_ASSET_URL_AMD64=$(json '.tools.node.pnpm.assets.amd64.url')" \
 		--build-arg \
 		"PNPM_ASSET_URL_ARM64=$(json '.tools.node.pnpm.assets.arm64.url')" \

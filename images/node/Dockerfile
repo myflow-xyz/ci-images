@@ -19,6 +19,7 @@ ARG NPM_BRACE_EXPANSION_VERSION
 ARG NPM_IP_ADDRESS_VERSION
 ARG NPM_SHA256
 ARG NPM_TAR_VERSION
+ARG NPM_UNDICI_VERSION
 ARG NPM_VERSION
 ARG PNPM_ASSET_URL_AMD64
 ARG PNPM_ASSET_URL_ARM64
@@ -119,10 +120,14 @@ RUN --mount=from=node-runtime,source=/usr/local/lib/node_modules/npm,target=/usr
     test "$(node --print \
       "require('/var/tmp/npm-runtime/node_modules/tar/package.json').version")" \
       = "${NPM_TAR_VERSION}"; \
+    test "$(node --print \
+      "require('/var/tmp/npm-runtime/node_modules/undici/package.json').version")" \
+      = "${NPM_UNDICI_VERSION}"; \
     rm -rf \
       /var/tmp/npm-package/node_modules/brace-expansion \
       /var/tmp/npm-package/node_modules/ip-address \
-      /var/tmp/npm-package/node_modules/tar; \
+      /var/tmp/npm-package/node_modules/tar \
+      /var/tmp/npm-package/node_modules/undici; \
     mv \
       /var/tmp/npm-runtime/node_modules/brace-expansion \
       /var/tmp/npm-package/node_modules/brace-expansion; \
@@ -132,6 +137,9 @@ RUN --mount=from=node-runtime,source=/usr/local/lib/node_modules/npm,target=/usr
     mv \
       /var/tmp/npm-runtime/node_modules/tar \
       /var/tmp/npm-package/node_modules/tar; \
+    mv \
+      /var/tmp/npm-runtime/node_modules/undici \
+      /var/tmp/npm-package/node_modules/undici; \
     install -d /opt/ci-tools/npm; \
     mv \
       /var/tmp/npm-package \
@@ -152,7 +160,10 @@ RUN --mount=from=node-runtime,source=/usr/local/lib/node_modules/npm,target=/usr
       = "${NPM_IP_ADDRESS_VERSION}"; \
     test "$(node --print \
       "require('/opt/ci-tools/npm/${NPM_VERSION}/node_modules/tar/package.json').version")" \
-      = "${NPM_TAR_VERSION}"
+      = "${NPM_TAR_VERSION}"; \
+    test "$(node --print \
+      "require('/opt/ci-tools/npm/${NPM_VERSION}/node_modules/undici/package.json').version")" \
+      = "${NPM_UNDICI_VERSION}"
 
 COPY images/node/markdownlint/package.json \
   images/node/markdownlint/package-lock.json \

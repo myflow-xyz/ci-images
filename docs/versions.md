@@ -13,9 +13,9 @@ revisions, checksums, and upstream image digests.
 | Component | Version |
 | --- | --- |
 | `Bash` | `5.3.20` |
-| `Git` | `2.55.0` |
+| `Git` | `2.56.0` |
 | `Git LFS` | `3.8.0` |
-| `GitHub CLI` | `2.101.0` |
+| `GitHub CLI` | `2.102.0` |
 | `CPython` | `3.14.7` |
 | `actionlint` | `1.7.12` |
 | `gitleaks` | `8.30.1` |
@@ -26,7 +26,7 @@ revisions, checksums, and upstream image digests.
 | `shellspec` | `0.28.1` |
 | `shfmt` | `3.14.1` |
 | `Trivy` | `0.74.0` |
-| `yq` | `4.53.6` |
+| `yq` | `4.54.1` |
 
 ### Direct Debian packages
 
@@ -55,7 +55,7 @@ version listed above.
 | `make` | `4.4.1-2` |
 | `media-types` | `13.0.0` |
 | `netbase` | `6.5` |
-| `openssl` | `3.5.7-1~deb13u2` |
+| `openssl` | `3.5.7-1~deb13u3` |
 | `procps` | `2:4.0.4-9` |
 | `sed` | `4.9-2+deb13u1` |
 | `tar` | `1.35+dfsg-3.1` |
@@ -74,7 +74,7 @@ version listed above.
 | `Hurl` | `8.0.1` |
 | `sqlc` | `1.31.1` |
 | `goose` | `3.28.0` |
-| `golangci-lint` | `2.13.2` |
+| `golangci-lint` | `2.14.0` |
 | `goimports` | `0.50.0` |
 | `govulncheck` | `1.8.0` |
 
@@ -84,9 +84,9 @@ version listed above.
 | --- | --- |
 | `Node.js` | `26.10.0` |
 | `npm` | `12.1.0` |
-| `pnpm` | `12.6.0` |
+| `pnpm` | `12.8.1` |
 | `markdownlint-cli2` | `0.23.3` |
-| `@redocly/cli` | `2.54.2` |
+| `@redocly/cli` | `2.56.0` |
 
 ## `ci-vite`
 
@@ -95,12 +95,12 @@ version listed above.
 | `@typescript/native` | `7.0.2` |
 | `TypeScript compatibility package` | `6.0.2` |
 | `TypeScript legacy compiler` | `6.0.3` |
-| `vite` | `8.3.0` |
-| `vitest` | `5.0.1` |
-| `@vitest/coverage-v8` | `5.0.1` |
-| `oxlint` | `1.85.0` |
-| `oxlint-tsgolint` | `7.0.2002` |
-| `oxfmt` | `0.70.0` |
+| `vite` | `8.3.1` |
+| `vitest` | `5.0.2` |
+| `@vitest/coverage-v8` | `5.0.2` |
+| `oxlint` | `1.86.0` |
+| `oxlint-tsgolint` | `7.0.2003` |
+| `oxfmt` | `0.71.0` |
 
 ## `ci-playwright`
 

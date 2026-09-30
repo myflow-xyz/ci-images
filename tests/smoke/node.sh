@@ -11,6 +11,7 @@ expected_pnpm=${EXPECTED_PNPM_VERSION:?EXPECTED_PNPM_VERSION is not set}
 : "${EXPECTED_NPM_BRACE_EXPANSION_VERSION:?EXPECTED_NPM_BRACE_EXPANSION_VERSION is not set}"
 : "${EXPECTED_NPM_IP_ADDRESS_VERSION:?EXPECTED_NPM_IP_ADDRESS_VERSION is not set}"
 : "${EXPECTED_NPM_TAR_VERSION:?EXPECTED_NPM_TAR_VERSION is not set}"
+: "${EXPECTED_NPM_UNDICI_VERSION:?EXPECTED_NPM_UNDICI_VERSION is not set}"
 : "${EXPECTED_NPM_VERSION:?EXPECTED_NPM_VERSION is not set}"
 : "${EXPECTED_REDOCLY_VERSION:?EXPECTED_REDOCLY_VERSION is not set}"
 expected_bundle=$EXPECTED_NODE_BUNDLE_VERSION
@@ -29,6 +30,33 @@ expected_store="/var/cache/pnpm/store/v${EXPECTED_PNPM_STORE_VERSION}"
 	"require('${npm_root}/ip-address/package.json').version") == "$EXPECTED_NPM_IP_ADDRESS_VERSION" ]]
 [[ $(node --print \
 	"require('${npm_root}/tar/package.json').version") == "$EXPECTED_NPM_TAR_VERSION" ]]
+[[ $(node --print \
+	"require('${npm_root}/undici/package.json').version") == "$EXPECTED_NPM_UNDICI_VERSION" ]]
+
+node - "${npm_root}/undici" <<'JS'
+const assert = require('node:assert/strict');
+const { createServer } = require('node:http');
+const { fetch } = require(process.argv[2]);
+
+const server = createServer((request, response) => {
+  response.writeHead(200, { 'content-type': 'application/json' });
+  response.end('{"ok":true}');
+});
+
+server.listen(0, '127.0.0.1', async () => {
+  try {
+    const response = await fetch(`http://127.0.0.1:${server.address().port}/`);
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { ok: true });
+  } catch (error) {
+    console.error(error);
+    process.exitCode = 1;
+  } finally {
+    server.close();
+  }
+});
+JS
+
 [[ $(pnpm --version) == "$expected_pnpm" ]]
 pnpm_executable=$(readlink -f "$(command -v pnpm)")
 [[ $pnpm_executable == "/opt/ci-tools/pnpm/${expected_pnpm}/pnpm" ]]
