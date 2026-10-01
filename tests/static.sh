@@ -56,6 +56,9 @@ required_files=(
 	images/playwright/Dockerfile
 	images/postgres/Dockerfile
 	manifests/versions.json
+	tests/docker-integration.sh
+	tests/smoke/docker.sh
+	tests/smoke/docker-integration.sh
 	tests/publish.sh
 	tests/release.sh
 	tests/scan-local-image.sh
@@ -83,6 +86,8 @@ done < <(
       ["Git", .tools.base.git.version],
       ["Bash", .tools.base.bash.version],
       ["CPython", .tools.base.python.version],
+      ["Docker CLI", .tools.base.docker.version],
+      ["Docker Compose", .tools.base.compose.version],
       ["actionlint", .tools.base.actionlint.version],
       ["GitHub CLI", .tools.base.gh.version],
       ["Git LFS", .tools.base.git_lfs.version],
@@ -157,8 +162,9 @@ jq --exit-status '
     endswith("debian:trixie-slim")) and
   (.upstream_images.node.reference |
     endswith("node:26.10.0-trixie-slim")) and
-  (.upstream_images.pgvector.reference |
-    endswith("pgvector:0.8.6-pg18-trixie")) and
+  .upstream_images.pgvector.reference ==
+    ("docker.io/pgvector/pgvector:" + .tools.postgres.pgvector +
+     "-pg" + .tools.postgres.postgres + "-trixie") and
   ([.upstream_images[].digest |
     test("^sha256:[0-9a-f]{64}$")] | all) and
   ([.images[].name] | sort) == ([
@@ -207,9 +213,9 @@ jq --exit-status '
       ("https://github.com/jqlang/jq/releases/download/jq-" +
        $jq.version + "/jq-linux-arm64")) and
   (.tools.base.python.version | test("^3\\.14\\.[0-9]+$")) and
-  .upstream_images.python.reference ==
-    ("docker.io/library/python:" + .tools.base.python.version +
-     "-slim-trixie") and
+  .tools.base.python.asset.url ==
+    ("https://www.python.org/ftp/python/" + .tools.base.python.version +
+     "/Python-" + .tools.base.python.version + ".tar.xz") and
   (.tools.base.osv_scanner as $osv |
     $osv.module ==
       "github.com/google/osv-scanner/v2/cmd/osv-scanner") and
@@ -235,15 +241,22 @@ jq --exit-status '
     "images/base/debian-packages.amd64.lock" and
   .tools.base.debian_packages.lockfiles.arm64.lockfile ==
     "images/base/debian-packages.arm64.lock" and
-  (.tools.base.trivy as $trivy |
-    $trivy.module == "github.com/aquasecurity/trivy/cmd/trivy" and
-    ($trivy.build_go.version | test("^1\\.26\\.[0-9]+$")) and
-    $trivy.build_go.assets.amd64.url ==
-      ("https://go.dev/dl/go" + $trivy.build_go.version +
-       ".linux-amd64.tar.gz") and
-    $trivy.build_go.assets.arm64.url ==
-      ("https://go.dev/dl/go" + $trivy.build_go.version +
-       ".linux-arm64.tar.gz")) and
+  .tools.base.trivy.module == "github.com/aquasecurity/trivy/cmd/trivy" and
+  (.tools.base.trivy | has("build_go") | not) and
+  (.tools.base.docker as $docker |
+    $docker.package_version == ("5:" + $docker.version + "-1~debian.13~trixie") and
+    (["amd64", "arm64"] | all(. as $arch |
+      $docker.assets[$arch].url ==
+        ("https://download.docker.com/linux/debian/dists/trixie/pool/stable/" +
+         $arch + "/docker-ce-cli_" + $docker.version +
+         "-1~debian.13~trixie_" + $arch + ".deb")))) and
+  (.tools.base.compose as $compose |
+    $compose.assets.amd64.url ==
+      ("https://github.com/docker/compose/releases/download/v" +
+       $compose.version + "/docker-compose-linux-x86_64") and
+    $compose.assets.arm64.url ==
+      ("https://github.com/docker/compose/releases/download/v" +
+       $compose.version + "/docker-compose-linux-aarch64")) and
   (.tools.go.hurl as $hurl |
     $hurl.assets.amd64.url ==
       ("https://github.com/Orange-OpenSource/hurl/releases/download/" +

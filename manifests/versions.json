@@ -9,27 +9,23 @@
     "uid": 1001,
     "gid": 2001
   },
-  "debian_snapshot": "20260930T082601Z",
+  "debian_snapshot": "20261001T203503Z",
   "upstream_images": {
     "dockerfile_frontend": {
-      "reference": "docker.io/docker/dockerfile:1.27.0",
-      "digest": "sha256:bde3983e9c939224420ddaf6b784cc30e09b035a4dea01f581230c50809f372e"
+      "reference": "docker.io/docker/dockerfile:1.27.1",
+      "digest": "sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e"
     },
     "debian": {
       "reference": "docker.io/library/debian:trixie-slim",
       "digest": "sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a"
-    },
-    "python": {
-      "reference": "docker.io/library/python:3.14.7-slim-trixie",
-      "digest": "sha256:51dafde81dbdb6ebde285137a295cf18a47ca95234fe388a343719cb97305b3d"
     },
     "node": {
       "reference": "docker.io/library/node:26.10.0-trixie-slim",
       "digest": "sha256:ec7758ee051e457b468b32bde57b0879010b325bb9862718e9615225ce4aaae1"
     },
     "pgvector": {
-      "reference": "docker.io/pgvector/pgvector:0.8.6-pg18-trixie",
-      "digest": "sha256:78bf48b801e792f99e3ac62b5036fd3876e9be48afda16c1e331af1c75ceb2ff"
+      "reference": "docker.io/pgvector/pgvector:0.8.7-pg18-trixie",
+      "digest": "sha256:9d9c930220cb9bf2f956d10a8f909cf9973d9672ca0278aef2c1e6facccad2e0"
     }
   },
   "images": {
@@ -150,29 +146,20 @@
         "module": "github.com/google/osv-scanner/v2/cmd/osv-scanner"
       },
       "trivy": {
-        "version": "0.74.0",
+        "version": "0.75.0",
         "source": "https://github.com/aquasecurity/trivy",
         "module": "github.com/aquasecurity/trivy/cmd/trivy",
-        "build_go": {
-          "version": "1.26.8",
-          "assets": {
-            "amd64": {
-              "url": "https://go.dev/dl/go1.26.8.linux-amd64.tar.gz",
-              "sha256": "d0f743b33e8d8945e6b1f432edd15785c70507121d6e2a723b21285eddf8b57b"
-            },
-            "arm64": {
-              "url": "https://go.dev/dl/go1.26.8.linux-arm64.tar.gz",
-              "sha256": "211ffced9dcb9633a55eac6364816ec0ddd951389a740e88fa8b3337971bdda0"
-            }
-          }
-        },
         "dependency_overrides": {
           "google.golang.org/grpc": "v1.84.0"
         }
       },
       "python": {
-        "version": "3.14.7",
-        "source": "https://www.python.org/"
+        "version": "3.14.8",
+        "source": "https://www.python.org/",
+        "asset": {
+          "url": "https://www.python.org/ftp/python/3.14.8/Python-3.14.8.tar.xz",
+          "sha256": "c2215904f02b175596dc49351585104f4bc20341e1c47378b26a2c274360ce73"
+        }
       },
       "ripgrep": {
         "version": "15.2.0",
@@ -221,6 +208,35 @@
         "module": "github.com/mikefarah/yq/v4",
         "dependency_overrides": {
           "golang.org/x/text": "v0.42.0"
+        }
+      },
+      "docker": {
+        "version": "29.8.2",
+        "source": "https://download.docker.com/linux/debian/",
+        "package_version": "5:29.8.2-1~debian.13~trixie",
+        "assets": {
+          "amd64": {
+            "url": "https://download.docker.com/linux/debian/dists/trixie/pool/stable/amd64/docker-ce-cli_29.8.2-1~debian.13~trixie_amd64.deb",
+            "sha256": "cc879c55abc5fdd0a381d80a55a4605e2e377c9d29ce1c08eadf9a0bc228fc73"
+          },
+          "arm64": {
+            "url": "https://download.docker.com/linux/debian/dists/trixie/pool/stable/arm64/docker-ce-cli_29.8.2-1~debian.13~trixie_arm64.deb",
+            "sha256": "443b79cd0a2439588b7cbd140867230941dba4c4185ee8044ce3fd561ea6bbaf"
+          }
+        }
+      },
+      "compose": {
+        "version": "5.5.1",
+        "source": "https://github.com/docker/compose",
+        "assets": {
+          "amd64": {
+            "url": "https://github.com/docker/compose/releases/download/v5.5.1/docker-compose-linux-x86_64",
+            "sha256": "db1889184726840f75c4f9c001048430d4f25b3be3cb084d3ddd762bc0aed576"
+          },
+          "arm64": {
+            "url": "https://github.com/docker/compose/releases/download/v5.5.1/docker-compose-linux-aarch64",
+            "sha256": "732e3a84c1a0f67256ce80bc2598a24546b10ca05f9faa97efceb1171ece2ef7"
+          }
         }
       }
     },
@@ -288,10 +304,10 @@
     "node": {
       "runtime": "26.10.0",
       "npm": {
-        "version": "12.1.0",
+        "version": "12.2.0",
         "asset": {
-          "url": "https://registry.npmjs.org/npm/-/npm-12.1.0.tgz",
-          "sha256": "f08e674e31eb99931df2297aa55c274bf9bebd90679dad57fdbe9683907a3325"
+          "url": "https://registry.npmjs.org/npm/-/npm-12.2.0.tgz",
+          "sha256": "6666b48816b39b86c3febac7b51a4ee4de6c5ca589c382ad8004b6b113f86677"
         },
         "lockfile": "images/node/npm-runtime/package-lock.json",
         "lockfile_sha256": "71f6744ecfeef8f2e19c701ca77f312835cbbb4422c7a303d9397dc2a0e37f05",
@@ -305,14 +321,14 @@
       "markdownlint_cli2": {
         "version": "0.23.3",
         "lockfile": "images/node/markdownlint/package-lock.json",
-        "lockfile_sha256": "a5ee8ce62d102435c0adfe1d5f9314a19266089b14beb5d30f3485e170efe98f",
+        "lockfile_sha256": "96e391a055f4e91d9dce28ecbd5dd6b4d7baaabe60dcaf540005b3263f317f50",
         "dependency_overrides": {
           "smol-toml": "1.9.0"
         }
       },
-      "bundle_version": "9",
+      "bundle_version": "10",
       "lockfile": "images/node/npm/package-lock.json",
-      "lockfile_sha256": "aab6daeebd3618dd228efb0bb87f4487b6dc1c61dfdaac4132ff3b3810c4887e",
+      "lockfile_sha256": "67cc528b3373466602c1734bdad4c589fa67246cdf719ae5b8866e0b73327087",
       "pnpm": {
         "version": "12.8.1",
         "store_version": "11",
@@ -328,12 +344,12 @@
           }
         }
       },
-      "redocly": "2.56.0"
+      "redocly": "2.57.0"
     },
     "vite": {
-      "bundle_version": "11",
+      "bundle_version": "12",
       "lockfile": "images/vite/npm/package-lock.json",
-      "lockfile_sha256": "c0f4afd53d6ad6e2307588f7df04fe472a4b41b749edbee0de2c8aa2c5d851e8",
+      "lockfile_sha256": "da600e85feb58f42a4940e2a39da36523abbda04f6314a3eedb700b4ccdcffbb",
       "typescript": "7.0.2",
       "typescript_source": {
         "repository": "https://github.com/microsoft/typescript-go",
@@ -346,9 +362,9 @@
         "compat_package": "6.0.2",
         "compiler": "6.0.3"
       },
-      "vite": "8.3.1",
-      "vitest": "5.0.2",
-      "coverage_v8": "5.0.2",
+      "vite": "8.3.2",
+      "vitest": "5.0.3",
+      "coverage_v8": "5.0.3",
       "oxlint": "1.86.0",
       "oxlint_tsgolint": "7.0.2003",
       "oxlint_tsgolint_source": {
@@ -367,7 +383,7 @@
     },
     "postgres": {
       "postgres": "18",
-      "pgvector": "0.8.6",
+      "pgvector": "0.8.7",
       "gosu": {
         "version": "1.19",
         "module": "github.com/tianon/gosu",

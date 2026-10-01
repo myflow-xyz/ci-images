@@ -67,8 +67,6 @@ if [[ $target == all || $target == base ]]; then
 		--env "EXPECTED_SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
 		--env "EXPECTED_TRIVY_VERSION=$(json '.tools.base.trivy.version')" \
 		--env \
-		"EXPECTED_TRIVY_GO_VERSION=$(json '.tools.base.trivy.build_go.version')" \
-		--env \
 		"EXPECTED_TRIVY_GRPC_VERSION=$(json '.tools.base.trivy.dependency_overrides["google.golang.org/grpc"]')" \
 		--env "EXPECTED_YQ_VERSION=$(json '.tools.base.yq.version')" \
 		--env \
@@ -176,3 +174,17 @@ fi
 if [[ $target == all || $target == postgres ]]; then
 	"${repository_root}/tests/smoke-postgres.sh"
 fi
+
+if [[ $target == all ]]; then
+	docker_targets=(base go node vite playwright)
+elif [[ $target != postgres ]]; then
+	docker_targets=("$target")
+else
+	docker_targets=()
+fi
+for image in "${docker_targets[@]}"; do
+	smoke_script "ci-${image}:test" docker \
+		--network none \
+		--env "EXPECTED_DOCKER_VERSION=$(json '.tools.base.docker.version')" \
+		--env "EXPECTED_COMPOSE_VERSION=$(json '.tools.base.compose.version')"
+done

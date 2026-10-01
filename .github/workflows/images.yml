@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  BUILDX_VERSION: v0.37.1
+  BUILDX_VERSION: v0.37.2
 
 jobs:
   contract:
@@ -165,6 +165,11 @@ jobs:
 
       - name: Run native image smoke tests
         run: tests/smoke-local.sh all
+
+      - name: Verify non-root Compose fixtures and owned cleanup
+        env:
+          CI_IMAGES_DOCKER_SOCKET: /var/run/docker.sock
+        run: tests/docker-integration.sh
 
       - name: Run image-hosted policy checks
         run: |
@@ -398,7 +403,7 @@ jobs:
           TRIVY_USERNAME: ${{ github.actor }}
         with:
           image-ref: ${{ matrix.image.ref }}
-          version: v0.74.0
+          version: v0.75.0
           scanners: vuln
           vuln-type: os,library
           severity: HIGH,CRITICAL

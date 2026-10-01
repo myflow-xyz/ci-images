@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  BUILDX_VERSION: v0.37.1
+  BUILDX_VERSION: v0.37.2
 
 jobs:
   release:

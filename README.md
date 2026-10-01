@@ -14,16 +14,16 @@ debian:trixie-slim@<digest>
         └── ci-vite
             └── ci-playwright
 
-pgvector/pgvector:0.8.6-pg18-trixie@<digest>
+pgvector/pgvector:0.8.7-pg18-trixie@<digest>
 └── ci-postgres
 ```
 
-`ci-base` imports CPython 3.14.7 from the digest-pinned official
-`python:3.14.7-slim-trixie` image.
+`ci-base` builds CPython 3.14.8 from its checksum-pinned official source
+release with the reviewed Debian snapshot.
 `ci-node` imports its Node runtime from the digest-pinned
 `node:26.10.0-trixie-slim` image without adding Node to `ci-base`.
 
-- `ghcr.io/myflow-xyz/ci-base`: operating-system utilities, Python 3.14.7
+- `ghcr.io/myflow-xyz/ci-base`: operating-system utilities, Python 3.14.8
   standard-library scripting, OSV-Scanner, Trivy, and runtime-independent
   repository policy tools.
 - `ghcr.io/myflow-xyz/ci-go`: Go toolchain, native race-test prerequisites,

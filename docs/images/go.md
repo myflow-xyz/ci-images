@@ -64,4 +64,6 @@ behavior.
 Use `ci-go` for Go generation, build, lint, race, test, and release jobs.
 
 Add [`ci-postgres`](postgres.md) as a service when a job requires PostgreSQL.
-Docker Compose conformance remains outside the ordinary job-image contract.
+Docker CLI and Compose are inherited from `ci-base`. Trusted fixture jobs
+explicitly supply a qualified daemon endpoint under the
+[base client contract](base.md#docker-client-contract).

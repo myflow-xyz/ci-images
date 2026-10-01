@@ -5,7 +5,6 @@ set -euo pipefail
 expected_uid=${EXPECTED_CI_UID:?EXPECTED_CI_UID is not set}
 expected_gid=${EXPECTED_CI_GID:?EXPECTED_CI_GID is not set}
 expected_go=${EXPECTED_TOOLCHAIN_GO_VERSION:?EXPECTED_TOOLCHAIN_GO_VERSION is not set}
-expected_trivy_go=${EXPECTED_TRIVY_GO_VERSION:?EXPECTED_TRIVY_GO_VERSION is not set}
 expected_python=${EXPECTED_PYTHON_VERSION:?EXPECTED_PYTHON_VERSION is not set}
 expected_bash=${EXPECTED_BASH_VERSION:?EXPECTED_BASH_VERSION is not set}
 : "${EXPECTED_ACTIONLINT_VERSION:?EXPECTED_ACTIONLINT_VERSION is not set}"
@@ -177,7 +176,7 @@ grep \
 grep \
 	--binary-files=text \
 	--fixed-strings \
-	"go${expected_trivy_go}" \
+	"go${expected_go}" \
 	"$(command -v trivy)" \
 	>/dev/null
 grep \
@@ -261,11 +260,6 @@ for path in \
 	/var/cache/pnpm; do
 	[[ ! -e $path ]]
 done
-
-if command -v docker >/dev/null 2>&1; then
-	printf 'Docker CLI must not be present in a job image\n' >&2
-	exit 1
-fi
 
 probe=/workspace/.ci-base-write-probe
 printf 'writable\n' >"$probe"
