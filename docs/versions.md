@@ -16,7 +16,9 @@ revisions, checksums, and upstream image digests.
 | `Git` | `2.56.0` |
 | `Git LFS` | `3.8.0` |
 | `GitHub CLI` | `2.102.0` |
-| `CPython` | `3.14.7` |
+| `CPython` | `3.14.8` |
+| `Docker CLI` | `29.8.2` |
+| `Docker Compose` | `5.5.1` |
 | `actionlint` | `1.7.12` |
 | `gitleaks` | `8.30.1` |
 | `jq` | `1.8.2` |
@@ -25,7 +27,7 @@ revisions, checksums, and upstream image digests.
 | `ShellCheck` | `0.11.0` |
 | `shellspec` | `0.28.1` |
 | `shfmt` | `3.14.1` |
-| `Trivy` | `0.74.0` |
+| `Trivy` | `0.75.0` |
 | `yq` | `4.54.1` |
 
 ### Direct Debian packages
@@ -83,10 +85,10 @@ version listed above.
 | Component | Version |
 | --- | --- |
 | `Node.js` | `26.10.0` |
-| `npm` | `12.1.0` |
+| `npm` | `12.2.0` |
 | `pnpm` | `12.8.1` |
 | `markdownlint-cli2` | `0.23.3` |
-| `@redocly/cli` | `2.56.0` |
+| `@redocly/cli` | `2.57.0` |
 
 ## `ci-vite`
 
@@ -95,9 +97,9 @@ version listed above.
 | `@typescript/native` | `7.0.2` |
 | `TypeScript compatibility package` | `6.0.2` |
 | `TypeScript legacy compiler` | `6.0.3` |
-| `vite` | `8.3.1` |
-| `vitest` | `5.0.2` |
-| `@vitest/coverage-v8` | `5.0.2` |
+| `vite` | `8.3.2` |
+| `vitest` | `5.0.3` |
+| `@vitest/coverage-v8` | `5.0.3` |
 | `oxlint` | `1.86.0` |
 | `oxlint-tsgolint` | `7.0.2003` |
 | `oxfmt` | `0.71.0` |
@@ -113,5 +115,5 @@ version listed above.
 | Component | Version |
 | --- | --- |
 | `PostgreSQL` | `18` |
-| `pgvector` | `0.8.6` |
+| `pgvector` | `0.8.7` |
 | `gosu` | `1.19` |

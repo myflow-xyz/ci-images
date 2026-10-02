@@ -8,10 +8,10 @@ CI tasks that do not require the Vite frontend toolchain.
 The initial image contract includes:
 
 - Node.js 26.10.0 imported from the digest-pinned official Node image;
-- npm and npx 12.1.0 from a hash-verified release artifact;
+- npm and npx 12.2.0 from a hash-verified release artifact;
 - pnpm 12.8.1 from hash-verified native Linux release artifacts;
 - `markdownlint-cli2` 0.23.3;
-- Redocly CLI 2.56.0 for OpenAPI validation;
+- Redocly CLI 2.57.0 for OpenAPI validation;
 - explicit npm and pnpm cache paths.
 
 The npm release artifact is hash-verified, and its reviewed bundled dependency

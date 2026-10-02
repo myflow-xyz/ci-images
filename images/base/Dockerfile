@@ -1,8 +1,7 @@
-# syntax=docker/dockerfile:1.27.0@sha256:bde3983e9c939224420ddaf6b784cc30e09b035a4dea01f581230c50809f372e
+# syntax=docker/dockerfile:1.27.1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
 # check=skip=InvalidDefaultArgInFrom
 
 ARG BASE_IMAGE
-ARG PYTHON_IMAGE
 FROM ${BASE_IMAGE} AS base-source-builder
 
 ARG BASH_PATCHLEVEL
@@ -113,11 +112,33 @@ RUN set -eu; \
     test "$(/out/usr/local/bin/git version)" = "git version ${GIT_VERSION}"; \
     rm -rf /var/tmp/git /var/tmp/git.tar.xz
 
-FROM ${PYTHON_IMAGE} AS base-python-runtime
+FROM base-source-builder AS base-python-runtime
 
+ARG PYTHON_ASSET_URL
+ARG PYTHON_SHA256
 ARG PYTHON_VERSION
 
 USER root
+
+RUN set -eu; \
+    apt-get update; \
+    apt-get install --yes --no-install-recommends \
+      libbluetooth-dev libbz2-dev libdb-dev libffi-dev libgdbm-dev \
+      liblzma-dev libncursesw5-dev libreadline-dev libsqlite3-dev \
+      libzstd-dev tk-dev uuid-dev; \
+    rm -rf /var/lib/apt/lists/*; \
+    /usr/local/libexec/ci/fetch-verified \
+      "${PYTHON_ASSET_URL}" "${PYTHON_SHA256}" /var/tmp/python.tar.xz; \
+    install -d /var/tmp/python; \
+    tar -xJf /var/tmp/python.tar.xz --strip-components=1 -C /var/tmp/python; \
+    cd /var/tmp/python; \
+    ./configure --prefix=/usr/local --enable-shared \
+      --enable-loadable-sqlite-extensions --enable-option-checking=fatal \
+      --with-ensurepip=no; \
+    make -j2; \
+    make -j2 install; \
+    ldconfig; \
+    rm -rf /var/tmp/python /var/tmp/python.tar.xz /out
 
 RUN set -eu; \
     test "$(python3 --version)" = "Python ${PYTHON_VERSION}"; \
@@ -181,7 +202,18 @@ FROM --platform=${BUILDPLATFORM} ${BASE_IMAGE} AS base-go-tools-builder
 
 ARG ACTIONLINT_VERSION
 ARG BUILDARCH
+ARG COMPOSE_ASSET_URL_AMD64
+ARG COMPOSE_ASSET_URL_ARM64
+ARG COMPOSE_SHA256_AMD64
+ARG COMPOSE_SHA256_ARM64
+ARG COMPOSE_VERSION
 ARG DEBIAN_SNAPSHOT
+ARG DOCKER_ASSET_URL_AMD64
+ARG DOCKER_ASSET_URL_ARM64
+ARG DOCKER_PACKAGE_VERSION
+ARG DOCKER_SHA256_AMD64
+ARG DOCKER_SHA256_ARM64
+ARG DOCKER_VERSION
 ARG GH_ASSET_URL_AMD64
 ARG GH_ASSET_URL_ARM64
 ARG GH_SHA256_AMD64
@@ -213,9 +245,6 @@ ARG SHELLCHECK_SHA256_ARM64
 ARG SHELLCHECK_VERSION
 ARG SHFMT_VERSION
 ARG TARGETARCH
-ARG TRIVY_GO_SHA256_AMD64
-ARG TRIVY_GO_SHA256_ARM64
-ARG TRIVY_GO_VERSION
 ARG TRIVY_GRPC_VERSION
 ARG TRIVY_VERSION
 ARG YQ_VERSION
@@ -261,27 +290,6 @@ RUN set -eu; \
     test "$(/usr/local/go/bin/go version | awk '{print $3}')" \
       = "go${GO_VERSION}"
 
-RUN set -eu; \
-    case "${BUILDARCH}" in \
-      amd64) trivy_go_sha256="${TRIVY_GO_SHA256_AMD64}" ;; \
-      arm64) trivy_go_sha256="${TRIVY_GO_SHA256_ARM64}" ;; \
-      *) \
-        printf 'unsupported build architecture: %s\n' "${BUILDARCH}" >&2; \
-        exit 1 \
-        ;; \
-    esac; \
-    /usr/local/libexec/ci/fetch-verified \
-      "https://go.dev/dl/go${TRIVY_GO_VERSION}.linux-${BUILDARCH}.tar.gz" \
-      "${trivy_go_sha256}" \
-      /var/tmp/trivy-go.tar.gz; \
-    install -d /opt/trivy-go; \
-    tar -xzf /var/tmp/trivy-go.tar.gz \
-      --strip-components=1 \
-      -C /opt/trivy-go; \
-    rm -f /var/tmp/trivy-go.tar.gz; \
-    test "$(/opt/trivy-go/bin/go version | awk '{print $3}')" \
-      = "go${TRIVY_GO_VERSION}"
-
 RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
     --mount=type=cache,target=/var/cache/go/build,sharing=locked \
     --mount=type=cache,target=/var/cache/go/trivy-mod,sharing=locked \
@@ -300,20 +308,20 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
         cd "${build_directory}"; \
         GOCACHE=/var/cache/go/trivy-build \
           GOMODCACHE=/var/cache/go/trivy-mod \
-          /opt/trivy-go/bin/go mod download \
+          /usr/local/go/bin/go mod download \
           "github.com/aquasecurity/trivy@${version}"; \
         cp -R "${source_directory}/." "${build_directory}/"; \
         chmod -R u+w "${build_directory}"; \
         for dependency in "$@"; do \
           GOCACHE=/var/cache/go/trivy-build \
             GOMODCACHE=/var/cache/go/trivy-mod \
-            /opt/trivy-go/bin/go get "${dependency}"; \
+            /usr/local/go/bin/go get "${dependency}"; \
         done; \
         CGO_ENABLED=0 GOARCH="${TARGETARCH}" GOOS=linux \
           GOEXPERIMENT=jsonv2 \
           GOCACHE=/var/cache/go/trivy-build \
           GOMODCACHE=/var/cache/go/trivy-mod \
-          /opt/trivy-go/bin/go build \
+          /usr/local/go/bin/go build \
           -buildvcs=false \
           -ldflags \
           "-s -w -X=github.com/aquasecurity/trivy/pkg/version/app.ver=${TRIVY_VERSION}" \
@@ -384,6 +392,39 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       github.com/mikefarah/yq/v4 \
       "v${YQ_VERSION}" \
       "golang.org/x/text@${YQ_X_TEXT_VERSION}"
+
+RUN set -eu; \
+    case "${TARGETARCH}" in \
+      amd64) \
+        docker_asset_url="${DOCKER_ASSET_URL_AMD64}"; \
+        docker_sha256="${DOCKER_SHA256_AMD64}"; \
+        compose_asset_url="${COMPOSE_ASSET_URL_AMD64}"; \
+        compose_sha256="${COMPOSE_SHA256_AMD64}" \
+        ;; \
+      arm64) \
+        docker_asset_url="${DOCKER_ASSET_URL_ARM64}"; \
+        docker_sha256="${DOCKER_SHA256_ARM64}"; \
+        compose_asset_url="${COMPOSE_ASSET_URL_ARM64}"; \
+        compose_sha256="${COMPOSE_SHA256_ARM64}" \
+        ;; \
+      *) exit 1 ;; \
+    esac; \
+    /usr/local/libexec/ci/fetch-verified \
+      "${docker_asset_url}" "${docker_sha256}" /var/tmp/docker-cli.deb; \
+    test "$(dpkg-deb --field /var/tmp/docker-cli.deb Architecture)" = "${TARGETARCH}"; \
+    test "$(dpkg-deb --field /var/tmp/docker-cli.deb Version)" = "${DOCKER_PACKAGE_VERSION}"; \
+    dpkg-deb --extract /var/tmp/docker-cli.deb /var/tmp/docker-cli; \
+    install -d "/out/docker/${DOCKER_VERSION}" "/out/docker-compose/${COMPOSE_VERSION}"; \
+    install -m 0755 /var/tmp/docker-cli/usr/bin/docker "/out/docker/${DOCKER_VERSION}/docker"; \
+    install -m 0644 /var/tmp/docker-cli/usr/share/doc/docker-ce-cli/changelog.Debian.gz "/out/docker/${DOCKER_VERSION}/changelog.Debian.gz"; \
+    /usr/local/libexec/ci/fetch-verified \
+      "${compose_asset_url}" "${compose_sha256}" "/out/docker-compose/${COMPOSE_VERSION}/docker-compose"; \
+    chmod 0755 "/out/docker-compose/${COMPOSE_VERSION}/docker-compose"; \
+    if [ "${BUILDARCH}" = "${TARGETARCH}" ]; then \
+      "/out/docker/${DOCKER_VERSION}/docker" --version | grep --fixed-strings "Docker version ${DOCKER_VERSION}," >/dev/null; \
+      test "$(/out/docker-compose/${COMPOSE_VERSION}/docker-compose version --short)" = "${COMPOSE_VERSION}"; \
+    fi; \
+    rm -rf /var/tmp/docker-cli /var/tmp/docker-cli.deb
 
 RUN set -eu; \
     case "${TARGETARCH}" in \
@@ -489,7 +530,9 @@ ARG BUILD_CREATED=unknown
 ARG BUILD_REVISION=unknown
 ARG CI_GID=2001
 ARG CI_UID=1001
+ARG COMPOSE_VERSION
 ARG DEBIAN_SNAPSHOT
+ARG DOCKER_VERSION
 ARG GH_VERSION
 ARG GIT_LFS_VERSION
 ARG GITLEAKS_VERSION
@@ -580,6 +623,10 @@ RUN set -eu; \
     ln -s \
       "../actionlint/${ACTIONLINT_VERSION}/actionlint" \
       /opt/ci-tools/bin/actionlint; \
+    ln -s "../docker/${DOCKER_VERSION}/docker" /opt/ci-tools/bin/docker; \
+    install -d /usr/local/lib/docker/cli-plugins; \
+    ln -s "/opt/ci-tools/docker-compose/${COMPOSE_VERSION}/docker-compose" \
+      /usr/local/lib/docker/cli-plugins/docker-compose; \
     ln -s \
       "../gh/${GH_VERSION}/gh" \
       /opt/ci-tools/bin/gh; \

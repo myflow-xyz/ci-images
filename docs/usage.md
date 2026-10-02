@@ -20,8 +20,10 @@ security surface, and accidental tool coupling.
 - Generic Node and OpenAPI jobs use `ci-node`.
 - TypeScript and Vite quality, test, coverage, and build jobs use `ci-vite`.
 - Browser smoke and E2E jobs use `ci-playwright`.
-- Docker Compose conformance stays on a separately controlled host runner;
-  ordinary job images do not receive the Docker socket.
+- Docker CLI and Compose are inherited by all base-derived job images.
+  Offline use needs no socket; trusted workflows explicitly supply daemon
+  access for builds and fixtures. The [base contract](images/base.md#docker-client-contract)
+  defines plugin discovery and compatibility limits.
 
 Repository-specific dependencies, configuration, and migrations remain in the
 consumer repository rather than the shared images.

@@ -282,13 +282,22 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 	if [[ $name == base ]]; then
 		cp "$output_file" "${temporary_directory}/base-${architecture}.json"
 		for build_arg in \
+			"DOCKER_VERSION=$(jq -r '.tools.base.docker.version' "$manifest")" \
+			"DOCKER_PACKAGE_VERSION=$(jq -r '.tools.base.docker.package_version' "$manifest")" \
+			"COMPOSE_VERSION=$(jq -r '.tools.base.compose.version' "$manifest")" \
+			"DOCKER_ASSET_URL_AMD64=$(jq -r '.tools.base.docker.assets.amd64.url' "$manifest")" \
+			"DOCKER_SHA256_AMD64=$(jq -r '.tools.base.docker.assets.amd64.sha256' "$manifest")" \
+			"DOCKER_ASSET_URL_ARM64=$(jq -r '.tools.base.docker.assets.arm64.url' "$manifest")" \
+			"DOCKER_SHA256_ARM64=$(jq -r '.tools.base.docker.assets.arm64.sha256' "$manifest")" \
+			"COMPOSE_ASSET_URL_AMD64=$(jq -r '.tools.base.compose.assets.amd64.url' "$manifest")" \
+			"COMPOSE_SHA256_AMD64=$(jq -r '.tools.base.compose.assets.amd64.sha256' "$manifest")" \
+			"COMPOSE_ASSET_URL_ARM64=$(jq -r '.tools.base.compose.assets.arm64.url' "$manifest")" \
+			"COMPOSE_SHA256_ARM64=$(jq -r '.tools.base.compose.assets.arm64.sha256' "$manifest")" \
 			"OSV_SCANNER_VERSION=$(jq -r '.tools.base.osv_scanner.version' "$manifest")" \
 			"PYTHON_VERSION=$(jq -r '.tools.base.python.version' "$manifest")" \
-			"PYTHON_IMAGE=$(jq -r '.upstream_images.python | .reference + "@" + .digest' "$manifest")" \
+			"PYTHON_ASSET_URL=$(jq -r '.tools.base.python.asset.url' "$manifest")" \
+			"PYTHON_SHA256=$(jq -r '.tools.base.python.asset.sha256' "$manifest")" \
 			"TRIVY_VERSION=$(jq -r '.tools.base.trivy.version' "$manifest")" \
-			"TRIVY_GO_VERSION=$(jq -r '.tools.base.trivy.build_go.version' "$manifest")" \
-			"TRIVY_GO_SHA256_AMD64=$(jq -r '.tools.base.trivy.build_go.assets.amd64.sha256' "$manifest")" \
-			"TRIVY_GO_SHA256_ARM64=$(jq -r '.tools.base.trivy.build_go.assets.arm64.sha256' "$manifest")" \
 			"TRIVY_GRPC_VERSION=$(jq -r '.tools.base.trivy.dependency_overrides["google.golang.org/grpc"]' "$manifest")"; do
 			grep -Fq -- "--build-arg ${build_arg}" "$fake_log" ||
 				fail "missing base build argument: ${build_arg%%=*}"

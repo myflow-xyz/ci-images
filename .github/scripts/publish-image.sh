@@ -186,10 +186,8 @@ publish_image() {
 case "$name" in
 base)
 	debian_image=$(image_reference debian)
-	python_image=$(image_reference python)
 	publish_image \
 		--build-arg "BASE_IMAGE=${debian_image}" \
-		--build-arg "PYTHON_IMAGE=${python_image}" \
 		--build-arg "CI_GID=$(json '.ci_user.gid')" \
 		--build-arg "CI_UID=$(json '.ci_user.uid')" \
 		--build-arg "DEBIAN_SNAPSHOT=$(json '.debian_snapshot')" \
@@ -200,6 +198,26 @@ base)
 		"BASH_PATCHLEVEL=$(json '.tools.base.bash.patchlevel')" \
 		--build-arg \
 		"BASH_SHA256=$(json '.tools.base.bash.asset.sha256')" \
+		--build-arg "DOCKER_VERSION=$(json '.tools.base.docker.version')" \
+		--build-arg \
+		"DOCKER_PACKAGE_VERSION=$(json '.tools.base.docker.package_version')" \
+		--build-arg "COMPOSE_VERSION=$(json '.tools.base.compose.version')" \
+		--build-arg \
+		"DOCKER_ASSET_URL_AMD64=$(json '.tools.base.docker.assets.amd64.url')" \
+		--build-arg \
+		"DOCKER_SHA256_AMD64=$(json '.tools.base.docker.assets.amd64.sha256')" \
+		--build-arg \
+		"DOCKER_ASSET_URL_ARM64=$(json '.tools.base.docker.assets.arm64.url')" \
+		--build-arg \
+		"DOCKER_SHA256_ARM64=$(json '.tools.base.docker.assets.arm64.sha256')" \
+		--build-arg \
+		"COMPOSE_ASSET_URL_AMD64=$(json '.tools.base.compose.assets.amd64.url')" \
+		--build-arg \
+		"COMPOSE_SHA256_AMD64=$(json '.tools.base.compose.assets.amd64.sha256')" \
+		--build-arg \
+		"COMPOSE_ASSET_URL_ARM64=$(json '.tools.base.compose.assets.arm64.url')" \
+		--build-arg \
+		"COMPOSE_SHA256_ARM64=$(json '.tools.base.compose.assets.arm64.sha256')" \
 		--build-arg "GH_VERSION=$(json '.tools.base.gh.version')" \
 		--build-arg \
 		"GH_ASSET_URL_AMD64=$(json '.tools.base.gh.assets.amd64.url')" \
@@ -237,6 +255,10 @@ base)
 		--build-arg \
 		"PYTHON_VERSION=$(json '.tools.base.python.version')" \
 		--build-arg \
+		"PYTHON_ASSET_URL=$(json '.tools.base.python.asset.url')" \
+		--build-arg \
+		"PYTHON_SHA256=$(json '.tools.base.python.asset.sha256')" \
+		--build-arg \
 		"GO_VERSION=$(json '.tools.go.runtime')" \
 		--build-arg \
 		"GO_SHA256_AMD64=$(json '.tools.go.assets.amd64.sha256')" \
@@ -268,12 +290,6 @@ base)
 		"SHELLCHECK_SHA256_ARM64=$(json '.tools.base.shellcheck.assets.arm64.sha256')" \
 		--build-arg "SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
 		--build-arg "TRIVY_VERSION=$(json '.tools.base.trivy.version')" \
-		--build-arg \
-		"TRIVY_GO_VERSION=$(json '.tools.base.trivy.build_go.version')" \
-		--build-arg \
-		"TRIVY_GO_SHA256_AMD64=$(json '.tools.base.trivy.build_go.assets.amd64.sha256')" \
-		--build-arg \
-		"TRIVY_GO_SHA256_ARM64=$(json '.tools.base.trivy.build_go.assets.arm64.sha256')" \
 		--build-arg \
 		"TRIVY_GRPC_VERSION=$(json '.tools.base.trivy.dependency_overrides["google.golang.org/grpc"]')" \
 		--build-arg "YQ_VERSION=$(json '.tools.base.yq.version')" \
