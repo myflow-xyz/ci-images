@@ -57,6 +57,7 @@ required_files=(
 	images/postgres/Dockerfile
 	manifests/versions.json
 	tests/docker-integration.sh
+	tests/docker-integration_spec.sh
 	tests/smoke/docker.sh
 	tests/smoke/docker-integration.sh
 	tests/publish.sh
@@ -481,5 +482,6 @@ fi
 "${repository_root}/tests/release.sh"
 "${repository_root}/tests/publish.sh"
 "${repository_root}/tests/scan-local-image_spec.sh"
+"${repository_root}/tests/docker-integration_spec.sh"
 
 printf 'static verification passed\n'

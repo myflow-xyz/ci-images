@@ -2,14 +2,30 @@
 
 set -euo pipefail
 
-[[ $(id -u) == 1001 && $(id -g) == 2001 ]]
-[[ ${DOCKER_HOST:?explicit daemon access is required} == unix:///var/run/docker.sock ]]
-[[ $(docker info --format '{{.OSType}}') == linux ]]
-server=$(docker version --format '{{json .Server}}')
-printf '%s\n' "$server" | jq --exit-status '.Version | test("^29\\.[3-8]\\.")' >/dev/null
+fail() {
+	printf 'Compose integration failed: %s\n' "$*" >&2
+	exit 1
+}
+
+uid=$(id -u)
+gid=$(id -g)
+[[ $uid == 1001 && $gid == 2001 ]] ||
+	fail "requires UID 1001/GID 2001; got ${uid}/${gid}"
+[[ ${DOCKER_HOST:-} == unix:///var/run/docker.sock ]] ||
+	fail 'requires explicitly supplied unix:///var/run/docker.sock'
+daemon_os=$(docker info --format '{{.OSType}}') ||
+	fail 'cannot query the explicitly supplied Docker daemon'
+[[ $daemon_os == linux ]] || fail "requires a Linux Docker daemon; got ${daemon_os}"
+server=$(docker version --format '{{json .Server}}') || fail 'cannot read Docker daemon version'
+daemon_version=$(jq --exit-status --raw-output '.Version' <<<"$server") ||
+	fail 'missing Docker daemon version'
+api_version=$(jq --exit-status --raw-output '.ApiVersion' <<<"$server") ||
+	fail 'missing Docker daemon API version'
 printf 'Compose integration: client %s; platform %s; daemon %s; API %s\n' \
-	"$(docker --version)" "$(uname -m)" \
-	"$(jq -r .Version <<<"$server")" "$(jq -r .ApiVersion <<<"$server")"
+	"$(docker --version)" "$(uname -m)" "$daemon_version" "$api_version"
+# Hosted runners can lag the pinned client; use normal API negotiation.
+[[ $daemon_version =~ ^(28|29)\.[0-9]+\.[0-9]+($|[-+~]) ]] ||
+	fail "unsupported Docker Engine ${daemon_version}; expected Linux Engine 28.x or 29.x"
 
 test_directory=$(mktemp -d)
 project="ci-client-$(date +%s)-${RANDOM}-${RANDOM}"

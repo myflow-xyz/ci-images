@@ -13,7 +13,10 @@ socket_gid=$(
 	docker run --rm --network none --volume "${socket}:/socket:ro" \
 		ci-base:test stat --format=%g /socket
 )
-[[ $socket_gid =~ ^[0-9]+$ ]]
+[[ $socket_gid =~ ^[0-9]+$ ]] || {
+	printf 'approved Docker socket has an invalid numeric group: %s\n' "$socket_gid" >&2
+	exit 1
+}
 
 docker run --rm --network host \
 	--group-add "$socket_gid" \

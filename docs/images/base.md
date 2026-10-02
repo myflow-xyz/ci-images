@@ -101,12 +101,15 @@ require an endpoint explicitly supplied by a trusted workflow. Installation
 never grants daemon access or changes host/socket permissions. Registry
 credentials remain job-scoped, preferably in a private client configuration.
 
-The supported target range is Linux Docker Engine 29.3 through 29.8,
+The supported target range is Linux Docker Engine 28.x and 29.x,
 using normal API negotiation and the API overlap with Docker CLI 29.8.2 and
 Compose 5.5.1. [Docker documents negotiation as best effort][docker-api];
-feature-specific consumer qualification is still required. The integration
-check records the actual daemon/API/platform and verifies fixture startup,
-HTTP receipt, and owned container/network/volume cleanup after both successful
+feature-specific consumer qualification is still required. This includes the
+28.0.4 daemon listed in the [GitHub Ubuntu 24.04 runner inventory][runner-tools];
+the image-managed client version does not require an identical host daemon.
+The integration check records the actual daemon/API/platform and verifies
+fixture startup, HTTP receipt, and owned container/network/volume cleanup after
+both successful
 and failed verification. Qualification of the whole version range is not
 implied by a passing check against one daemon. Older daemons, Windows daemons,
 rootless/user-namespace networking and remapped socket permissions need
@@ -115,10 +118,13 @@ separate qualification.
 Local qualification used a Linux ARM64 client against Docker Engine 29.4.0
 with API 1.54. Native AMD64/ARM64 Actions repeat the checks against their
 runner daemons. Other versions in the target range have not been directly
-qualified by this local run.
+qualified by this local run. The preflight regression covers admission of
+28.x and 29.x daemons, including 28.0.4, and explicit rejection diagnostics;
+it does not replace live integration qualification of those versions.
 
 [compose-install]: https://docs.docker.com/compose/install/linux/
 [docker-api]: https://docs.docker.com/reference/api/engine/
+[runner-tools]: https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md
 
 ## Runtime contract
 
