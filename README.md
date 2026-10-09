@@ -20,8 +20,7 @@ pgvector/pgvector:0.8.7-pg18-trixie@<digest>
 
 `ci-base` builds CPython 3.14.8 from its checksum-pinned official source
 release with the reviewed Debian snapshot.
-`ci-node` imports its Node runtime from the digest-pinned
-`node:26.10.0-trixie-slim` image without adding Node to `ci-base`.
+`ci-node` imports Node 26.11.1 from its checksum-pinned official Linux archive.
 
 - `ghcr.io/myflow-xyz/ci-base`: operating-system utilities, Python 3.14.8
   standard-library scripting, OSV-Scanner, Trivy, and runtime-independent

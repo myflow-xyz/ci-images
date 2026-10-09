@@ -161,8 +161,14 @@ jq --exit-status '
   (.debian_snapshot | test("^[0-9]{8}T[0-9]{6}Z$")) and
   (.upstream_images.debian.reference |
     endswith("debian:trixie-slim")) and
-  (.upstream_images.node.reference |
-    endswith("node:26.10.0-trixie-slim")) and
+  (.tools.node as $node |
+    ($node.runtime | test("^26\\.[0-9]+\\.[0-9]+$")) and
+    $node.assets.amd64.url ==
+      ("https://nodejs.org/dist/v" + $node.runtime + "/node-v" +
+       $node.runtime + "-linux-x64.tar.xz") and
+    $node.assets.arm64.url ==
+      ("https://nodejs.org/dist/v" + $node.runtime + "/node-v" +
+       $node.runtime + "-linux-arm64.tar.xz")) and
   .upstream_images.pgvector.reference ==
     ("docker.io/pgvector/pgvector:" + .tools.postgres.pgvector +
      "-pg" + .tools.postgres.postgres + "-trixie") and
@@ -198,13 +204,7 @@ jq --exit-status '
       ("https://ftp.gnu.org/gnu/bash/bash-" +
        $bash.release + ".tar.gz") and
     $bash.patches.lockfile == "images/base/bash-5.3-patches.sha256") and
-  (.tools.base.gh as $gh |
-    $gh.assets.amd64.url ==
-      ("https://github.com/cli/cli/releases/download/v" +
-       $gh.version + "/gh_" + $gh.version + "_linux_amd64.tar.gz") and
-    $gh.assets.arm64.url ==
-      ("https://github.com/cli/cli/releases/download/v" +
-       $gh.version + "/gh_" + $gh.version + "_linux_arm64.tar.gz")) and
+  .tools.base.gh.module == "github.com/cli/cli/v2/cmd/gh" and
   .tools.base.git_lfs.module == "github.com/git-lfs/git-lfs/v3" and
   (.tools.base.jq as $jq |
     $jq.assets.amd64.url ==
@@ -245,19 +245,9 @@ jq --exit-status '
   .tools.base.trivy.module == "github.com/aquasecurity/trivy/cmd/trivy" and
   (.tools.base.trivy | has("build_go") | not) and
   (.tools.base.docker as $docker |
-    $docker.package_version == ("5:" + $docker.version + "-1~debian.13~trixie") and
-    (["amd64", "arm64"] | all(. as $arch |
-      $docker.assets[$arch].url ==
-        ("https://download.docker.com/linux/debian/dists/trixie/pool/stable/" +
-         $arch + "/docker-ce-cli_" + $docker.version +
-         "-1~debian.13~trixie_" + $arch + ".deb")))) and
-  (.tools.base.compose as $compose |
-    $compose.assets.amd64.url ==
-      ("https://github.com/docker/compose/releases/download/v" +
-       $compose.version + "/docker-compose-linux-x86_64") and
-    $compose.assets.arm64.url ==
-      ("https://github.com/docker/compose/releases/download/v" +
-       $compose.version + "/docker-compose-linux-aarch64")) and
+    $docker.module == "github.com/docker/cli" and
+    ($docker.commit | test("^[0-9a-f]{40}$"))) and
+  .tools.base.compose.module == "github.com/docker/compose/v5" and
   (.tools.go.hurl as $hurl |
     $hurl.assets.amd64.url ==
       ("https://github.com/Orange-OpenSource/hurl/releases/download/" +
@@ -280,7 +270,11 @@ jq --exit-status '
     $pnpm.assets.arm64.url ==
       ("https://github.com/pnpm/pnpm/releases/download/v" +
        $pnpm.version + "/pnpm-linux-arm64.tar.gz")) and
-  ([.tools.base.git_lfs.dependency_overrides[],
+  ([.tools.base.actionlint.dependency_overrides[],
+    .tools.base.compose.dependency_overrides[],
+    .tools.base.gh.dependency_overrides[],
+    .tools.base.osv_scanner.dependency_overrides[],
+    .tools.base.git_lfs.dependency_overrides[],
     .tools.base.gitleaks.dependency_overrides[],
     .tools.base.trivy.dependency_overrides[],
     .tools.base.yq.dependency_overrides[],
@@ -288,7 +282,8 @@ jq --exit-status '
     .tools.go.sqlc.dependency_overrides[],
     .tools.go.goose.dependency_overrides[],
     .tools.vite.typescript_source.dependency_overrides[],
-    .tools.vite.oxlint_tsgolint_source.dependency_overrides[]] |
+    .tools.vite.oxlint_tsgolint_source.dependency_overrides[],
+    .tools.postgres.gosu.dependency_overrides[]] |
     map(test("^v[0-9]+\\.[0-9]+\\.[0-9]+$")) |
     all) and
   (.tools.node.markdownlint_cli2.dependency_overrides["smol-toml"] |
@@ -368,6 +363,10 @@ assert_package_version \
 	images/node/markdownlint/package-lock.json \
 	smol-toml \
 	"$(jq -r '.tools.node.markdownlint_cli2.dependency_overrides["smol-toml"]' "$manifest")"
+assert_package_version \
+	images/node/markdownlint/package-lock.json \
+	katex \
+	"$(jq -r '.tools.node.markdownlint_cli2.dependency_overrides.katex' "$manifest")"
 jq --exit-status \
 	'.packages | has("node_modules/npm") | not' \
 	"${repository_root}/images/node/npm-runtime/package-lock.json" >/dev/null ||
@@ -378,8 +377,16 @@ assert_package_version \
 	"$(jq -r '.tools.node.npm.dependency_replacements["brace-expansion"]' "$manifest")"
 assert_package_version \
 	images/node/npm-runtime/package-lock.json \
+	http-cache-semantics \
+	"$(jq -r '.tools.node.npm.dependency_replacements["http-cache-semantics"]' "$manifest")"
+assert_package_version \
+	images/node/npm-runtime/package-lock.json \
 	ip-address \
 	"$(jq -r '.tools.node.npm.dependency_replacements["ip-address"]' "$manifest")"
+assert_package_version \
+	images/node/npm-runtime/package-lock.json \
+	postcss-selector-parser \
+	"$(jq -r '.tools.node.npm.dependency_replacements["postcss-selector-parser"]' "$manifest")"
 assert_package_version \
 	images/node/npm-runtime/package-lock.json \
 	tar \

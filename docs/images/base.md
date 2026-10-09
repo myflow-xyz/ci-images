@@ -42,7 +42,7 @@ The base image includes:
   OpenSSL, tar, gzip, xz, zip, and unzip;
 - CPython 3.14.8 and its standard-library modules for repository-owned CI
   automation;
-- Docker CLI 29.8.2 and the Compose 5.5.1 CLI plugin;
+- Docker CLI 29.9.0 and the Compose 5.6.0 CLI plugin;
 - structured-data and diagnosis tools: `jq`, `yq`, ripgrep, and GitHub CLI;
 - shared policy tools: OSV-Scanner 2.6.0, Trivy 0.75.0, gitleaks, actionlint,
   shfmt, ShellCheck, and ShellSpec;
@@ -57,10 +57,10 @@ pip, virtual-environment support, development headers, or third-party Python
 packages.
 
 Git is built from a checksum-pinned upstream source release so the protected
-system configuration can scope trust to GitHub's workspace tree. GitHub CLI,
-jq, ripgrep, and ShellCheck use checksum-pinned upstream release artifacts for
-each supported architecture. Git LFS, actionlint, gitleaks, OSV-Scanner, shfmt,
-and yq are built from exact module releases with Go 1.27.1. Trivy 0.75.0 uses
+system configuration can scope trust to GitHub's workspace tree. jq, ripgrep,
+and ShellCheck use checksum-pinned upstream release artifacts for each supported
+architecture. GitHub CLI, Git LFS, actionlint, gitleaks, OSV-Scanner, shfmt,
+and yq are built from exact module releases with Go 1.27.2. Trivy 0.75.0 uses
 the same toolchain with the `jsonv2` build mode required by that release.
 Narrow dependency overrides used to remove known vulnerabilities from released
 tools are recorded in the version manifest and verified by image smoke tests.
@@ -82,11 +82,12 @@ or newer; the base image exceeds that minimum.
 
 ## Docker client contract
 
-Docker CLI comes from Docker's exact, checksum-pinned `docker-ce-cli` package
-for each architecture; only the client executable and package release metadata
-are retained. Compose uses Docker's checksum-pinned release executable. Both
-upstream artifacts use the supported Go 1.26.8 toolchain and pass the image
-vulnerability policy; compilers are not installed with them.
+Docker CLI and Compose are built from their exact upstream module releases with
+Go 1.27.2. Go authenticates module downloads through its checksum database.
+This gives the clients the current Go security fixes, which were absent from
+the previous image's upstream executables. Their upstream version metadata is
+retained. The image includes only the client executables; compilers remain in
+the build stages.
 
 The client is exposed through `/opt/ci-tools/bin/docker`. Compose is exposed at
 `/usr/local/lib/docker/cli-plugins/docker-compose`, a root-owned system-wide
@@ -102,8 +103,8 @@ never grants daemon access or changes host/socket permissions. Registry
 credentials remain job-scoped, preferably in a private client configuration.
 
 The supported target range is Linux Docker Engine 28.x and 29.x,
-using normal API negotiation and the API overlap with Docker CLI 29.8.2 and
-Compose 5.5.1. [Docker documents negotiation as best effort][docker-api];
+using normal API negotiation and the API overlap with Docker CLI 29.9.0 and
+Compose 5.6.0. [Docker documents negotiation as best effort][docker-api];
 feature-specific consumer qualification is still required. This includes the
 28.0.4 daemon listed in the [GitHub Ubuntu 24.04 runner inventory][runner-tools];
 the image-managed client version does not require an identical host daemon.

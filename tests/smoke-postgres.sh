@@ -64,6 +64,15 @@ docker exec "$container_name" \
 	"go${expected_go}" \
 	/usr/local/bin/gosu \
 	>/dev/null
+while IFS=$'\t' read -r module version; do
+	docker exec "$container_name" \
+		grep \
+		--binary-files=text \
+		--fixed-strings \
+		$'dep\t'"${module}"$'\t'"${version}" \
+		/usr/local/bin/gosu \
+		>/dev/null
+done < <(jq -r '.tools.postgres.gosu.dependency_overrides | to_entries[] | [.key, .value] | @tsv' "$manifest")
 
 actual_postgres=$(
 	docker exec "$container_name" postgres --version |

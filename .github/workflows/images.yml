@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  BUILDX_VERSION: v0.37.2
+  BUILDX_VERSION: v0.38.0
 
 jobs:
   contract:
@@ -76,7 +76,23 @@ jobs:
               '.tools.base.actionlint.version' \
               manifests/versions.json
           )
-          go install "${actionlint_module}@v${actionlint_version}"
+          go_version=$(jq --raw-output '.tools.go.runtime' manifests/versions.json)
+          x_sys_version=$(
+            jq --raw-output \
+              '.tools.base.actionlint.dependency_overrides["golang.org/x/sys"]' \
+              manifests/versions.json
+          )
+          export GOTOOLCHAIN="go${go_version}"
+          build_directory=$(mktemp -d)
+          (
+            cd "$build_directory"
+            go mod init ci.invalid/actionlint
+            go get \
+              "${actionlint_module}@v${actionlint_version}" \
+              "golang.org/x/sys@${x_sys_version}"
+            go build -buildvcs=false -trimpath \
+              -o "$GOBIN/actionlint" "$actionlint_module"
+          )
           "$GOBIN/actionlint"
 
       - name: Classify changes

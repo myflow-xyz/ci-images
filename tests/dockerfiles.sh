@@ -14,7 +14,6 @@ image_reference() {
 }
 
 debian_image=$(image_reference debian)
-node_image=$(image_reference node)
 pgvector_image=$(image_reference pgvector)
 
 docker buildx build \
@@ -33,14 +32,13 @@ docker buildx build \
 	--call=check \
 	--file "${repository_root}/images/node/Dockerfile" \
 	--build-arg "BASE_IMAGE=${debian_image}" \
-	--build-arg "NODE_IMAGE=${node_image}" \
 	"$repository_root"
 
 for image in vite playwright; do
 	docker buildx build \
 		--call=check \
 		--file "${repository_root}/images/${image}/Dockerfile" \
-		--build-arg "BASE_IMAGE=${node_image}" \
+		--build-arg "BASE_IMAGE=${debian_image}" \
 		"$repository_root"
 done
 

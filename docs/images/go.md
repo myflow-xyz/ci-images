@@ -7,7 +7,7 @@ generation, analysis, test, and release jobs.
 
 The initial image contract includes:
 
-- Go 1.27.1, installed from the official per-architecture archive after
+- Go 1.27.2, installed from the official per-architecture archive after
   SHA-256 verification, with local toolchain selection and the JSON v2
   implementation enabled by default;
 - a C compiler, libc development headers, and native build prerequisites for
@@ -26,7 +26,7 @@ versioned directories. Stable links are exposed through
 upstream Linux archives for both supported architectures.
 
 The manifest records narrow dependency overrides used to rebuild a tool when
-its released dependency graph contains a fixed HIGH or CRITICAL vulnerability
+its released dependency graph contains a known vulnerability with a fixed version
 or an upstream-retracted module version. The image smoke contract verifies
 those resolved module versions; an override is removed when the upstream tool
 release incorporates the fix.

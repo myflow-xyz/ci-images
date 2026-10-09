@@ -282,17 +282,20 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 	if [[ $name == base ]]; then
 		cp "$output_file" "${temporary_directory}/base-${architecture}.json"
 		for build_arg in \
+			"COMPOSE_X_NET_VERSION=$(jq -r '.tools.base.compose.dependency_overrides["golang.org/x/net"]' "$manifest")" \
+			"GH_X_NET_VERSION=$(jq -r '.tools.base.gh.dependency_overrides["golang.org/x/net"]' "$manifest")" \
+			"GIT_LFS_X_NET_VERSION=$(jq -r '.tools.base.git_lfs.dependency_overrides["golang.org/x/net"]' "$manifest")" \
+			"OSV_SCANNER_X_NET_VERSION=$(jq -r '.tools.base.osv_scanner.dependency_overrides["golang.org/x/net"]' "$manifest")" \
+			"TRIVY_X_NET_VERSION=$(jq -r '.tools.base.trivy.dependency_overrides["golang.org/x/net"]' "$manifest")" \
+			"GITLEAKS_COMPRESS_VERSION=$(jq -r '.tools.base.gitleaks.dependency_overrides["github.com/klauspost/compress"]' "$manifest")" \
+			"YQ_X_NET_VERSION=$(jq -r '.tools.base.yq.dependency_overrides["golang.org/x/net"]' "$manifest")" \
 			"DOCKER_VERSION=$(jq -r '.tools.base.docker.version' "$manifest")" \
-			"DOCKER_PACKAGE_VERSION=$(jq -r '.tools.base.docker.package_version' "$manifest")" \
+			"DOCKER_COMMIT=$(jq -r '.tools.base.docker.commit' "$manifest")" \
 			"COMPOSE_VERSION=$(jq -r '.tools.base.compose.version' "$manifest")" \
-			"DOCKER_ASSET_URL_AMD64=$(jq -r '.tools.base.docker.assets.amd64.url' "$manifest")" \
-			"DOCKER_SHA256_AMD64=$(jq -r '.tools.base.docker.assets.amd64.sha256' "$manifest")" \
-			"DOCKER_ASSET_URL_ARM64=$(jq -r '.tools.base.docker.assets.arm64.url' "$manifest")" \
-			"DOCKER_SHA256_ARM64=$(jq -r '.tools.base.docker.assets.arm64.sha256' "$manifest")" \
-			"COMPOSE_ASSET_URL_AMD64=$(jq -r '.tools.base.compose.assets.amd64.url' "$manifest")" \
-			"COMPOSE_SHA256_AMD64=$(jq -r '.tools.base.compose.assets.amd64.sha256' "$manifest")" \
-			"COMPOSE_ASSET_URL_ARM64=$(jq -r '.tools.base.compose.assets.arm64.url' "$manifest")" \
-			"COMPOSE_SHA256_ARM64=$(jq -r '.tools.base.compose.assets.arm64.sha256' "$manifest")" \
+			"GH_VERSION=$(jq -r '.tools.base.gh.version' "$manifest")" \
+			"GO_VERSION=$(jq -r '.tools.go.runtime' "$manifest")" \
+			"ACTIONLINT_X_SYS_VERSION=$(jq -r '.tools.base.actionlint.dependency_overrides["golang.org/x/sys"]' "$manifest")" \
+			"GITLEAKS_RARDECODE_VERSION=$(jq -r '.tools.base.gitleaks.dependency_overrides["github.com/nwaples/rardecode/v2"]' "$manifest")" \
 			"OSV_SCANNER_VERSION=$(jq -r '.tools.base.osv_scanner.version' "$manifest")" \
 			"PYTHON_VERSION=$(jq -r '.tools.base.python.version' "$manifest")" \
 			"PYTHON_ASSET_URL=$(jq -r '.tools.base.python.asset.url' "$manifest")" \
@@ -305,6 +308,7 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 	fi
 	if [[ $name == go ]]; then
 		for build_arg in \
+			"SQLC_CEL_GO_VERSION=$(jq -r '.tools.go.sqlc.dependency_overrides["github.com/google/cel-go"]' "$manifest")" \
 			"GOOSE_MODERNC_LIBC_VERSION=$(jq -r '.tools.go.goose.dependency_overrides["modernc.org/libc"]' "$manifest")" \
 			"GOIMPORTS_VERSION=$(jq -r '.tools.go.goimports.version' "$manifest")" \
 			"GOVULNCHECK_VERSION=$(jq -r '.tools.go.govulncheck.version' "$manifest")"; do
@@ -314,6 +318,13 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 	fi
 	if [[ $name == node ]]; then
 		for build_arg in \
+			"NODE_ASSET_URL_AMD64=$(jq -r '.tools.node.assets.amd64.url' "$manifest")" \
+			"NODE_ASSET_URL_ARM64=$(jq -r '.tools.node.assets.arm64.url' "$manifest")" \
+			"NODE_SHA256_AMD64=$(jq -r '.tools.node.assets.amd64.sha256' "$manifest")" \
+			"NODE_SHA256_ARM64=$(jq -r '.tools.node.assets.arm64.sha256' "$manifest")" \
+			"MARKDOWNLINT_KATEX_VERSION=$(jq -r '.tools.node.markdownlint_cli2.dependency_overrides.katex' "$manifest")" \
+			"NPM_POSTCSS_SELECTOR_PARSER_VERSION=$(jq -r '.tools.node.npm.dependency_replacements["postcss-selector-parser"]' "$manifest")" \
+			"NPM_HTTP_CACHE_SEMANTICS_VERSION=$(jq -r '.tools.node.npm.dependency_replacements["http-cache-semantics"]' "$manifest")" \
 			"MARKDOWNLINT_SMOL_TOML_VERSION=$(jq -r '.tools.node.markdownlint_cli2.dependency_overrides["smol-toml"]' "$manifest")" \
 			"PNPM_ASSET_URL_AMD64=$(jq -r '.tools.node.pnpm.assets.amd64.url' "$manifest")" \
 			"PNPM_ASSET_URL_ARM64=$(jq -r '.tools.node.pnpm.assets.arm64.url' "$manifest")" \
@@ -331,6 +342,14 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 			"TYPESCRIPT_X_TEXT_VERSION=$(jq -r '.tools.vite.typescript_source.dependency_overrides["golang.org/x/text"]' "$manifest")"; do
 			grep -Fq -- "--build-arg ${build_arg}" "$fake_log" ||
 				fail "missing vite build argument: ${build_arg%%=*}"
+		done
+	fi
+	if [[ $name == postgres ]]; then
+		for build_arg in \
+			"GOSU_MOBY_USER_VERSION=$(jq -r '.tools.postgres.gosu.dependency_overrides["github.com/moby/sys/user"]' "$manifest")" \
+			"GOSU_X_SYS_VERSION=$(jq -r '.tools.postgres.gosu.dependency_overrides["golang.org/x/sys"]' "$manifest")"; do
+			grep -Fq -- "--build-arg ${build_arg}" "$fake_log" ||
+				fail "missing postgres build argument: ${build_arg%%=*}"
 		done
 	fi
 done

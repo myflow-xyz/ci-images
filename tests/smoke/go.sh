@@ -4,6 +4,7 @@ set -euo pipefail
 
 expected_go=${EXPECTED_GO_VERSION:?EXPECTED_GO_VERSION is not set}
 expected_sqlc=${EXPECTED_SQLC_VERSION:?EXPECTED_SQLC_VERSION is not set}
+: "${EXPECTED_SQLC_CEL_GO_VERSION:?EXPECTED_SQLC_CEL_GO_VERSION is not set}"
 expected_goose=${EXPECTED_GOOSE_VERSION:?EXPECTED_GOOSE_VERSION is not set}
 : "${EXPECTED_GOOSE_GRPC_VERSION:?EXPECTED_GOOSE_GRPC_VERSION is not set}"
 : "${EXPECTED_GOOSE_MODERNC_LIBC_VERSION:?EXPECTED_GOOSE_MODERNC_LIBC_VERSION is not set}"
@@ -100,6 +101,10 @@ assert_dependency_version() {
 
 assert_dependency_version \
 	sqlc \
+	github.com/google/cel-go \
+	"$EXPECTED_SQLC_CEL_GO_VERSION"
+assert_dependency_version \
+	sqlc \
 	golang.org/x/net \
 	"$EXPECTED_SQLC_X_NET_VERSION"
 assert_dependency_version \
@@ -126,6 +131,42 @@ assert_dependency_version \
 	golangci-lint \
 	golang.org/x/text \
 	"$EXPECTED_GOLANGCI_LINT_X_TEXT_VERSION"
+
+(
+	sqlc_smoke_directory=$(mktemp -d /var/tmp/sqlc-cel-smoke.XXXXXX)
+	trap 'rm -rf "$sqlc_smoke_directory"' EXIT
+	cd "$sqlc_smoke_directory"
+	cat >sqlc.yaml <<'YAML'
+version: "2"
+sql:
+  - engine: sqlite
+    schema: schema.sql
+    queries: query.sql
+    gen:
+      go:
+        package: db
+        out: db
+    rules: [no-delete]
+rules:
+  - name: no-delete
+    message: delete query rejected by CI smoke rule
+    rule: query.sql.contains("DELETE")
+YAML
+	printf '%s\n' 'CREATE TABLE items (id INTEGER PRIMARY KEY);' >schema.sql
+	printf '%s\n' '-- name: GetItem :one' \
+		'SELECT id FROM items WHERE id = ?;' >query.sql
+	sqlc generate
+	[[ -s db/query.sql.go ]]
+	sqlc vet
+	printf '%s\n' '-- name: DeleteItem :exec' \
+		'DELETE FROM items WHERE id = ?;' >query.sql
+	if sqlc vet >vet.log 2>&1; then
+		printf 'sqlc ignored its CEL rule\n' >&2
+		exit 1
+	fi
+	grep --fixed-strings 'delete query rejected by CI smoke rule' vet.log >/dev/null
+)
+
 hurl_smoke_directory=$(mktemp -d /var/tmp/hurl-smoke.XXXXXX)
 hurl_request="${hurl_smoke_directory}/request.hurl"
 hurl_server_pid=
