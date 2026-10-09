@@ -21,7 +21,7 @@ RUN set -eu; \
     esac; \
     /usr/local/libexec/ci/fetch-verified \
       "${node_asset_url}" "${node_sha256}" /var/tmp/node.tar.xz; \
-    tar -xJf /var/tmp/node.tar.xz --strip-components=1 -C /usr/local; \
+    tar --no-same-owner -xJf /var/tmp/node.tar.xz --strip-components=1 -C /usr/local; \
     rm -f /var/tmp/node.tar.xz; \
     install -d /usr/local/share/doc/node; \
     cp /usr/local/LICENSE /usr/local/CHANGELOG.md /usr/local/README.md \

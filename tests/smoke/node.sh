@@ -24,6 +24,18 @@ bundle_root="/opt/ci-tools/node/${expected_bundle}/node_modules"
 npm_root="/opt/ci-tools/npm/${EXPECTED_NPM_VERSION}/node_modules"
 expected_store="/var/cache/pnpm/store/v${EXPECTED_PNPM_STORE_VERSION}"
 
+[[ $(id -u) != 0 ]]
+writable_runtime_path=$(
+	find /usr/local/LICENSE /usr/local/bin/node /usr/local/include/node \
+		/usr/local/share/doc/node /usr/local/share/man/man1/node.1 \
+		-writable -print -quit
+)
+if [[ -n $writable_runtime_path ]]; then
+	printf 'Node runtime is writable by the job user: %s\n' \
+		"$writable_runtime_path" >&2
+	exit 1
+fi
+
 [[ $(node --version) == "v${expected_node}" ]]
 [[ $NODE_VERSION == "$expected_node" ]]
 [[ $(npm --version) == "$EXPECTED_NPM_VERSION" ]]
