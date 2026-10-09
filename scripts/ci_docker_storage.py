@@ -57,7 +57,10 @@ def measure(info, sources, run_id):
             path = pathlib.Path(value).resolve(strict=True)
             if not path.is_dir():
                 raise GateError(2, "storage path is not a directory")
-            descriptor = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+            descriptor = os.open(
+                path,
+                getattr(os, "O_PATH", os.O_RDONLY) | os.O_DIRECTORY | os.O_NOFOLLOW,
+            )
             try:
                 device = str(os.fstat(descriptor).st_dev)
                 if device not in filesystems:

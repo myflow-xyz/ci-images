@@ -345,11 +345,13 @@ class Gate:
             raise GateError(4, "job registration cannot be opened safely") from error
 
     @contextlib.contextmanager
-    def job(self, wait_seconds=1):
+    def job(self, wait_seconds=1, participant=None):
         deadline = self._deadline(wait_seconds)
         descriptor = None
         registration = None
         record = self._record("job", "active")
+        if participant is not None:
+            record["participant"] = participant
         path = self.directory / "jobs" / (record["id"] + ".json")
         while descriptor is None:
             with self._admission(deadline):

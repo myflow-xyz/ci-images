@@ -16,6 +16,7 @@ import tempfile
 import time
 import uuid
 
+import ci_docker_job
 from ci_docker_gate import Gate, GateError, LeaseServer
 from ci_docker_storage import measure
 from ci_utils.cleanup import reject_constant, strict_object
@@ -504,6 +505,12 @@ def arguments(argv):
     sub = parser.add_subparsers(dest="operation", required=True)
     sub.add_parser("init")
     sub.add_parser("status")
+    sub.add_parser("job-complete")
+    job = sub.add_parser("job")
+    job.add_argument("--participant", required=True)
+    job.add_argument("--wait", default="15m")
+    job.add_argument("--timeout", default="12h")
+    job.add_argument("command", nargs=argparse.REMAINDER)
     for operation in ("check", "plan", "apply"):
         command = sub.add_parser(operation)
         command.add_argument("--profile", choices=("daily", "weekly"), default="daily")
@@ -526,6 +533,8 @@ def main(argv=None):
                 2,
                 "the host adapter requires native Linux in the Docker daemon PID namespace",
             )
+        if args.operation == "job-complete":
+            return ci_docker_job.complete()
         settings, policy = load_settings(args.config)
         gate = Gate(settings["gate_directory"])
         if args.operation == "init":
@@ -539,6 +548,8 @@ def main(argv=None):
             return 0
         for signum in (signal.SIGTERM, signal.SIGINT):
             old_signals[signum] = signal.signal(signum, interrupted)
+        if args.operation == "job":
+            return ci_docker_job.run(settings, policy, args, emit)
         return maintain(
             settings, policy, args.operation, args.profile, duration(args.wait)
         )

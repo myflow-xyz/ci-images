@@ -1,5 +1,6 @@
 """T-24: host path verification and filesystem deduplication."""
 
+import os
 import pathlib
 import sys
 import tempfile
@@ -62,6 +63,15 @@ class HostStorageTests(unittest.TestCase):
     def test_unknown_store_layout_is_not_guessed(self):
         with self.assertRaises(GateError):
             measure({**self.info, "DriverStatus": None}, self.sources, "a" * 32)
+
+    @unittest.skipUnless(hasattr(os, "O_PATH"), "Linux host path handle")
+    def test_measurement_does_not_require_reading_storage_directory_contents(self):
+        path = self.path / "docker"
+        path.chmod(0)
+        try:
+            self.assertTrue(measure(self.info, self.sources, "a" * 32)["complete"])
+        finally:
+            path.chmod(0o700)
 
 
 if __name__ == "__main__":

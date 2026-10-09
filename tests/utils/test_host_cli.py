@@ -152,6 +152,94 @@ class HostCLITests(unittest.TestCase):
         result, _ = self.invoke("apply")
         self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
 
+    def job_program(self, code=0, complete=True, background=False):
+        return "\n".join(
+            [
+                "import subprocess, sys",
+                (
+                    "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(2)'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)"
+                    if background
+                    else ""
+                ),
+                (
+                    f"subprocess.run([sys.executable, '-B', {str(ROOT / 'scripts/ci-docker-maintenance')!r}, 'job-complete'], check=True)"
+                    if complete
+                    else ""
+                ),
+                f"sys.exit({code})",
+            ]
+        )
+
+    def test_job_result_and_lifecycle_completion_are_independent(self):
+        self.policy["pressure"] = {"reserve_bytes": 1}
+        self.save()
+        result, events = self.invoke(
+            "job",
+            "--participant",
+            "test-runner",
+            "--",
+            sys.executable,
+            "-c",
+            self.job_program(code=1),
+        )
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertEqual(Gate(self.root / "gate").status()["jobs"], [])
+        self.assertTrue(events[-1]["completion_known"])
+        self.assertEqual(events[-1]["job_exit_code"], 1)
+
+    def test_job_without_completion_receipt_blocks_later_admission(self):
+        self.policy["pressure"] = {"reserve_bytes": 1}
+        self.save()
+        result, _ = self.invoke(
+            "job",
+            "--participant",
+            "test-runner",
+            "--",
+            sys.executable,
+            "-c",
+            self.job_program(complete=False),
+        )
+        self.assertEqual(result.returncode, 6, result.stdout + result.stderr)
+        with (
+            self.assertRaises(GateError),
+            Gate(self.root / "gate").job(wait_seconds=0.02),
+        ):
+            self.fail("missing completion receipt reopened admission")
+
+    def test_background_client_prevents_completion_even_with_receipt(self):
+        self.policy["pressure"] = {"reserve_bytes": 1}
+        self.save()
+        result, _ = self.invoke(
+            "job",
+            "--participant",
+            "test-runner",
+            "--",
+            sys.executable,
+            "-c",
+            self.job_program(background=True),
+        )
+        self.assertEqual(result.returncode, 6, result.stdout + result.stderr)
+        self.assertEqual(
+            Gate(self.root / "gate").status()["jobs"][0]["phase"], "uncertain"
+        )
+
+    def test_insufficient_capacity_blocks_job_before_its_command(self):
+        self.policy["pressure"] = {"reserve_bytes": 2**63 - 1}
+        self.save()
+        marker = self.root / "job-started"
+        result, _ = self.invoke(
+            "job",
+            "--participant",
+            "test-runner",
+            "--",
+            sys.executable,
+            "-c",
+            f"open({str(marker)!r}, 'w').close()",
+        )
+        self.assertEqual(result.returncode, 4, result.stdout + result.stderr)
+        self.assertFalse(marker.exists())
+        self.assertEqual(Gate(self.root / "gate").status()["jobs"], [])
+
 
 if __name__ == "__main__":
     unittest.main()
