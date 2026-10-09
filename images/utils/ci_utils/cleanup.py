@@ -13,6 +13,7 @@ import sys
 import time
 import uuid
 
+from .cache import BuildCache
 from .engine import APIError, Engine, Failure
 from .policy import (
     IMAGE_ID,
@@ -365,22 +366,20 @@ def main(argv=None):
         )
         if args.operation == "apply":
             raise Failure(4, "apply requires the trusted host integration")
-        if policy["cache"]["mode"] != "off":
-            raise Failure(
-                2, "the configured cache adapter is unavailable in this build"
+        with BuildCache(engine, policy, info["ID"], report) as cache:
+            cache.preflight()
+            inventory = Inventory(engine, policy, report)
+            inventory.load()
+            report.emit(
+                "observations",
+                docker=accounting(engine),
+                filesystems=None,
+                cache=cache.observe(),
+                reclaimed_bytes=None,
             )
-        report.emit("cache", builder="default", mode="off", status="unmanaged")
-        inventory = Inventory(engine, policy, report)
-        inventory.load()
-        report.emit(
-            "observations",
-            docker=accounting(engine),
-            filesystems=None,
-            cache=None,
-            reclaimed_bytes=None,
-        )
-        if args.operation == "plan":
-            plan(inventory, now, args.profile, report)
+            if args.operation == "plan":
+                plan(inventory, now, args.profile, report)
+                cache.plan(now)
     except InvalidPolicy as error:
         code = 2
         report.emit("error", message=str(error), exit_code=code)

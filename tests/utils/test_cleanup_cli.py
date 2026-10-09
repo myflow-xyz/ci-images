@@ -9,6 +9,7 @@ import tempfile
 import unittest
 
 from api_fixture import APIFixture, daemon_routes
+from cache_fixture import CacheTools
 from test_policy import CID, IID, NID, container, image, network
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -166,6 +167,38 @@ class CleanupCLITests(unittest.TestCase):
             accounting = next(e for e in events if e["event"] == "observations")
             self.assertIsNone(accounting["docker"])
             self.assertIsNone(accounting["filesystems"])
+
+    def test_cache_capability_failure_precedes_all_resource_mutations(self):
+        with CacheTools() as tools, APIFixture(routes()) as api:
+            tools.state["capabilities"]["gc_space_filters"] = False
+            tools.save()
+            result, events = self.invoke(
+                api,
+                config={"cache": {"mode": "scheduled"}},
+                env={"PATH": str(tools.path)},
+            )
+            self.assertEqual(result.returncode, 2, result.stderr)
+            self.assertEqual(events[-1]["exit_code"], 2)
+            self.assertFalse(any(method == "DELETE" for method, path in api.requests))
+            self.assertFalse(
+                any("prune" in call and "--help" not in call for call in tools.calls())
+            )
+
+    def test_cache_plan_reports_budget_limitations_without_pruning(self):
+        with CacheTools() as tools, APIFixture(routes()) as api:
+            result, events = self.invoke(
+                api,
+                config={"cache": {"mode": "scheduled"}},
+                env={"PATH": str(tools.path)},
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            planned = next(event for event in events if event["event"] == "cache_plan")
+            self.assertTrue(planned["budget_may_remove_recent_records"])
+            self.assertFalse(planned["exact_native_candidates"])
+            self.assertIsNone(planned["exact_reclaimed_bytes"])
+            self.assertFalse(
+                any("prune" in call and "--help" not in call for call in tools.calls())
+            )
 
 
 if __name__ == "__main__":
