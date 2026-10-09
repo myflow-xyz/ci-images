@@ -5,10 +5,10 @@ set -euo pipefail
 target=${1:-all}
 
 case "$target" in
-all | base | go | node | vite | playwright | postgres) ;;
+all | base | go | node | vite | playwright | postgres | utils) ;;
 *)
 	printf \
-		'usage: %s [all|base|go|node|vite|playwright|postgres]\n' \
+		'usage: %s [all|base|go|node|vite|playwright|postgres|utils]\n' \
 		"$0" \
 		>&2
 	exit 64
@@ -37,7 +37,7 @@ scan_image() {
 		"$image"
 }
 
-names=(base go node vite playwright postgres)
+names=(base go node vite playwright postgres utils)
 scan_status=0
 
 for name in "${names[@]}"; do

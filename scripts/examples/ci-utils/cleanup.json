@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "endpoint": "unix:///var/run/docker.sock",
+  "expected_daemon_id": "REPLACE_WITH_DAEMON_ID",
+  "image_scope": {
+    "mode": "allowlist",
+    "repositories": [],
+    "references": [],
+    "ids": []
+  },
+  "protected": {
+    "container_ids": [],
+    "network_ids": [],
+    "image_ids": [],
+    "image_references": [],
+    "image_repositories": []
+  },
+  "cache": {
+    "mode": "scheduled",
+    "builder": "default",
+    "max_unused_age": "336h",
+    "max_used_space": "20gb",
+    "include_internal": false
+  },
+  "pressure": {
+    "used_percent": 80,
+    "critical_percent": 90,
+    "reserve_bytes": null,
+    "max_sample_age": "5m"
+  }
+}

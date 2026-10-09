@@ -12,6 +12,11 @@ on:
         description: Digest-pinned parent published by an upstream suite job.
         required: false
         type: string
+      go_image:
+        default: ""
+        description: Digest-pinned ci-go used only to build utility helpers.
+        required: false
+        type: string
     outputs:
       record:
         description: Validated JSON record for the published candidate.
@@ -69,11 +74,13 @@ jobs:
           IMAGE: ${{ inputs.image }}
           OUTPUT_FILE: ${{ runner.temp }}/published-image.json
           PARENT_IMAGE: ${{ inputs.parent_image }}
+          GO_IMAGE: ${{ inputs.go_image }}
         run: |
           .github/scripts/publish-image.sh \
             "$IMAGE" \
             "$OUTPUT_FILE" \
-            "$PARENT_IMAGE"
+            "$PARENT_IMAGE" \
+            "$GO_IMAGE"
 
       - name: Upload platform record
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

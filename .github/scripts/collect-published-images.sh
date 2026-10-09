@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-if [[ $# -ne 7 ]]; then
-	printf 'usage: %s <output-json> <six-image-records>\n' "$0" >&2
+if [[ $# -ne 8 ]]; then
+	printf 'usage: %s <output-json> <seven-image-records>\n' "$0" >&2
 	exit 64
 fi
 
@@ -14,13 +14,14 @@ printf '%s\n' "$@" |
 	jq --slurp --exit-status '
 		if (
 			type == "array" and
-			length == 6 and
+			length == 7 and
 			([.[].name] | sort) == [
 				"base",
 				"go",
 				"node",
 				"playwright",
 				"postgres",
+				"utils",
 				"vite"
 			] and
 			([

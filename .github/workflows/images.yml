@@ -51,6 +51,18 @@ jobs:
           tests/static.sh
           git diff --check
 
+      - name: Verify utility policy and host protocol
+        run: sudo python3 -B -m unittest discover -s tests/utils -p 'test_*.py'
+
+      - name: Verify systemd example syntax
+        run: |
+          unit_directory=$(mktemp -d)
+          trap 'rm -rf "$unit_directory"' EXIT
+          cp scripts/examples/ci-utils/*.service scripts/examples/ci-utils/*.timer "$unit_directory/"
+          sed -i "s|/usr/local/libexec/ci-utils/ci-docker-maintenance|$GITHUB_WORKSPACE/scripts/ci-docker-maintenance|" \
+            "$unit_directory/ci-docker-maintenance@.service"
+          systemd-analyze verify "$unit_directory"/*.service "$unit_directory"/*.timer
+
       - name: Verify documentation
         run: |
           npm ci \
@@ -137,6 +149,9 @@ jobs:
               ! git diff --quiet "$diff_range" -- \
                 .github/scripts \
                 .github/workflows \
+                scripts/ci-docker-maintenance \
+                'scripts/ci_docker_*.py' \
+                scripts/examples/ci-utils \
                 tests; then
               smoke_changed=true
             fi
@@ -182,10 +197,25 @@ jobs:
       - name: Run native image smoke tests
         run: tests/smoke-local.sh all
 
+      - name: Verify utility policy and host protocol fixtures
+        run: |
+          docker run --rm --pull=never --network=none --read-only \
+            --user=0 --cap-drop=ALL --security-opt=no-new-privileges \
+            --env TMPDIR=/tmp \
+            --tmpfs /tmp:rw,exec,nosuid,nodev,size=64m,mode=1777 \
+            --volume "$GITHUB_WORKSPACE:/workspace:ro" \
+            --workdir /workspace ci-base:test \
+            python3 -B -m unittest discover -s tests/utils -p 'test_*.py'
+
       - name: Verify non-root Compose fixtures and owned cleanup
         env:
           CI_IMAGES_DOCKER_SOCKET: /var/run/docker.sock
         run: tests/docker-integration.sh
+
+      - name: Verify guarded cleanup on a disposable daemon
+        run: |
+          tests/utils-docker.sh
+          CI_UTILS_TEST_IMAGE_STORE=classic tests/utils-docker.sh
 
       - name: Run image-hosted policy checks
         run: |
@@ -235,6 +265,20 @@ jobs:
     with:
       image: go
       parent_image: ${{ needs.publish-base.outputs.reference }}
+
+  publish-utils:
+    name: Publish candidate (utils)
+    needs:
+      - publish-base
+      - publish-go
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish-image.yml
+    with:
+      image: utils
+      parent_image: ${{ needs.publish-base.outputs.reference }}
+      go_image: ${{ needs.publish-go.outputs.reference }}
 
   publish-node:
     name: Publish candidate (node)
@@ -296,6 +340,7 @@ jobs:
       - publish-vite
       - publish-playwright
       - publish-postgres
+      - publish-utils
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -319,6 +364,7 @@ jobs:
           PLAYWRIGHT_RECORD: ${{ needs.publish-playwright.outputs.record }}
           POSTGRES_RECORD: ${{ needs.publish-postgres.outputs.record }}
           VITE_RECORD: ${{ needs.publish-vite.outputs.record }}
+          UTILS_RECORD: ${{ needs.publish-utils.outputs.record }}
         run: |
           .github/scripts/collect-published-images.sh \
             "$OUTPUT_FILE" \
@@ -327,7 +373,8 @@ jobs:
             "$NODE_RECORD" \
             "$VITE_RECORD" \
             "$PLAYWRIGHT_RECORD" \
-            "$POSTGRES_RECORD"
+            "$POSTGRES_RECORD" \
+            "$UTILS_RECORD"
           base_image=$(
             jq --exit-status --raw-output '
               map(select(.name == "base")) |

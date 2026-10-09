@@ -8,6 +8,18 @@ reviewed snapshot are intentionally omitted. The
 remain authoritative for source revisions, dependency overrides, package
 revisions, checksums, and upstream image digests.
 
+## `ci-utils`
+
+The runtime inherits `ci-base`. Buildx and the capability helper reuse the
+existing `ci-go` toolchain; Go is not installed in the utility runtime.
+
+| Component | Version |
+| --- | --- |
+| `Docker Buildx` | `0.38.0` |
+
+Cleanup and its internal capability helper are repository-owned commands tied
+to the suite source revision, with no independent release stream.
+
 ## `ci-base`
 
 | Component | Version |
