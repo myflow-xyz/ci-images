@@ -24,8 +24,8 @@ class CacheTools:
             "records": [
                 {
                     "ID": "old",
-                    "Size": "512",
-                    "Reclaimable": True,
+                    "Size": 512,
+                    "InUse": False,
                     "Shared": False,
                     "Type": "regular",
                     "LastUsedAt": "2026-01-01T00:00:00Z",
@@ -55,7 +55,7 @@ elif "inspect" in args:
     print("Name: default\\nDriver: " + state["driver"] + "\\n\\nNodes:\\nName: default\\nEndpoint: default\\nStatus: running\\nBuildKit version: v0.29.0")
 elif "du" in args:
     for record in state["records"]:
-        print(json.dumps(record))
+        print(json.dumps({{**record, "Size": "512B", "LastUsedAt": "9 months ago", "Reclaimable": not record["InUse"]}}))
 elif "prune" in args:
     state["prune_count"] += 1
     state["records"] = state["after_budget"] if "--max-used-space" in args else state["after_age"]
@@ -72,6 +72,14 @@ else:
 
     def save(self):
         self.state_path.write_text(json.dumps(self.state))
+
+    def routes(self):
+        return {
+            ("GET", "/v1.48/system/df?type=build-cache"): lambda: (
+                200,
+                {"BuildCache": json.loads(self.state_path.read_text())["records"]},
+            )
+        }
 
     def calls(self):
         return (

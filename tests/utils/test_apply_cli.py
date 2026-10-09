@@ -325,6 +325,38 @@ class ApplyCLITests(unittest.TestCase):
             self.assertFalse(events[-1]["completion_known"])
             self.assertEqual(len([r for r in api.requests if r[0] == "DELETE"]), 1)
 
+    def test_scheduled_cache_uses_engine_accounting_before_and_after_prune(self):
+        with StatefulAPI() as api, CacheTools() as tools:
+            api.routes.update(tools.routes())
+            code, events, stderr = self.invoke(
+                api,
+                config={"cache": {"mode": "scheduled"}},
+                environ={"PATH": str(tools.path)},
+            )
+            self.assertEqual(code, 0, stderr)
+            self.assertTrue(any(method == "DELETE" for method, _ in api.requests))
+            self.assertGreaterEqual(
+                api.requests.count(("GET", "/v1.48/system/df?type=build-cache")), 2
+            )
+            budget = next(e for e in events if e["event"] == "cache_budget")
+            self.assertEqual(budget["remaining_bytes"], 0)
+            self.assertEqual(budget["status"], "achieved")
+            self.assertFalse(any("du" in call for call in tools.calls()))
+
+    def test_missing_cache_accounting_prevents_every_resource_deletion(self):
+        with StatefulAPI() as api, CacheTools() as tools:
+            api.routes[("GET", "/v1.48/system/df?type=build-cache")] = (200, {})
+            code, _, stderr = self.invoke(
+                api,
+                config={"cache": {"mode": "scheduled"}},
+                environ={"PATH": str(tools.path)},
+            )
+            self.assertEqual(code, 2, stderr)
+            self.assertFalse(any(method == "DELETE" for method, _ in api.requests))
+            self.assertFalse(
+                any("prune" in call and "--help" not in call for call in tools.calls())
+            )
+
     def test_cache_preflight_failure_prevents_every_resource_deletion(self):
         with StatefulAPI() as api, CacheTools() as tools:
             tools.state["capabilities"]["gc_space_filters"] = False

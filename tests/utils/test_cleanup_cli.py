@@ -196,7 +196,7 @@ class CleanupCLITests(unittest.TestCase):
             self.assertIsNone(accounting["filesystems"])
 
     def test_cache_capability_failure_precedes_all_resource_mutations(self):
-        with CacheTools() as tools, APIFixture(routes()) as api:
+        with CacheTools() as tools, APIFixture(routes() | tools.routes()) as api:
             tools.state["capabilities"]["gc_space_filters"] = False
             tools.save()
             result, events = self.invoke(
@@ -212,7 +212,7 @@ class CleanupCLITests(unittest.TestCase):
             )
 
     def test_cache_plan_reports_budget_limitations_without_pruning(self):
-        with CacheTools() as tools, APIFixture(routes()) as api:
+        with CacheTools() as tools, APIFixture(routes() | tools.routes()) as api:
             result, events = self.invoke(
                 api,
                 config={"cache": {"mode": "scheduled"}},
@@ -221,6 +221,8 @@ class CleanupCLITests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             planned = next(event for event in events if event["event"] == "cache_plan")
             self.assertTrue(planned["budget_may_remove_recent_records"])
+            self.assertEqual(planned["age_candidates"], 1)
+            self.assertIn(("GET", "/v1.48/system/df?type=build-cache"), api.requests)
             self.assertFalse(planned["exact_native_candidates"])
             self.assertIsNone(planned["exact_reclaimed_bytes"])
             self.assertFalse(

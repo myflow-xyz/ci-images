@@ -177,31 +177,30 @@ class BuildCache:
     def observe(self):
         if self.policy["mode"] == "off":
             return None
-        text = self._command(self._buildx("du", "--format=json"))
+        # Buildx du formats bytes and timestamps for display, even in JSON.
+        # Engine disk usage describes the same default docker-driver backend.
+        usage = self.engine.get("/system/df?type=build-cache")
         records = []
         seen = set()
         try:
-            for line in text.splitlines():
-                if not line.strip():
-                    continue
-                item = json.loads(line)
+            if not isinstance(usage, dict) or not isinstance(
+                usage.get("BuildCache"), list
+            ):
+                raise TypeError("indeterminate cache inventory")
+            for item in usage["BuildCache"]:
                 if (
                     not isinstance(item, dict)
                     or not isinstance(item.get("ID"), str)
                     or not re.fullmatch(r"[a-zA-Z0-9_-]{1,256}", item["ID"])
                     or item["ID"] in seen
-                    or type(item.get("Reclaimable")) is not bool
+                    or type(item.get("InUse")) is not bool
                     or type(item.get("Shared")) is not bool
                 ):
                     raise ValueError("indeterminate cache metadata")
                 size = item.get("Size")
-                if (
-                    not isinstance(size, str)
-                    or not re.fullmatch(r"\d{1,19}", size)
-                    or int(size) > 2**63 - 1
-                ):
+                if type(size) is not int or not 0 <= size <= 2**63 - 1:
                     raise ValueError("indeterminate cache size")
-                item["bytes"] = int(size)
+                item["bytes"] = size
                 records.append(item)
                 seen.add(item["ID"])
         except (ValueError, TypeError) as error:
@@ -215,13 +214,13 @@ class BuildCache:
                 item["bytes"] for item in records if item["Shared"]
             ),
             "records": len(records),
-            "reclaimable_records": sum(item["Reclaimable"] for item in records),
+            "reclaimable_records": sum(not item["InUse"] for item in records),
             "physical_reclaimed_bytes": None,
         }
 
     def _eligible(self, item):
         return (
-            item["Reclaimable"]
+            not item["InUse"]
             and item.get("Type")
             in (
                 "regular",
