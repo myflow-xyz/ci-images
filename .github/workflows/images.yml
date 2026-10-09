@@ -213,7 +213,9 @@ jobs:
         run: tests/docker-integration.sh
 
       - name: Verify guarded cleanup on a disposable daemon
-        run: tests/utils-docker.sh
+        run: |
+          tests/utils-docker.sh
+          CI_UTILS_TEST_IMAGE_STORE=classic tests/utils-docker.sh
 
       - name: Run image-hosted policy checks
         run: |

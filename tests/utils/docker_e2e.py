@@ -1,18 +1,21 @@
 """Real Docker/BuildKit tests; run only through tests/utils-docker.sh."""
 
 import datetime as dt
+import http.server
 import json
 import os
 import pathlib
 import signal
+import socketserver
 import subprocess
 import sys
+import threading
 import time
 import unittest
 import uuid
 
 sys.path.insert(0, "/workspace/images/utils")
-from ci_utils.engine import Engine
+from ci_utils.engine import Engine, UnixConnection
 
 ROOT = pathlib.Path("/run/ci-utils-test")
 SOCKET = "unix:///run/ci-utils-test/docker.sock"
@@ -46,6 +49,101 @@ def wait_for(predicate):
         time.sleep(0.05)
 
 
+class DelayedDeleteProxy:
+    """Hold one real deletion reply so the test can kill its host coordinator."""
+
+    def __init__(self, path, containers):
+        self.path = path
+        self.containers = containers
+        self.deleted = threading.Event()
+        self.release = threading.Event()
+        self.replied = threading.Event()
+        self.disconnect = False
+        self.mutations = []
+        fixture = self
+
+        class Server(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
+            daemon_threads = True
+
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def respond(self):
+                connection = UnixConnection(SOCKET[7:], 30)
+                delayed = False
+                try:
+                    body = self.rfile.read(int(self.headers.get("Content-Length", 0)))
+                    connection.request(
+                        self.command,
+                        self.path,
+                        body,
+                        {
+                            "Content-Type": self.headers.get(
+                                "Content-Type", "application/json"
+                            )
+                        },
+                    )
+                    response = connection.getresponse()
+                    data = response.read()
+                    if self.command == "DELETE":
+                        fixture.mutations.append(self.path)
+                        identifier = self.path.split("?")[0].rsplit("/", 1)[-1]
+                        if (
+                            identifier in fixture.containers
+                            and not fixture.deleted.is_set()
+                        ):
+                            delayed = True
+                            fixture.deleted.set()
+                            if not fixture.release.wait(15):
+                                raise TimeoutError(
+                                    "test did not release the completed deletion reply"
+                                )
+                            if fixture.disconnect:
+                                return
+                    self.send_response(response.status)
+                    for key, value in response.getheaders():
+                        if key.lower() not in (
+                            "content-length",
+                            "transfer-encoding",
+                            "connection",
+                        ):
+                            self.send_header(key, value)
+                    self.send_header("Content-Length", str(len(data)))
+                    self.send_header("Connection", "close")
+                    self.end_headers()
+                    if self.command != "HEAD":
+                        self.wfile.write(data)
+                except (BrokenPipeError, ConnectionResetError):
+                    # The client may be the process deliberately killed by the test.
+                    pass
+                finally:
+                    connection.close()
+                    if delayed:
+                        fixture.replied.set()
+
+            do_GET = respond
+            do_HEAD = respond
+            do_POST = respond
+            do_DELETE = respond
+
+            def log_message(self, *args):
+                pass
+
+        self.server = Server(str(path), Handler)
+        path.chmod(0o660)
+        self.thread = threading.Thread(
+            target=lambda: self.server.serve_forever(poll_interval=0.01), daemon=True
+        )
+
+    def __enter__(self):
+        self.thread.start()
+        return self
+
+    def __exit__(self, *args):
+        self.release.set()
+        self.server.shutdown()
+        self.server.server_close()
+        self.thread.join()
+
+
 class DockerE2E(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -60,11 +158,16 @@ class DockerE2E(unittest.TestCase):
                 "cleanup requires the fresh, explicitly identified disposable daemon"
             )
         cls.daemon = info["ID"]
+        cls.containerd_store = any(
+            row == ["driver-type", "io.containerd.snapshotter.v1"]
+            for row in info["DriverStatus"]
+        )
         print(
             json.dumps(
                 {
                     "fixture_engine": info["ServerVersion"],
                     "architecture": info["Architecture"],
+                    "storage_driver": info["Driver"],
                 }
             )
         )
@@ -152,6 +255,9 @@ class DockerE2E(unittest.TestCase):
             "check",
             expected=3,
         )
+        self.policy["expected_daemon_id"] = "wrong-daemon"
+        self.save()
+        self.host("check", expected=3)
 
     def test_owned_objects_protections_volumes_and_repeat(self):
         volume = docker("volume", "create", "retained-" + self.root.name)
@@ -206,6 +312,7 @@ class DockerE2E(unittest.TestCase):
         )
         time.sleep(2)
         plan = self.host("plan")
+        docker("pause", running)
         self.assertTrue(
             any(e.get("id") == owned and e.get("outcome") == "candidate" for e in plan)
         )
@@ -234,13 +341,14 @@ class DockerE2E(unittest.TestCase):
                 ),
                 "retained",
             )
+        docker("unpause", running)
         again = self.host("apply")
         self.assertFalse(any(e["event"] == "removed" for e in again))
         docker("stop", "--time", "1", running)
 
     def build(self, tag):
         context = self.root / tag
-        context.mkdir()
+        context.mkdir(exist_ok=True)
         (context / "Dockerfile").write_text("FROM scratch\nCOPY payload /payload\n")
         (context / "payload").write_bytes(os.urandom(1024 * 1024))
         reference = "ci-utils-test/" + self.root.name + ":" + tag
@@ -262,16 +370,54 @@ class DockerE2E(unittest.TestCase):
         keep_ref, keep = self.build("keep")
         alias = "ci-utils-test/rollback:" + self.root.name
         docker("tag", keep_ref, alias)
+        time.sleep(2)
+        self.host("apply", "--profile", "weekly")
+        self.assertTrue(
+            self.exists("image", eligible), "empty image scope deleted an image"
+        )
+        reservation = docker(
+            "create", "--pull=never", "--network=none", reference, "/payload"
+        )
+        docker("rm", reservation)
         self.policy["image_scope"] = {"ids": [eligible, keep]}
         self.policy["protected"]["image_references"] = [alias]
         self.save()
-        time.sleep(2)
         self.host("apply", "--profile", "daily")
         self.assertTrue(self.exists("image", reference))
         self.host("apply", "--profile", "weekly")
         self.assertFalse(self.exists("image", eligible))
         self.assertTrue(self.exists("image", keep))
         self.assertTrue(self.exists("image", IMAGE))
+
+    def test_dangling_images_preserve_existing_container_references(self):
+        if self.containerd_store:
+            self.skipTest(
+                "Docker's containerd store drops the old image metadata during tag replacement; the dangling-image fixture is qualified on classic overlay2"
+            )
+        reference, used = self.build("dangling-used")
+        reservation = docker(
+            "create", "--pull=never", "--network=none", reference, "/payload"
+        )
+        self.build("dangling-used")
+        _, unused = self.build("dangling-unused")
+        self.build("dangling-unused")
+        self.assertTrue(
+            self.exists("image", used),
+            f"retagging lost the fixture image before cleanup; container Image={docker('inspect', reservation, '--format', '{{.Image}}')}; original={used}",
+        )
+        self.assertTrue(
+            self.exists("image", unused),
+            "fixture has no unused dangling image before cleanup",
+        )
+        self.policy["image_scope"] = {"ids": [used, unused]}
+        self.save()
+        time.sleep(2)
+        self.host("apply")
+        self.assertTrue(self.exists("image", used))
+        self.assertFalse(self.exists("image", unused))
+        docker("rm", reservation)
+        self.host("apply")
+        self.assertFalse(self.exists("image", used))
 
     def test_cache_modes_age_then_budget_on_default_builder(self):
         reference, _ = self.build("cache")
@@ -354,6 +500,7 @@ class DockerE2E(unittest.TestCase):
 
     def test_compose_jobs_drain_before_maintenance_and_isolate_projects(self):
         compose = self.root / "compose.json"
+        external = docker("volume", "create", "external-" + self.root.name)
         compose.write_text(
             json.dumps(
                 {
@@ -362,10 +509,13 @@ class DockerE2E(unittest.TestCase):
                             "image": IMAGE,
                             "command": ["sleep", "300"],
                             "stop_grace_period": "1s",
-                            "volumes": ["data:/data"],
+                            "volumes": ["data:/data", "external:/external"],
                         }
                     },
-                    "volumes": {"data": {}},
+                    "volumes": {
+                        "data": {},
+                        "external": {"external": True, "name": external},
+                    },
                 }
             )
         )
@@ -413,6 +563,7 @@ subprocess.run([sys.executable, '-B', '/workspace/scripts/ci-docker-maintenance'
             (self.root / "1-release").touch()
             self.finish(jobs[1])
             self.finish(maintenance)
+            self.assertTrue(self.exists("volume", external))
         finally:
             for marker in markers:
                 (self.root / (marker.name + "-release")).touch()
@@ -456,6 +607,94 @@ os.kill(os.getppid(), signal.SIGKILL)
         self.host("reconcile", "--record-id", identifier, "--evidence", str(evidence))
         self.host("apply")
         self.assertEqual(list((self.root / "gate/jobs").glob("*.json")), [])
+
+    def test_capacity_refusal_precedes_job_start(self):
+        self.policy["pressure"]["reserve_bytes"] = 2**63 - 1
+        self.save()
+        marker = self.root / "must-not-start"
+        process = self.start_job(
+            "import pathlib,sys; pathlib.Path(sys.argv[1]).touch()", str(marker)
+        )
+        self.finish(process, 4)
+        self.assertFalse(marker.exists())
+        self.assertEqual(list((self.root / "gate/jobs").glob("*.json")), [])
+
+    def test_interrupted_deletion_stops_later_mutations(self):
+        for fault in ("crash", "cancel", "timeout", "disconnect"):
+            with self.subTest(fault=fault):
+                self.interrupt_deletion(fault)
+
+    def interrupt_deletion(self, fault):
+        self.policy["protected"]["container_ids"] = [
+            c["Id"] for c in Engine(SOCKET).get("/containers/json?all=true")
+        ]
+        candidates = {self.create("--label", OWNED) for _ in range(3)}
+        time.sleep(2)
+        with DelayedDeleteProxy(self.root / f"{fault}.sock", candidates) as proxy:
+            self.policy["endpoint"] = "unix://" + str(proxy.path)
+            self.policy["timeouts"] = {"operation": "2s", "run": "30s"}
+            self.save()
+            wrapper = subprocess.Popen(
+                self.host_args("apply"),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            try:
+                self.assertTrue(
+                    proxy.deleted.wait(15), "no real deletion reached the daemon"
+                )
+                if fault == "crash":
+                    wrapper.kill()
+                elif fault == "cancel":
+                    wrapper.terminate()
+                elif fault == "disconnect":
+                    proxy.disconnect = True
+                    proxy.release.set()
+                self.finish(wrapper, -signal.SIGKILL if fault == "crash" else 6)
+            finally:
+                proxy.release.set()
+                if wrapper.poll() is None:
+                    wrapper.terminate()
+                    wrapper.communicate(timeout=10)
+            self.assertTrue(
+                proxy.replied.wait(5), "proxy deletion handler remains active"
+            )
+            record = json.loads((self.root / "gate/maintenance.json").read_text())
+            child = record["container_id"]
+            wait_for(
+                lambda: (
+                    docker("inspect", child, "--format", "{{.State.Running}}")
+                    == "false"
+                )
+            )
+            self.assertEqual(
+                docker("inspect", child, "--format", "{{.State.ExitCode}}"), "6"
+            )
+            self.assertEqual(len(proxy.mutations), 1)
+            self.assertEqual(sum(self.exists("container", c) for c in candidates), 2)
+            self.host("apply", "--wait", "1s", expected=4)
+            self.finish(self.start_job("raise SystemExit('must not start')"), 4)
+            evidence = self.root / "recovery.json"
+            evidence.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "record_id": record["id"],
+                        "daemon_id": self.daemon,
+                        "observed_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+                        "observer": "isolated-test-controller",
+                        "evidence": "Proxy received the daemon deletion result; maintenance process exited 6 with PID 0; exactly one deletion completed and no daemon requests remain in flight.",
+                        "participants_drained": True,
+                        "daemon_operations_complete": True,
+                    }
+                )
+            )
+            self.host(
+                "reconcile", "--record-id", record["id"], "--evidence", str(evidence)
+            )
+            self.host("apply")
+            self.assertFalse(any(self.exists("container", c) for c in candidates))
 
 
 if __name__ == "__main__":

@@ -5,6 +5,15 @@ set -euo pipefail
 
 repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 dind_image=docker.io/library/docker:29.9.0-dind@sha256:0b6d18a4a222e71c88be6034926b4f6cde2fc33c2218643d03ccfddc65995470
+image_store=${CI_UTILS_TEST_IMAGE_STORE:-containerd}
+case "$image_store" in
+containerd) snapshotter=true ;;
+classic) snapshotter=false ;;
+*)
+	printf 'test image store must be containerd or classic\n' >&2
+	exit 2
+	;;
+esac
 fixture="ci-utils-e2e-$(python3 -c 'import uuid; print(uuid.uuid4().hex)')"
 socket=unix:///run/ci-utils-test/docker.sock
 image_id=$(docker image inspect ci-utils:test --format '{{.Id}}')
@@ -35,7 +44,7 @@ docker run --detach --pull=never --privileged --network=none \
 	--env DOCKER_TLS_CERTDIR= \
 	--mount "type=volume,src=${fixture}-run,dst=/run/ci-utils-test" \
 	--mount "type=volume,src=${fixture}-data,dst=/var/lib/docker" \
-	"$dind_image" dockerd --host="$socket" --label "ci-utils-test=${fixture}" >/dev/null
+	"$dind_image" dockerd --host="$socket" --feature "containerd-snapshotter=${snapshotter}" --label "ci-utils-test=${fixture}" >/dev/null
 
 ready=false
 for ((attempt = 0; attempt < 60; attempt++)); do
@@ -74,4 +83,4 @@ docker run --rm --init --pull=never --network=none --user=0 \
 	--mount "type=bind,src=${repository_root},dst=/workspace,readonly" \
 	--env "CI_UTILS_TEST_FIXTURE=${fixture}" --env "CI_UTILS_TEST_IMAGE=${imported_image}" \
 	--env "CI_UTILS_OUTER_DAEMON=${outer_daemon}" \
-	"$image_id" python3 -B /workspace/tests/utils/docker_e2e.py
+	"$image_id" python3 -B /workspace/tests/utils/docker_e2e.py "$@"

@@ -128,6 +128,11 @@ The harness creates and removes its own test containers and volumes. Only the
 test daemon is privileged; it receives no host Docker socket or host-root mount.
 These tests do not replace qualification of the runner's complete job lifecycle.
 
+CI runs both the default containerd image store and
+`CI_UTILS_TEST_IMAGE_STORE=classic`. The dangling-image fixture uses classic
+`overlay2`: the containerd store removes the fixture's old image metadata during
+tag replacement, before cleanup runs. Other cases run against both stores.
+
 After the rollout gates below pass, review and install the
 [systemd examples](../scripts/examples/ci-utils/). They use the same adapter for
 daily and weekly profiles. Adjust the selected Docker service/socket and the
