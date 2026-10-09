@@ -138,7 +138,7 @@ class Engine:
         if (
             not isinstance(info, dict)
             or not isinstance(info.get("ID"), str)
-            or not info["ID"]
+            or not re.fullmatch(r"[\w:.-]{1,256}", info["ID"], flags=re.ASCII)
         ):
             raise Failure(3, "cannot establish daemon identity")
         if expected is not None and info["ID"] != expected:

@@ -12,6 +12,21 @@ from ci_utils.engine import APIError, Engine, Failure
 
 
 class EngineAPITests(unittest.TestCase):
+    def test_daemon_identity_is_bounded_valid_data(self):
+        for identifier in (
+            None,
+            "",
+            "has whitespace",
+            "x" * 257,
+            "name\nlog-injection",
+        ):
+            routes = daemon_routes()
+            routes[("GET", "/v1.48/info")][1]["ID"] = identifier
+            with APIFixture(routes) as api:
+                with self.assertRaises(Failure) as raised:
+                    Engine(api.endpoint).preflight()
+                self.assertEqual(raised.exception.code, 3)
+
     def test_preflight_validates_local_daemon_without_mutation(self):
         with APIFixture(daemon_routes()) as api:
             info = Engine(api.endpoint).preflight("fixture-daemon")
