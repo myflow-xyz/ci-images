@@ -12,6 +12,7 @@ overview.
 - [Using the CI images](usage.md), including
   [self-hosted bind-mount permissions](usage.md#self-hosted-bind-mount-permissions)
 - [Releasing the CI images](release.md)
+- [Guarded Docker maintenance and recovery](maintenance.md)
 
 ## Image contracts
 
@@ -21,6 +22,7 @@ overview.
 - [`ci-vite`](images/vite.md)
 - [`ci-playwright`](images/playwright.md)
 - [`ci-postgres`](images/postgres.md)
+- [`ci-utils`](images/utils.md)
 
 ## Source authorities
 

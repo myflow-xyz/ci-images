@@ -12,7 +12,7 @@ output_file=$2
 shift 2
 
 case "$name" in
-base | go | node | playwright | postgres | vite) ;;
+base | go | node | playwright | postgres | vite | utils) ;;
 *)
 	printf 'unsupported image: %s\n' "$name" >&2
 	exit 64

@@ -7,10 +7,10 @@ manifest="${repository_root}/manifests/versions.json"
 target=${1:-all}
 
 case "$target" in
-all | base | go | node | vite | playwright | postgres) ;;
+all | base | go | node | vite | playwright | postgres | utils) ;;
 *)
 	printf \
-		'usage: %s [all|base|go|node|vite|playwright|postgres]\n' \
+		'usage: %s [all|base|go|node|vite|playwright|postgres|utils]\n' \
 		"$0" \
 		>&2
 	exit 64
@@ -95,6 +95,18 @@ if [[ $target == all || $target == base ]]; then
 		--user 0:0 \
 		--env "EXPECTED_CI_UID=$(json '.ci_user.uid')" \
 		--env "EXPECTED_CI_GID=$(json '.ci_user.gid')"
+fi
+
+if [[ $target == all || $target == utils ]]; then
+	docker run --rm --pull=never --network=none --read-only \
+		--cap-drop=ALL --security-opt=no-new-privileges ci-utils:test |
+		grep --fixed-strings ci-docker-cleanup >/dev/null
+	smoke_script ci-utils:test utils \
+		--network=none --read-only --cap-drop=ALL --security-opt=no-new-privileges \
+		--tmpfs /var/tmp:rw,noexec,nosuid,nodev,size=32m,mode=1777 \
+		--env "EXPECTED_CI_UID=$(json '.ci_user.uid')" \
+		--env "EXPECTED_CI_GID=$(json '.ci_user.gid')" \
+		--env "EXPECTED_BUILDX_VERSION=$(json '.tools.utils.buildx.version')"
 fi
 
 if [[ $target == all || $target == go ]]; then
@@ -202,15 +214,20 @@ if [[ $target == all || $target == postgres ]]; then
 fi
 
 if [[ $target == all ]]; then
-	docker_targets=(base go node vite playwright)
+	docker_targets=(base go node vite playwright utils)
 elif [[ $target != postgres ]]; then
 	docker_targets=("$target")
 else
 	docker_targets=()
 fi
 for image in "${docker_targets[@]}"; do
+	buildx_environment=()
+	if [[ $image == utils ]]; then
+		buildx_environment=(--env "EXPECTED_BUILDX_VERSION=$(json '.tools.utils.buildx.version')")
+	fi
 	smoke_script "ci-${image}:test" docker \
 		--network none \
+		"${buildx_environment[@]}" \
 		--env "EXPECTED_DOCKER_VERSION=$(json '.tools.base.docker.version')" \
 		--env "EXPECTED_COMPOSE_VERSION=$(json '.tools.base.compose.version')"
 done

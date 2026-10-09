@@ -48,6 +48,10 @@
     "postgres": {
       "name": "ghcr.io/myflow-xyz/ci-postgres",
       "parent": "upstream_images.pgvector"
+    },
+    "utils": {
+      "name": "ghcr.io/myflow-xyz/ci-utils",
+      "parent": "images.base"
     }
   },
   "tools": {
@@ -392,6 +396,17 @@
         "dependency_overrides": {
           "github.com/moby/sys/user": "v0.4.1",
           "golang.org/x/sys": "v0.48.0"
+        }
+      }
+    },
+    "utils": {
+      "buildx": {
+        "version": "0.38.0",
+        "source": "https://github.com/docker/buildx",
+        "commit": "0dbe87f36ed472fe36b6796c3f70b4210a731fc5",
+        "module_sum": "h1:LKfznm3wgm0hYaQDkiuoK9hyDS1GU/GChnXYsBr3A00=",
+        "dependency_overrides": {
+          "github.com/moby/go-archive": "v0.3.0"
         }
       }
     }

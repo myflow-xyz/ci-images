@@ -44,6 +44,13 @@ done
 
 docker buildx build \
 	--call=check \
+	--file "${repository_root}/images/utils/Dockerfile" \
+	--build-arg "BASE_IMAGE=${debian_image}" \
+	--build-arg "GO_IMAGE=${debian_image}" \
+	"$repository_root"
+
+docker buildx build \
+	--call=check \
 	--file "${repository_root}/images/postgres/Dockerfile" \
 	--build-arg "PGVECTOR_IMAGE=${pgvector_image}" \
 	"$repository_root"
