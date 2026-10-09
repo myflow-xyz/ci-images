@@ -7,7 +7,11 @@ import json
 import math
 import os
 import pathlib
+import socket
+import socketserver
 import stat
+import struct
+import threading
 import time
 import uuid
 
@@ -16,6 +20,122 @@ class GateError(Exception):
     def __init__(self, code, message):
         super().__init__(message)
         self.code = code
+
+
+class LeaseServer:
+    def __init__(
+        self, gate, lease, profile, image_digest, timeout=900, client_pid=None
+    ):
+        self.path = gate.directory / "lease.sock"
+        self.gate = gate
+        self.lease = lease
+        self.deadline = Gate._deadline(timeout)
+        if client_pid is not None and (type(client_pid) is not int or client_pid <= 0):
+            raise GateError(2, "cleanup process identity must be a positive PID")
+        self.client_pid = client_pid
+        self.expected = {
+            "protocol_version": 1,
+            "run_id": lease.id,
+            "daemon_id": lease.record["daemon_id"],
+            "policy_hash": lease.record["policy_hash"],
+            "profile": profile,
+            "image_digest": image_digest,
+        }
+
+    def __enter__(self):
+        if not hasattr(socket, "SO_PEERCRED"):
+            raise GateError(2, "lease process binding requires a Linux host")
+        if len(os.fsencode(self.path)) >= 100:
+            raise GateError(2, "gate path is too long for a portable Unix socket")
+        self.gate._validate()
+        if self.path.exists() or self.path.is_symlink():
+            metadata = self.path.lstat()
+            if not stat.S_ISSOCK(metadata.st_mode) or metadata.st_uid != os.geteuid():
+                raise GateError(4, "refusing to replace an untrusted lease socket")
+            self.path.unlink()
+        owner = self
+
+        class Server(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
+            daemon_threads = True
+
+        class Handler(socketserver.StreamRequestHandler):
+            def handle(self):
+                self.request.settimeout(1)
+                active = False
+                pending = False
+                try:
+                    data = self.rfile.readline(4097)
+                    if len(data) > 4096 or not data.endswith(b"\n"):
+                        raise ValueError("lease request limit")
+                    request = json.loads(data)
+                    if (
+                        isinstance(request, dict)
+                        and type(request.get("protocol_version")) is int
+                        and request == owner.expected
+                    ):
+                        owner.gate._validate()
+                        state = owner.gate._read(
+                            owner.gate.directory / "maintenance.json"
+                        )
+                        held = os.fstat(owner.lease.descriptor)
+                        lock = (owner.gate.directory / "activity.lock").stat()
+                        active = (
+                            not owner.lease.known
+                            and time.monotonic() < owner.deadline
+                            and state is not None
+                            and state["id"] == owner.lease.id
+                            and state["phase"] == "active"
+                            and held.st_ino == lock.st_ino
+                            and held.st_dev == lock.st_dev
+                        )
+                        pending = active and owner.client_pid is None
+                        peer_pid, _, _ = struct.unpack(
+                            "3i",
+                            self.request.getsockopt(
+                                socket.SOL_SOCKET,
+                                socket.SO_PEERCRED,
+                                struct.calcsize("3i"),
+                            ),
+                        )
+                        active = active and not pending and peer_pid == owner.client_pid
+                except (OSError, ValueError, GateError):
+                    active = False
+                try:
+                    self.wfile.write(
+                        (
+                            json.dumps(
+                                {**owner.expected, "active": active, "pending": pending}
+                            )
+                            + "\n"
+                        ).encode()
+                    )
+                except OSError:
+                    pass
+
+        self.server = Server(str(self.path), Handler)
+        try:
+            self.path.chmod(0o660)
+            self.thread = threading.Thread(
+                target=lambda: self.server.serve_forever(poll_interval=0.01),
+                daemon=True,
+            )
+            self.thread.start()
+        except BaseException:
+            self.server.server_close()
+            self.path.unlink(missing_ok=True)
+            raise
+        return self
+
+    def bind_client(self, pid):
+        if type(pid) is not int or pid <= 0 or self.client_pid is not None:
+            raise GateError(4, "a lease must bind exactly one cleanup process")
+        self.client_pid = pid
+
+    def __exit__(self, *args):
+        self.server.shutdown()
+        self.server.server_close()
+        self.thread.join()
+        self.path.unlink(missing_ok=True)
 
 
 class Lease:
