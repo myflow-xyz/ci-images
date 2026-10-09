@@ -14,6 +14,7 @@ import sys
 import time
 import uuid
 
+from . import storage
 from .cache import BuildCache
 from .engine import APIError, Engine, Failure
 from .guard import LeaseGuard
@@ -133,12 +134,22 @@ class Report:
 
 
 class Inventory:
-    def __init__(self, engine, policy, report):
+    def __init__(self, engine, policy, report, observation=None):
         self.engine = engine
         self.policy = policy
         self.report = report
         self.protected_images = set(policy["protected"]["image_ids"])
         self.objects = {}
+        self.observation = observation
+
+    def pressure(self):
+        return storage.evaluate(
+            self.observation,
+            self.policy,
+            self.report.context["daemon_id"],
+            self.report.run_id,
+            dt.datetime.now(dt.timezone.utc),
+        )
 
     def load(self):
         for kind in ("containers", "networks", "images"):
@@ -278,12 +289,15 @@ def is_tagged(item):
     )
 
 
-def image_profile(item, policy, profile):
+def image_profile(item, policy, profile, pressure):
     tagged = is_tagged(item)
     if tagged and (profile != "weekly" or policy["tagged_image_trigger"] == "disabled"):
         return Decision(False, "tagged-image-profile-disabled")
     if tagged and policy["tagged_image_trigger"] == "pressure":
-        return Decision(False, "pressure-observation-unavailable")
+        if pressure["pressured"] is None:
+            return Decision(False, "pressure-observation-unavailable")
+        if not pressure["pressured"]:
+            return Decision(False, "below-pressure-threshold")
     return None
 
 
@@ -314,7 +328,7 @@ def plan(inventory, now, profile, report):
         )
     for item in inventory.objects["images"]:
         inventory.engine.remaining()
-        disabled = image_profile(item, policy, profile)
+        disabled = image_profile(item, policy, profile, inventory.pressure())
         choice = image_decision(
             item, policy, now, image_refs, inventory.protected_images
         )
@@ -384,7 +398,9 @@ def apply(inventory, cache, guard, now, profile, report):
                                 inventory.protected_images,
                             )
                             if choice.eligible:
-                                disabled = image_profile(item, policy, profile)
+                                disabled = image_profile(
+                                    item, policy, profile, inventory.pressure()
+                                )
                                 if disabled:
                                     choice = disabled
                                 elif is_tagged(item) != (stage == "tagged-images"):
@@ -461,6 +477,7 @@ def arguments(argv):
     parser.add_argument("--expected-daemon-id")
     parser.add_argument("--run-id")
     parser.add_argument("--lease-socket")
+    parser.add_argument("--observations")
     for name in (
         "container-min-age",
         "network-min-age",
@@ -501,7 +518,15 @@ def main(argv=None):
             key: value
             for key, value in vars(args).items()
             if value is not None
-            and key not in ("operation", "config", "profile", "run_id", "lease_socket")
+            and key
+            not in (
+                "operation",
+                "config",
+                "profile",
+                "run_id",
+                "lease_socket",
+                "observations",
+            )
         }
         policy = load_policy(args.config, os.environ, overrides)
         for key in (
@@ -554,12 +579,24 @@ def main(argv=None):
             guard.check()
         with BuildCache(engine, policy, info["ID"], report) as cache:
             cache.preflight()
-            inventory = Inventory(engine, policy, report)
+            observation = None
+            if args.observations:
+                try:
+                    observation = storage.load(args.observations)
+                except (OSError, ValueError):
+                    report.emit(
+                        "storage_observation",
+                        status="unknown",
+                        reason="unreadable-or-untrusted-host-sample",
+                    )
+            inventory = Inventory(engine, policy, report, observation)
             inventory.load()
+            pressure = inventory.pressure()
             report.emit(
                 "observations",
                 docker=accounting(engine),
-                filesystems=None,
+                filesystems=pressure["filesystems"],
+                pressure=pressure,
                 cache=cache.observe(),
                 reclaimed_bytes=None,
             )

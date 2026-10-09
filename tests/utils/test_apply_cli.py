@@ -1,5 +1,6 @@
 """T-06–13/18–21/25/26/32: CLI apply through a real host lease and API fixture."""
 
+import datetime as dt
 import hashlib
 import json
 import os
@@ -20,6 +21,7 @@ from cache_fixture import CacheTools
 from ci_docker_gate import Gate, LeaseServer
 from ci_utils.policy import configuration
 from test_policy import CID, IID, NID, container, image, network
+from test_storage import observation
 
 DIGEST = "sha256:" + "a" * 64
 DANGLING = "sha256:" + "4" * 64
@@ -92,7 +94,15 @@ class StatefulAPI(APIFixture):
     "apply protocol E2E requires an isolated Linux root controller",
 )
 class ApplyCLITests(unittest.TestCase):
-    def invoke(self, api, config=None, profile="weekly", environ=None, revoke=False):
+    def invoke(
+        self,
+        api,
+        config=None,
+        profile="weekly",
+        environ=None,
+        revoke=False,
+        storage=None,
+    ):
         policy = configuration(
             {
                 "schema_version": 1,
@@ -114,6 +124,18 @@ class ApplyCLITests(unittest.TestCase):
             path.write_text(json.dumps(policy))
             with gate.maintenance("fixture-daemon", policy_hash) as lease:
                 with LeaseServer(gate, lease, profile, DIGEST) as server:
+                    extra = []
+                    if storage is not None:
+                        sample = {
+                            **observation(),
+                            "run_id": lease.id,
+                            "sampled_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+                            **storage,
+                        }
+                        storage_path = pathlib.Path(root) / "storage.json"
+                        storage_path.write_text(json.dumps(sample))
+                        storage_path.chmod(0o644)
+                        extra = ["--observations", str(storage_path)]
                     if revoke:
                         api.after_remove = lambda *args: lease.complete()
                     process = subprocess.Popen(
@@ -130,6 +152,7 @@ class ApplyCLITests(unittest.TestCase):
                             lease.id,
                             "--lease-socket",
                             str(server.path),
+                            *extra,
                         ],
                         env={
                             "PATH": os.environ["PATH"],
@@ -178,6 +201,32 @@ class ApplyCLITests(unittest.TestCase):
             self.assertEqual(code, 0, stderr)
             self.assertIn(IID, api.objects["images"])
             self.assertNotIn(DANGLING, api.objects["images"])
+
+    def test_pressure_trigger_needs_fresh_host_evidence_and_keeps_protection(self):
+        for sample, removed in [
+            (None, False),
+            ({}, True),
+            ({"sampled_at": "2000-01-01T00:00:00Z"}, False),
+            ({"daemon_id": "other"}, False),
+            ({"source": "container-root"}, False),
+        ]:
+            with self.subTest(sample=sample), StatefulAPI() as api:
+                code, _, stderr = self.invoke(
+                    api, config={"tagged_image_trigger": "pressure"}, storage=sample
+                )
+                self.assertEqual(code, 0, stderr)
+                self.assertEqual(IID not in api.objects["images"], removed)
+        with StatefulAPI() as api:
+            code, _, stderr = self.invoke(
+                api,
+                config={
+                    "tagged_image_trigger": "pressure",
+                    "protected": {"image_ids": [IID]},
+                },
+                storage={},
+            )
+            self.assertEqual(code, 0, stderr)
+            self.assertIn(IID, api.objects["images"])
 
     def test_unknown_alias_metadata_and_multiple_tags_are_preserved(self):
         for tags in (42, ["ci.example/fixture:old", "ci.example/fixture:second"]):
