@@ -168,6 +168,10 @@ sys.exit(response["status"])
             output = self.output.read().decode()
             if self.mode == "lost-report":
                 output = ""
+            elif self.mode == "wrong-report-daemon":
+                events = [json.loads(line) for line in output.splitlines()]
+                events[-1]["daemon_id"] = "another-daemon"
+                output = "".join(json.dumps(event) + "\n" for event in events)
         elif command == "rm":
             if self.process.poll() is None:
                 raise AssertionError("running container must not be removed")

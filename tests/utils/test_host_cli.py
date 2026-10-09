@@ -1,5 +1,6 @@
 """T-18–20/22/24/28/32/33: public host launcher and retained uncertainty."""
 
+import datetime as dt
 import json
 import os
 import pathlib
@@ -142,6 +143,33 @@ class HostCLITests(unittest.TestCase):
             any(call[0] in ("rm", "stop", "kill") for call in self.docker.calls)
         )
 
+    def test_report_for_another_daemon_cannot_release_the_host_lease(self):
+        self.docker.mode = "wrong-report-daemon"
+        result, _ = self.invoke("apply")
+        self.assertEqual(result.returncode, 6, result.stdout + result.stderr)
+        self.assertEqual(
+            Gate(self.root / "gate").status()["maintenance"]["phase"], "uncertain"
+        )
+
+    def test_stale_or_mismatched_reconciliation_does_not_clear_records(self):
+        record, path = self.reconciliation_evidence()
+        original = json.loads(path.read_text())
+        for patch in (
+            {"record_id": "0" * 32},
+            {"daemon_id": "other"},
+            {"observed_at": "2000-01-01T00:00:00Z"},
+            {"daemon_operations_complete": False},
+        ):
+            with self.subTest(patch=patch):
+                path.write_text(json.dumps({**original, **patch}))
+                result, _ = self.invoke(
+                    "reconcile", "--record-id", record["id"], "--evidence", str(path)
+                )
+                self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                self.assertEqual(
+                    Gate(self.root / "gate").status()["maintenance"]["id"], record["id"]
+                )
+
     def test_unqualified_image_and_mutable_settings_fail_before_launch(self):
         self.docker.mode = "wrong-image"
         result, _ = self.invoke("apply")
@@ -239,6 +267,54 @@ class HostCLITests(unittest.TestCase):
         self.assertEqual(result.returncode, 4, result.stdout + result.stderr)
         self.assertFalse(marker.exists())
         self.assertEqual(Gate(self.root / "gate").status()["jobs"], [])
+
+    def reconciliation_evidence(self):
+        self.docker.mode = "lost-report"
+        result, _ = self.invoke("apply")
+        self.assertEqual(result.returncode, 6, result.stdout + result.stderr)
+        record = Gate(self.root / "gate").status()["maintenance"]
+        proof = {
+            "schema_version": 1,
+            "record_id": record["id"],
+            "daemon_id": "fixture-daemon",
+            "observed_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+            "observer": "fixture-operator",
+            "evidence": "fixture-only: stopped process and completed API handlers",
+            "participants_drained": True,
+            "daemon_operations_complete": True,
+        }
+        path = self.root / "reconciled.json"
+        path.write_text(json.dumps(proof))
+        path.chmod(0o644)
+        return record, path
+
+    def test_explicit_reconciliation_audits_before_reopening_admission(self):
+        record, path = self.reconciliation_evidence()
+        result, events = self.invoke(
+            "reconcile", "--record-id", record["id"], "--evidence", str(path)
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        gate = Gate(self.root / "gate")
+        self.assertIsNone(gate.status()["maintenance"])
+        with gate.job() as lease:
+            lease.complete()
+        self.assertEqual(events[-1]["record_id"], record["id"])
+        audits = list((self.root / "gate/reconciliations").glob("*.json"))
+        self.assertEqual(len(audits), 1)
+        self.assertEqual(
+            json.loads(audits[0].read_text())["evidence"]["record_id"], record["id"]
+        )
+
+    def test_reconciliation_cannot_override_a_running_cleanup_container(self):
+        record, path = self.reconciliation_evidence()
+        self.api.routes[
+            ("GET", "/v1.48/containers/" + record["container_id"] + "/json")
+        ] = (200, {"Id": record["container_id"], "State": {"Running": True}})
+        result, _ = self.invoke(
+            "reconcile", "--record-id", record["id"], "--evidence", str(path)
+        )
+        self.assertEqual(result.returncode, 4, result.stdout + result.stderr)
+        self.assertIsNotNone(Gate(self.root / "gate").status()["maintenance"])
 
 
 if __name__ == "__main__":

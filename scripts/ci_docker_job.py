@@ -78,7 +78,9 @@ def run(settings, policy, args, emit):
             2, "job admission requires a reviewed capacity reserve in bytes"
         )
     gate = Gate(settings["gate_directory"])
-    with gate.job(duration(args.wait), args.participant) as lease:
+    with gate.job(
+        duration(args.wait), args.participant, policy["expected_daemon_id"]
+    ) as lease:
         process = None
         try:
             engine = Engine(policy["endpoint"])

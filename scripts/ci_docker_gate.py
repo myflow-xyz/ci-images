@@ -167,6 +167,7 @@ class Gate:
         jobs = self.directory / "jobs"
         jobs.mkdir(mode=0o770)
         jobs.chmod(0o3770)
+        (self.directory / "reconciliations").mkdir(mode=0o750)
         for name in ("admission.lock", "activity.lock"):
             fd = os.open(
                 self.directory / name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o640
@@ -345,13 +346,15 @@ class Gate:
             raise GateError(4, "job registration cannot be opened safely") from error
 
     @contextlib.contextmanager
-    def job(self, wait_seconds=1, participant=None):
+    def job(self, wait_seconds=1, participant=None, daemon_id=None):
         deadline = self._deadline(wait_seconds)
         descriptor = None
         registration = None
         record = self._record("job", "active")
         if participant is not None:
             record["participant"] = participant
+        if daemon_id is not None:
+            record["daemon_id"] = daemon_id
         path = self.directory / "jobs" / (record["id"] + ".json")
         while descriptor is None:
             with self._admission(deadline):

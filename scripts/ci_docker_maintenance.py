@@ -18,6 +18,7 @@ import uuid
 
 import ci_docker_job
 from ci_docker_gate import Gate, GateError, LeaseServer
+from ci_docker_reconcile import reconcile
 from ci_docker_storage import measure
 from ci_utils.cleanup import reject_constant, strict_object
 from ci_utils.engine import Engine, Failure
@@ -303,7 +304,7 @@ def launch_args(
 
 
 def terminal_result(
-    text, exit_code, run_id, policy_hash, image_digest, operation, profile
+    text, exit_code, run_id, policy_hash, image_digest, operation, profile, daemon_id
 ):
     try:
         events = [json.loads(line) for line in text.splitlines()]
@@ -333,7 +334,14 @@ def terminal_result(
             or type(result.get("mutation_started")) is not bool
             or exit_code not in (0, 2, 3, 4, 5)
             or result.get("policy_hash") not in (None, policy_hash)
-            or (result["mutation_started"] and result.get("policy_hash") != policy_hash)
+            or result.get("daemon_id") not in (None, daemon_id)
+            or (
+                (exit_code == 0 or result["mutation_started"])
+                and (
+                    result.get("policy_hash") != policy_hash
+                    or result.get("daemon_id") != daemon_id
+                )
+            )
         ):
             raise ValueError("completion contract")
         return events
@@ -441,6 +449,10 @@ def maintain(settings, policy, operation, profile, wait_seconds):
                     started = True
                     docker.call("start", identifier)
                     state = docker.inspect("container", identifier).get("State", {})
+                    if not isinstance(state, dict):
+                        raise GateError(
+                            6, "maintenance container state is indeterminate"
+                        )
                     if server and state.get("Running") is True:
                         server.bind_client(state.get("Pid"))
                     exit_text = docker.call("wait", identifier, wait=True).strip()
@@ -451,9 +463,11 @@ def maintain(settings, policy, operation, profile, wait_seconds):
                     exit_code = int(exit_text)
                     state = docker.inspect("container", identifier).get("State", {})
                     if (
-                        state.get("Running") is not False
+                        not isinstance(state, dict)
+                        or state.get("Running") is not False
                         or state.get("Status") != "exited"
                         or state.get("ExitCode") != exit_code
+                        or type(state.get("ExitCode")) is not int
                         or state.get("OOMKilled") is not False
                     ):
                         raise GateError(
@@ -469,6 +483,7 @@ def maintain(settings, policy, operation, profile, wait_seconds):
                         host_context["image_digest"],
                         operation,
                         profile,
+                        info["ID"],
                     )
                     for event in events:
                         print(json.dumps(event, sort_keys=True), flush=True)
@@ -506,6 +521,9 @@ def arguments(argv):
     sub.add_parser("init")
     sub.add_parser("status")
     sub.add_parser("job-complete")
+    recovery = sub.add_parser("reconcile")
+    recovery.add_argument("--record-id", required=True)
+    recovery.add_argument("--evidence", required=True)
     job = sub.add_parser("job")
     job.add_argument("--participant", required=True)
     job.add_argument("--wait", default="15m")
@@ -550,6 +568,10 @@ def main(argv=None):
             old_signals[signum] = signal.signal(signum, interrupted)
         if args.operation == "job":
             return ci_docker_job.run(settings, policy, args, emit)
+        if args.operation == "reconcile":
+            return reconcile(
+                settings, policy, args.record_id, trusted_json(args.evidence), emit
+            )
         return maintain(
             settings, policy, args.operation, args.profile, duration(args.wait)
         )
