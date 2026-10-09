@@ -280,6 +280,7 @@ class Gate:
             record = json.loads(raw)
             if (
                 not isinstance(record, dict)
+                or type(record.get("schema_version")) is not int
                 or record.get("schema_version") != 1
                 or record.get("phase") not in ("waiting", "active", "uncertain")
                 or not isinstance(record.get("id"), str)
@@ -318,24 +319,54 @@ class Gate:
             if record is not None:
                 if record.get("kind") != "job" or path.stem != record["id"]:
                     raise GateError(4, "job registration is indeterminate")
+                descriptor = self._open_registration(record["id"])
+                try:
+                    try:
+                        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                        record["process_lock_held"] = False
+                    except BlockingIOError:
+                        record["process_lock_held"] = True
+                finally:
+                    os.close(descriptor)
                 result.append(record)
         return result
+
+    def _open_registration(self, identifier):
+        try:
+            descriptor = os.open(
+                self.directory / "jobs" / (identifier + ".json"),
+                os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK,
+            )
+            if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+                os.close(descriptor)
+                raise GateError(4, "job registration is not a regular file")
+            return descriptor
+        except OSError as error:
+            raise GateError(4, "job registration cannot be opened safely") from error
 
     @contextlib.contextmanager
     def job(self, wait_seconds=1):
         deadline = self._deadline(wait_seconds)
         descriptor = None
+        registration = None
         record = self._record("job", "active")
         path = self.directory / "jobs" / (record["id"] + ".json")
         while descriptor is None:
             with self._admission(deadline):
                 state = self._read(self.directory / "maintenance.json")
-                uncertain = any(job["phase"] == "uncertain" for job in self._jobs())
+                uncertain = any(
+                    job["phase"] == "uncertain" or not job["process_lock_held"]
+                    for job in self._jobs()
+                )
                 if state is None and not uncertain:
                     descriptor = self._acquire("activity.lock", fcntl.LOCK_SH, deadline)
                     try:
                         self._write(path, record)
+                        registration = self._open_registration(record["id"])
+                        fcntl.flock(registration, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     except BaseException:
+                        if registration is not None:
+                            os.close(registration)
                         os.close(descriptor)
                         raise
             if descriptor is None:
@@ -355,6 +386,7 @@ class Gate:
                     else:
                         self._write(path, {**record, "phase": "uncertain"})
             finally:
+                os.close(registration)
                 os.close(descriptor)
 
     @contextlib.contextmanager

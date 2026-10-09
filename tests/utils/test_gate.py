@@ -86,6 +86,13 @@ with context:
         self.assertEqual(len(self.gate.status()["jobs"]), 2)
         self.assertEqual(self.gate.status()["maintenance"]["phase"], "uncertain")
 
+    def test_crashed_job_blocks_new_jobs_before_any_maintenance_attempt(self):
+        holder = self.start_holder("job")
+        holder.kill()
+        holder.wait(timeout=2)
+        with self.assertRaises(GateError), Gate(self.path).job(wait_seconds=0.02):
+            self.fail("new job entered after an unresolved worker crash")
+
     def test_jobs_share_access_and_maintenance_waits_for_both(self):
         with self.gate.job() as first, Gate(self.path).job() as second:
             self.assertEqual(len(self.gate.status()["jobs"]), 2)
