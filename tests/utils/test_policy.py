@@ -40,6 +40,7 @@ def container():
         "State": {"Status": "exited"},
         "Name": "/fixture",
         "Image": IID,
+        "HostConfig": {"NetworkMode": "default"},
     }
 
 

@@ -89,6 +89,33 @@ class CleanupCLITests(unittest.TestCase):
             self.assertFalse(any(event["event"] == "decision" for event in events))
             self.assertTrue(all(method == "GET" for method, path in api.requests))
 
+    def test_created_container_reservations_preserve_networks_without_endpoints(self):
+        for networks, mode in [
+            ({"fixture": {"NetworkID": ""}}, "fixture"),
+            ({NID: {"NetworkID": ""}}, NID),
+            ({}, "fixture"),
+            ({}, NID[:12]),
+        ]:
+            with self.subTest(networks=networks, mode=mode):
+                data = routes()
+                obj = data[("GET", "/v1.48/containers/" + CID + "/json")][1]
+                obj["State"]["Status"] = "created"
+                obj["Config"]["Labels"] = {}
+                obj["HostConfig"] = {"NetworkMode": mode}
+                obj["NetworkSettings"] = {"Networks": networks}
+                data[("GET", "/v1.48/networks/" + NID)][1]["Containers"] = {}
+                with APIFixture(data) as api:
+                    result, events = self.invoke(api)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    decision = next(
+                        e
+                        for e in events
+                        if e["event"] == "decision" and e["kind"] == "networks"
+                    )
+                    self.assertEqual(decision["outcome"], "excluded")
+                    self.assertEqual(decision["reason"], "referenced")
+                    self.assertTrue(all(method == "GET" for method, _ in api.requests))
+
     def test_invalid_config_and_conflicting_environment_precede_daemon_access(self):
         for config, env in [
             ({"unknown": True}, {}),

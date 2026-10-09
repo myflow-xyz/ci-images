@@ -171,20 +171,40 @@ class Inventory:
 
     def references(self, exclude=()):
         image_ids, network_ids = set(), set()
+
+        def reserve_network(reference):
+            if not isinstance(reference, str):
+                raise Failure(5, "cannot establish container network reservation")
+            if not reference or reference.startswith("container:"):
+                return
+            if reference == "default":
+                reference = "bridge"
+            # Before an endpoint exists, Docker retains only a name or ID prefix.
+            # Duplicate names reserve every matching network conservatively.
+            for network in self.objects["networks"]:
+                if network.get("Name") == reference or network["Id"].startswith(
+                    reference
+                ):
+                    network_ids.add(network["Id"])
+
         for item in self.objects["containers"]:
             if item["Id"] in exclude:
                 continue
             identifier = item.get("Image")
             settings = item.get("NetworkSettings")
             networks = settings.get("Networks") if isinstance(settings, dict) else None
+            host = item.get("HostConfig")
             if (
                 not isinstance(identifier, str)
                 or not IMAGE_ID.fullmatch(identifier)
                 or not isinstance(networks, dict)
+                or not isinstance(host, dict)
+                or not isinstance(host.get("NetworkMode"), str)
             ):
                 raise Failure(5, "cannot establish container image/network references")
             image_ids.add(identifier)
-            for network in networks.values():
+            reserve_network(host["NetworkMode"])
+            for name, network in networks.items():
                 if not isinstance(network, dict):
                     raise Failure(5, "cannot establish container network references")
                 # A created but never attached container can have an empty NetworkID.
@@ -195,7 +215,9 @@ class Inventory:
                     ):
                         raise Failure(5, "invalid container network reference")
                     network_ids.add(network_id)
-                elif network_id is None:
+                elif network_id == "":
+                    reserve_network(name)
+                else:
                     raise Failure(5, "cannot establish container network identity")
         return image_ids, network_ids
 
