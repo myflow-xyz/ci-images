@@ -103,6 +103,12 @@ class ConfigurationTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(InvalidPolicy):
                 space_bytes(value)
 
+    def test_space_target_cannot_round_or_overflow_the_backend_parser(self):
+        self.assertEqual(space_bytes("9007199254740991b"), 2**53 - 1)
+        for value in ["9007199254740993b", "9223372036854775807b", "8192tb"]:
+            with self.subTest(value=value), self.assertRaises(InvalidPolicy):
+                space_bytes(value)
+
     def test_unknown_keys_and_unsafe_configuration_fail(self):
         for change in [
             {"surprise": 1},

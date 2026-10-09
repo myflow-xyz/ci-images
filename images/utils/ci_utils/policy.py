@@ -95,8 +95,10 @@ def space_bytes(value):
             "space target must be a positive integer with b/kb/mb/gb/tb units"
         )
     result = int(match[1]) * 1024 ** ("b", "kb", "mb", "gb", "tb").index(match[2])
-    if result > 2**63 - 1:
-        raise InvalidPolicy("space target exceeds backend integer range")
+    # Buildx's RAMInBytes parser passes through float64 before int64. Keep
+    # every accepted byte count exact, including at the upper boundary.
+    if result > 2**53 - 1:
+        raise InvalidPolicy("space target exceeds exact backend parser range")
     return result
 
 
