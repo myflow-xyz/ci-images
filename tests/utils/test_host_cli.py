@@ -316,6 +316,33 @@ class HostCLITests(unittest.TestCase):
         self.assertEqual(result.returncode, 4, result.stdout + result.stderr)
         self.assertIsNotNone(Gate(self.root / "gate").status()["maintenance"])
 
+    def test_refused_maintenance_needs_only_the_original_job_reconciled(self):
+        gate = Gate(self.root / "gate")
+        with gate.job(participant="test-runner", daemon_id="fixture-daemon") as lease:
+            identifier = lease.id
+        result, _ = self.invoke("apply", "--wait", "1s")
+        self.assertEqual(result.returncode, 4, result.stdout + result.stderr)
+        self.assertIsNone(gate.status()["maintenance"])
+        self.assertEqual([job["id"] for job in gate.status()["jobs"]], [identifier])
+        proof = {
+            "schema_version": 1,
+            "record_id": identifier,
+            "daemon_id": "fixture-daemon",
+            "observed_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+            "observer": "fixture-operator",
+            "evidence": "isolated job exited and the fixture has no pending daemon operations",
+            "participants_drained": True,
+            "daemon_operations_complete": True,
+        }
+        path = self.root / "job-reconciled.json"
+        path.write_text(json.dumps(proof))
+        result, _ = self.invoke(
+            "reconcile", "--record-id", identifier, "--evidence", str(path)
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        result, _ = self.invoke("apply")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -420,6 +420,9 @@ class Gate:
         try:
             with self._admission(self._deadline(5)):
                 if self._jobs():
+                    # Authority was never granted. The existing job records
+                    # retain uncertainty; this refusal needs no second recovery.
+                    lease.complete()
                     raise GateError(
                         4, "job completion is unresolved despite released process locks"
                     )

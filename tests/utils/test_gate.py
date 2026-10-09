@@ -84,7 +84,9 @@ with context:
         ):
             self.fail("crashed jobs lost their persistent completion records")
         self.assertEqual(len(self.gate.status()["jobs"]), 2)
-        self.assertEqual(self.gate.status()["maintenance"]["phase"], "uncertain")
+        self.assertIsNone(self.gate.status()["maintenance"])
+        with self.assertRaises(GateError), Gate(self.path).job(wait_seconds=0.02):
+            self.fail("refused maintenance must preserve unresolved job admission")
 
     def test_crashed_job_blocks_new_jobs_before_any_maintenance_attempt(self):
         holder = self.start_holder("job")
