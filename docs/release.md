@@ -11,9 +11,9 @@ The release workflow accepts only the current `main` commit. The CI images
 workflow for that commit must have completed successfully and promoted all six
 images to `sha-<full-commit>` tags for immutable source identity.
 
-The immutable revision tags are the release inputs. The mutable `latest` tag is
-a discovery pointer for verified `main` pushes and is not a release
-precondition.
+The immutable revision tags are the release inputs. The mutable `latest` tag
+identifies the most recent published stable release and is not a release
+precondition. A verified `main` build does not move `latest`.
 
 If the automatic workflow skipped image publication because the commit did not
 change image inputs, dispatch the CI images workflow manually from `main`.
@@ -54,7 +54,9 @@ The workflow:
    digest;
 5. assigns the image tag to each verified OCI index and verifies the result;
 6. creates the `vX.Y.Z` Git tag and GitHub Release at the source revision,
-   including the six index digests.
+   including the six index digests;
+7. updates `latest` on all six images to those same index digests in a separate
+   job, after confirming that this is the current published stable release.
 
 The Git tag is created only after registry promotion succeeds. A stable image
 tag that already identifies the expected digest is accepted so a partially
@@ -68,12 +70,14 @@ completed registry promotion can be retried safely.
 | `candidate-<run>-<attempt>-<arch>` | native platform build | Internal only. |
 | `sha-<full-commit>` | verified publication | Immutable source revision. |
 | `edge` | optional `develop` push | Integration pointer; off by default. |
-| `latest` | verified `main` push | Moving stable-branch pointer. |
+| `latest` | stable release | Most recent published suite. |
 | `run-<run>` | manual image publication | Ad hoc verification pointer. |
 | `X.Y.Z` | manual release | Immutable suite release. |
 
-Consumers use the shared `X.Y.Z` image tag, verify it against the matching
-`vX.Y.Z` GitHub Release, and pin its OCI index digest in workflow configuration.
+Consumers can use `latest` to follow stable releases automatically. For
+reproducible builds, use the shared `X.Y.Z` image tag, verify it against the
+matching `vX.Y.Z` GitHub Release, and pin its OCI index digest in workflow
+configuration.
 The container runtime selects the compatible platform manifest;
 architecture-specific suffix tags are not part of the release contract. Neither
 `edge` nor `latest` is a reproducible consumer pin.
@@ -86,7 +90,9 @@ A release is successful only when:
 - the GitHub Release and Git tag point to the intended `main` commit;
 - all six unprefixed release tags exist in GHCR;
 - each release tag resolves to the digest recorded in the GitHub Release;
-- that digest also matches the commit's immutable revision tag.
+- that digest also matches the commit's immutable revision tag;
+- for the most recent release, each `latest` tag resolves to the same digest
+  as its versioned image tag.
 
 The source image workflow already verified that every index contains
 `linux/amd64` and `linux/arm64` manifests, per-platform attestations, smoke
@@ -112,6 +118,13 @@ matching existing registry tags are preserved.
 If an existing stable image tag has a different digest, the workflow fails
 before promotion. Investigate the registry state; do not overwrite or delete
 the stable tag to force a release.
+
+If only **Update latest release tags** fails, rerun failed jobs in the same
+workflow run. This retries the aliases without creating another version. The
+job validates all six versioned image tags before moving any alias and rejects
+an old run if a newer stable release has been published. GHCR updates each
+image tag separately, so a partial failure can temporarily leave `latest` tags
+on different suite versions until the retry succeeds.
 
 Published versions are never moved. Roll back a consumer by restoring a
 previous recorded digest. Publish a new version for any corrected image suite.

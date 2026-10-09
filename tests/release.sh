@@ -6,6 +6,7 @@ repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 next_version="${repository_root}/.github/scripts/next-version.sh"
 promote_images="${repository_root}/.github/scripts/promote-images.sh"
 release_images="${repository_root}/.github/scripts/release-images.sh"
+promote_latest="${repository_root}/.github/scripts/promote-latest.sh"
 
 fail() {
 	printf 'release verification failed: %s\n' "$*" >&2
@@ -95,6 +96,14 @@ digest_for_name() {
 if [[ ${1-} == buildx && ${2-} == imagetools &&
 	${3-} == inspect ]]; then
 	reference=${4:?}
+	if [[ ${FAKE_INSPECT_ERROR_REF:-} == "$reference" ]]; then
+		printf 'unauthorized\n' >&2
+		exit 1
+	fi
+	if [[ ${FAKE_INSPECT_MISMATCH_REF:-} == "$reference" ]]; then
+		printf 'sha256:%064d\n' 9
+		exit 0
+	fi
 	state_digest=$(
 		awk -F '\t' -v reference="$reference" '
 			$1 == reference { digest = $2 }
@@ -169,6 +178,10 @@ if [[ ${1-} == buildx && ${2-} == imagetools &&
 	[[ -n $source && ${#targets[@]} -gt 0 ]]
 	digest=${source##*@}
 	for target in "${targets[@]}"; do
+		if [[ ${FAKE_CREATE_ERROR_REF:-} == "$target" ]]; then
+			printf 'registry unavailable\n' >&2
+			exit 1
+		fi
 		printf '%s\t%s\n' "$target" "$digest" >>"$state"
 		printf '%s\n' "$target" >>"$log"
 	done
@@ -180,10 +193,30 @@ exit 1
 EOF
 chmod 0755 "${fake_bin}/docker"
 
+cat >"${fake_bin}/gh" <<'EOF'
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+[[ $# == 2 && $1 == api &&
+	$2 == repos/myflow-xyz/ci-images/releases/latest ]]
+if [[ ${FAKE_GH_ERROR:-} == true ]]; then
+	printf 'HTTP 404: Not Found\n' >&2
+	exit 1
+fi
+jq --null-input \
+	--arg git_tag "${FAKE_LATEST_RELEASE:-v0.1.0}" \
+	--argjson draft "${FAKE_RELEASE_DRAFT:-false}" \
+	--argjson prerelease "${FAKE_RELEASE_PRERELEASE:-false}" \
+	'{tag_name: $git_tag, draft: $draft, prerelease: $prerelease}'
+EOF
+chmod 0755 "${fake_bin}/gh"
+
 export PATH="${fake_bin}:${PATH}"
 export FAKE_DOCKER_LOG="$fake_log"
 export FAKE_DOCKER_STATE="$fake_state"
 export GITHUB_SHA=1111111111111111111111111111111111111111
+export GITHUB_REPOSITORY=myflow-xyz/ci-images
 
 output_file="${temporary_directory}/released-images.json"
 failure_output="${temporary_directory}/failure-output"
@@ -300,6 +333,9 @@ printf '%s\t%s\n' \
 assert_equal 5 "$(create_count)" 'partial release retry promotions'
 assert_release_output
 
+released_images="${temporary_directory}/released-images-template.json"
+cp "$output_file" "$released_images"
+
 published_images_template="${temporary_directory}/published-images-template.json"
 published_images="${temporary_directory}/published-images.json"
 jq '
@@ -371,8 +407,21 @@ GITHUB_EVENT_NAME=push \
 	GITHUB_RUN_ID=124 \
 	"$promote_images" "$published_images"
 assert_equal 6 \
-	"$(grep -c ':latest$' "$fake_log")" \
-	'main publication aliases'
+	"$(grep -c ":sha-${GITHUB_SHA}$" "$fake_log")" \
+	'main publication revision tags'
+if grep -Eq ':(edge|latest|[0-9]+\.[0-9]+\.[0-9]+)$' "$fake_log"; then
+	fail 'main publication created a moving or stable alias'
+fi
+
+reset_registry
+create_published_images 128
+seed_candidates
+GITHUB_EVENT_NAME=push \
+	GITHUB_REF_NAME=develop \
+	GITHUB_REF_TYPE=branch \
+	GITHUB_RUN_ID=128 \
+	"$promote_images" "$published_images"
+assert_equal 6 "$(grep -c ':edge$' "$fake_log")" 'develop publication aliases'
 
 reset_registry
 create_published_images 999
@@ -425,5 +474,122 @@ fi
 grep -q 'no promotion policy' "$failure_output" ||
 	fail 'tag publication diagnostic'
 assert_equal 0 "$(create_count)" 'tag publication promotions'
+
+seed_release() {
+	jq -r '.[] | [.release_ref, .digest] | @tsv' \
+		"$released_images" >>"$fake_state"
+}
+
+assert_latest_matches_release() {
+	local image digest latest_digest
+
+	while IFS=$'\t' read -r image digest; do
+		latest_digest=$(docker buildx imagetools inspect \
+			"${image}:latest" --format '{{.Manifest.Digest}}')
+		assert_equal "$digest" "$latest_digest" "${image}:latest"
+	done < <(jq -r '.[] | [.image, .digest] | @tsv' "$released_images")
+	if grep -Ev ':latest$' "$fake_log"; then
+		fail 'latest promotion moved another tag'
+	fi
+}
+
+reset_registry
+seed_release
+jq -r '.[] | [.image + ":latest", "sha256:" + ("9" * 64)] | @tsv' \
+	"$released_images" >>"$fake_state"
+"$promote_latest" "$released_images"
+assert_equal 6 "$(create_count)" 'latest release promotions'
+assert_latest_matches_release
+
+: >"$fake_log"
+"$promote_latest" "$released_images"
+assert_equal 6 "$(create_count)" 'latest release retry promotions'
+assert_latest_matches_release
+
+for fault in older unpublished draft prerelease; do
+	reset_registry
+	seed_release
+	case "$fault" in
+	older) fault_env=FAKE_LATEST_RELEASE=v0.2.0 ;;
+	unpublished) fault_env=FAKE_GH_ERROR=true ;;
+	draft) fault_env=FAKE_RELEASE_DRAFT=true ;;
+	prerelease) fault_env=FAKE_RELEASE_PRERELEASE=true ;;
+	esac
+	if env "$fault_env" "$promote_latest" "$released_images" \
+		>"$failure_output" 2>&1; then
+		fail "invalid release accepted for latest: ${fault}"
+	fi
+	if [[ $fault == unpublished ]]; then
+		grep -q 'HTTP 404: Not Found' "$failure_output" ||
+			fail 'unpublished release diagnostic'
+	else
+		grep -q 'current published stable release' "$failure_output" ||
+			fail "invalid release diagnostic: ${fault}"
+	fi
+	assert_equal 0 "$(create_count)" "${fault} release latest promotions"
+done
+
+for fault in missing duplicate wrong-image mixed-version wrong-digest wrong-revision wrong-tag; do
+	reset_registry
+	case "$fault" in
+	missing) filter='.[0:-1]' ;;
+	duplicate) filter='.[5] = .[0]' ;;
+	wrong-image) filter='.[0].image = "ghcr.io/other/ci-base"' ;;
+	mixed-version) filter='.[0].git_tag = "v0.2.0"' ;;
+	wrong-digest) filter='.[0].digest = "sha256:invalid"' ;;
+	wrong-revision) filter='.[0].revision_ref = (.[0].image + ":sha-wrong")' ;;
+	wrong-tag) filter='.[0].release_ref = (.[0].image + ":latest")' ;;
+	esac
+	jq "$filter" "$released_images" >"${temporary_directory}/invalid-release.json"
+	if "$promote_latest" "${temporary_directory}/invalid-release.json" \
+		>"$failure_output" 2>&1; then
+		fail "invalid latest input accepted: ${fault}"
+	fi
+	grep -q 'latest promotion contract' "$failure_output" ||
+		fail "invalid latest input diagnostic: ${fault}"
+	assert_equal 0 "$(create_count)" "${fault} latest promotions"
+done
+
+for fault in error mismatch; do
+	reset_registry
+	seed_release
+	case "$fault" in
+	error) fault_env=FAKE_INSPECT_ERROR_REF=ghcr.io/myflow-xyz/ci-vite:0.1.0 ;;
+	mismatch) fault_env=FAKE_INSPECT_MISMATCH_REF=ghcr.io/myflow-xyz/ci-vite:0.1.0 ;;
+	esac
+	if env "$fault_env" "$promote_latest" "$released_images" \
+		>"$failure_output" 2>&1; then
+		fail "invalid stable image accepted for latest: ${fault}"
+	fi
+	case "$fault" in
+	error) diagnostic=unauthorized ;;
+	mismatch) diagnostic='release tag has unexpected digest: ghcr.io/myflow-xyz/ci-vite:0.1.0' ;;
+	esac
+	grep -q "$diagnostic" "$failure_output" ||
+		fail "stable image preflight diagnostic: ${fault}"
+	assert_equal 0 "$(create_count)" "${fault} stable image latest promotions"
+done
+
+reset_registry
+seed_release
+if FAKE_CREATE_ERROR_REF=ghcr.io/myflow-xyz/ci-vite:latest \
+	"$promote_latest" "$released_images" >"$failure_output" 2>&1; then
+	fail 'partial latest promotion failure was ignored'
+fi
+grep -q 'registry unavailable' "$failure_output" ||
+	fail 'partial latest promotion diagnostic'
+assert_equal 5 "$(create_count)" 'partial latest promotions'
+: >"$fake_log"
+"$promote_latest" "$released_images"
+assert_latest_matches_release
+
+reset_registry
+seed_release
+if FAKE_INSPECT_MISMATCH_REF=ghcr.io/myflow-xyz/ci-go:latest \
+	"$promote_latest" "$released_images" >"$failure_output" 2>&1; then
+	fail 'incorrect latest digest was accepted'
+fi
+grep -q 'latest tag has unexpected digest: ghcr.io/myflow-xyz/ci-go:latest' \
+	"$failure_output" || fail 'incorrect latest digest diagnostic'
 
 printf 'release verification passed\n'

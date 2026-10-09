@@ -59,7 +59,7 @@ if [[ $event_name == workflow_dispatch ]]; then
 elif [[ $ref_type == branch && $ref_name == develop ]]; then
 	aliases=(edge)
 elif [[ $ref_type == branch && $ref_name == main ]]; then
-	aliases=(latest)
+	aliases=()
 else
 	printf 'no promotion policy for %s ref %s\n' "$ref_type" "$ref_name" >&2
 	exit 1
