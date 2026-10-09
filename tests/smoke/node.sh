@@ -7,9 +7,12 @@ expected_pnpm=${EXPECTED_PNPM_VERSION:?EXPECTED_PNPM_VERSION is not set}
 : "${EXPECTED_PNPM_STORE_VERSION:?EXPECTED_PNPM_STORE_VERSION is not set}"
 : "${EXPECTED_MARKDOWNLINT_VERSION:?EXPECTED_MARKDOWNLINT_VERSION is not set}"
 : "${EXPECTED_MARKDOWNLINT_SMOL_TOML_VERSION:?EXPECTED_MARKDOWNLINT_SMOL_TOML_VERSION is not set}"
+: "${EXPECTED_MARKDOWNLINT_KATEX_VERSION:?EXPECTED_MARKDOWNLINT_KATEX_VERSION is not set}"
 : "${EXPECTED_NODE_BUNDLE_VERSION:?EXPECTED_NODE_BUNDLE_VERSION is not set}"
 : "${EXPECTED_NPM_BRACE_EXPANSION_VERSION:?EXPECTED_NPM_BRACE_EXPANSION_VERSION is not set}"
+: "${EXPECTED_NPM_HTTP_CACHE_SEMANTICS_VERSION:?EXPECTED_NPM_HTTP_CACHE_SEMANTICS_VERSION is not set}"
 : "${EXPECTED_NPM_IP_ADDRESS_VERSION:?EXPECTED_NPM_IP_ADDRESS_VERSION is not set}"
+: "${EXPECTED_NPM_POSTCSS_SELECTOR_PARSER_VERSION:?EXPECTED_NPM_POSTCSS_SELECTOR_PARSER_VERSION is not set}"
 : "${EXPECTED_NPM_TAR_VERSION:?EXPECTED_NPM_TAR_VERSION is not set}"
 : "${EXPECTED_NPM_UNDICI_VERSION:?EXPECTED_NPM_UNDICI_VERSION is not set}"
 : "${EXPECTED_NPM_VERSION:?EXPECTED_NPM_VERSION is not set}"
@@ -27,7 +30,25 @@ expected_store="/var/cache/pnpm/store/v${EXPECTED_PNPM_STORE_VERSION}"
 [[ $(node --print \
 	"require('${npm_root}/brace-expansion/package.json').version") == "$EXPECTED_NPM_BRACE_EXPANSION_VERSION" ]]
 [[ $(node --print \
+	"require('${npm_root}/http-cache-semantics/package.json').version") == "$EXPECTED_NPM_HTTP_CACHE_SEMANTICS_VERSION" ]]
+node - "${npm_root}/http-cache-semantics" <<'JS'
+const assert = require('node:assert/strict');
+const CachePolicy = require(process.argv[2]);
+const request = {
+  url: 'https://registry.example/package', method: 'GET',
+  headers: { accept: 'application/json' }
+};
+const response = {
+  status: 200, headers: { 'cache-control': 'public, max-age=600', vary: 'accept' }
+};
+assert.equal(new CachePolicy(request, response).satisfiesWithoutRevalidation(request), true);
+response.headers.vary = 'accept, *';
+assert.equal(new CachePolicy(request, response).satisfiesWithoutRevalidation(request), false);
+JS
+[[ $(node --print \
 	"require('${npm_root}/ip-address/package.json').version") == "$EXPECTED_NPM_IP_ADDRESS_VERSION" ]]
+[[ $(node --print \
+	"require('${npm_root}/postcss-selector-parser/package.json').version") == "$EXPECTED_NPM_POSTCSS_SELECTOR_PARSER_VERSION" ]]
 [[ $(node --print \
 	"require('${npm_root}/tar/package.json').version") == "$EXPECTED_NPM_TAR_VERSION" ]]
 [[ $(node --print \
@@ -69,6 +90,21 @@ markdownlint-cli2 --version 2>&1 |
 	grep --fixed-strings "markdownlint-cli2 v${expected_markdownlint}" >/dev/null
 [[ $(node --print \
 	"require('/opt/ci-tools/markdownlint-cli2/${expected_markdownlint}/node_modules/smol-toml/package.json').version") == "$EXPECTED_MARKDOWNLINT_SMOL_TOML_VERSION" ]]
+[[ $(node --print \
+	"require('/opt/ci-tools/markdownlint-cli2/${expected_markdownlint}/node_modules/katex/package.json').version") == "$EXPECTED_MARKDOWNLINT_KATEX_VERSION" ]]
+node - "/opt/ci-tools/markdownlint-cli2/${expected_markdownlint}" <<'JS'
+const assert = require('node:assert/strict');
+const options = { paths: [process.argv[2]] };
+Promise.all([
+  import(require.resolve('micromark', options)),
+  import(require.resolve('micromark-extension-math', options))
+]).then(([{ micromark }, { math, mathHtml }]) => {
+  const html = micromark('$$\nE = mc^2\n$$', {
+    extensions: [math()], htmlExtensions: [mathHtml()]
+  });
+  assert.match(html, /class="katex"/);
+}).catch(error => { console.error(error); process.exitCode = 1; });
+JS
 [[ $(node --print \
 	"require('${bundle_root}/@redocly/cli/package.json').version") == "$expected_redocly" ]]
 [[ ! -e ${bundle_root}/pnpm ]]
@@ -124,3 +160,9 @@ actual=$(
 	pnpm run --silent check
 )
 [[ $actual == repository-local-redocly ]]
+
+(
+	cd "$smoke_directory"
+	npm query ':root' |
+		jq --exit-status 'length == 1 and .[0].name == "node-shadow-smoke"' >/dev/null
+)

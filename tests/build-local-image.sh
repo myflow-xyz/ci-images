@@ -41,7 +41,6 @@ build_created=$(git -C "$repository_root" show -s --format=%cI HEAD)
 build_revision=$(git -C "$repository_root" rev-parse HEAD)
 manifest_sha=$(sha256_file "$manifest")
 debian_image=$(image_reference debian)
-node_image=$(image_reference node)
 pgvector_image=$(image_reference pgvector)
 
 common_labels=(
@@ -73,40 +72,21 @@ build_base() {
 		--build-arg "DEBIAN_SNAPSHOT=$(json '.debian_snapshot')" \
 		--build-arg \
 		"ACTIONLINT_VERSION=$(json '.tools.base.actionlint.version')" \
+		--build-arg \
+		"ACTIONLINT_X_SYS_VERSION=$(json '.tools.base.actionlint.dependency_overrides["golang.org/x/sys"]')" \
 		--build-arg "BASH_RELEASE=$(json '.tools.base.bash.release')" \
 		--build-arg \
 		"BASH_PATCHLEVEL=$(json '.tools.base.bash.patchlevel')" \
 		--build-arg \
 		"BASH_SHA256=$(json '.tools.base.bash.asset.sha256')" \
 		--build-arg "DOCKER_VERSION=$(json '.tools.base.docker.version')" \
-		--build-arg \
-		"DOCKER_PACKAGE_VERSION=$(json '.tools.base.docker.package_version')" \
+		--build-arg "DOCKER_COMMIT=$(json '.tools.base.docker.commit')" \
 		--build-arg "COMPOSE_VERSION=$(json '.tools.base.compose.version')" \
 		--build-arg \
-		"DOCKER_ASSET_URL_AMD64=$(json '.tools.base.docker.assets.amd64.url')" \
-		--build-arg \
-		"DOCKER_SHA256_AMD64=$(json '.tools.base.docker.assets.amd64.sha256')" \
-		--build-arg \
-		"DOCKER_ASSET_URL_ARM64=$(json '.tools.base.docker.assets.arm64.url')" \
-		--build-arg \
-		"DOCKER_SHA256_ARM64=$(json '.tools.base.docker.assets.arm64.sha256')" \
-		--build-arg \
-		"COMPOSE_ASSET_URL_AMD64=$(json '.tools.base.compose.assets.amd64.url')" \
-		--build-arg \
-		"COMPOSE_SHA256_AMD64=$(json '.tools.base.compose.assets.amd64.sha256')" \
-		--build-arg \
-		"COMPOSE_ASSET_URL_ARM64=$(json '.tools.base.compose.assets.arm64.url')" \
-		--build-arg \
-		"COMPOSE_SHA256_ARM64=$(json '.tools.base.compose.assets.arm64.sha256')" \
+		"COMPOSE_X_NET_VERSION=$(json '.tools.base.compose.dependency_overrides["golang.org/x/net"]')" \
 		--build-arg "GH_VERSION=$(json '.tools.base.gh.version')" \
 		--build-arg \
-		"GH_ASSET_URL_AMD64=$(json '.tools.base.gh.assets.amd64.url')" \
-		--build-arg \
-		"GH_ASSET_URL_ARM64=$(json '.tools.base.gh.assets.arm64.url')" \
-		--build-arg \
-		"GH_SHA256_AMD64=$(json '.tools.base.gh.assets.amd64.sha256')" \
-		--build-arg \
-		"GH_SHA256_ARM64=$(json '.tools.base.gh.assets.arm64.sha256')" \
+		"GH_X_NET_VERSION=$(json '.tools.base.gh.dependency_overrides["golang.org/x/net"]')" \
 		--build-arg \
 		"GIT_VERSION=$(json '.tools.base.git.version')" \
 		--build-arg \
@@ -114,9 +94,15 @@ build_base() {
 		--build-arg \
 		"GIT_LFS_VERSION=$(json '.tools.base.git_lfs.version')" \
 		--build-arg \
+		"GIT_LFS_X_NET_VERSION=$(json '.tools.base.git_lfs.dependency_overrides["golang.org/x/net"]')" \
+		--build-arg \
 		"GIT_LFS_X_CRYPTO_VERSION=$(json '.tools.base.git_lfs.dependency_overrides["golang.org/x/crypto"]')" \
 		--build-arg \
 		"GITLEAKS_VERSION=$(json '.tools.base.gitleaks.version')" \
+		--build-arg \
+		"GITLEAKS_COMPRESS_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["github.com/klauspost/compress"]')" \
+		--build-arg \
+		"GITLEAKS_RARDECODE_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["github.com/nwaples/rardecode/v2"]')" \
 		--build-arg \
 		"GITLEAKS_X_CRYPTO_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["golang.org/x/crypto"]')" \
 		--build-arg \
@@ -132,6 +118,8 @@ build_base() {
 		"JQ_SHA256_ARM64=$(json '.tools.base.jq.assets.arm64.sha256')" \
 		--build-arg \
 		"OSV_SCANNER_VERSION=$(json '.tools.base.osv_scanner.version')" \
+		--build-arg \
+		"OSV_SCANNER_X_NET_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["golang.org/x/net"]')" \
 		--build-arg \
 		"PYTHON_VERSION=$(json '.tools.base.python.version')" \
 		--build-arg \
@@ -171,8 +159,12 @@ build_base() {
 		--build-arg "SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
 		--build-arg "TRIVY_VERSION=$(json '.tools.base.trivy.version')" \
 		--build-arg \
+		"TRIVY_X_NET_VERSION=$(json '.tools.base.trivy.dependency_overrides["golang.org/x/net"]')" \
+		--build-arg \
 		"TRIVY_GRPC_VERSION=$(json '.tools.base.trivy.dependency_overrides["google.golang.org/grpc"]')" \
 		--build-arg "YQ_VERSION=$(json '.tools.base.yq.version')" \
+		--build-arg \
+		"YQ_X_NET_VERSION=$(json '.tools.base.yq.dependency_overrides["golang.org/x/net"]')" \
 		--build-arg \
 		"YQ_X_TEXT_VERSION=$(json '.tools.base.yq.dependency_overrides["golang.org/x/text"]')" \
 		"$repository_root"
@@ -195,6 +187,8 @@ build_go() {
 		--build-arg \
 		"HURL_SHA256_ARM64=$(json '.tools.go.hurl.assets.arm64.sha256')" \
 		--build-arg "SQLC_VERSION=$(json '.tools.go.sqlc.version')" \
+		--build-arg \
+		"SQLC_CEL_GO_VERSION=$(json '.tools.go.sqlc.dependency_overrides["github.com/google/cel-go"]')" \
 		--build-arg \
 		"SQLC_X_NET_VERSION=$(json '.tools.go.sqlc.dependency_overrides["golang.org/x/net"]')" \
 		--build-arg \
@@ -225,11 +219,16 @@ build_node() {
 		--tag ci-node:test \
 		"${common_labels[@]}" \
 		--build-arg BASE_IMAGE=ci-base:test \
-		--build-arg "NODE_IMAGE=${node_image}" \
+		--build-arg "NODE_ASSET_URL_AMD64=$(json '.tools.node.assets.amd64.url')" \
+		--build-arg "NODE_ASSET_URL_ARM64=$(json '.tools.node.assets.arm64.url')" \
+		--build-arg "NODE_SHA256_AMD64=$(json '.tools.node.assets.amd64.sha256')" \
+		--build-arg "NODE_SHA256_ARM64=$(json '.tools.node.assets.arm64.sha256')" \
 		--build-arg \
 		"MARKDOWNLINT_CLI2_VERSION=$(json '.tools.node.markdownlint_cli2.version')" \
 		--build-arg \
 		"MARKDOWNLINT_SMOL_TOML_VERSION=$(json '.tools.node.markdownlint_cli2.dependency_overrides["smol-toml"]')" \
+		--build-arg \
+		"MARKDOWNLINT_KATEX_VERSION=$(json '.tools.node.markdownlint_cli2.dependency_overrides.katex')" \
 		--build-arg \
 		"NODE_TOOLS_BUNDLE_VERSION=$(json '.tools.node.bundle_version')" \
 		--build-arg "NODE_VERSION=$(json '.tools.node.runtime')" \
@@ -241,6 +240,10 @@ build_node() {
 		"NPM_BRACE_EXPANSION_VERSION=$(json '.tools.node.npm.dependency_replacements["brace-expansion"]')" \
 		--build-arg \
 		"NPM_IP_ADDRESS_VERSION=$(json '.tools.node.npm.dependency_replacements["ip-address"]')" \
+		--build-arg \
+		"NPM_HTTP_CACHE_SEMANTICS_VERSION=$(json '.tools.node.npm.dependency_replacements["http-cache-semantics"]')" \
+		--build-arg \
+		"NPM_POSTCSS_SELECTOR_PARSER_VERSION=$(json '.tools.node.npm.dependency_replacements["postcss-selector-parser"]')" \
 		--build-arg \
 		"NPM_SHA256=$(json '.tools.node.npm.asset.sha256')" \
 		--build-arg \
@@ -327,6 +330,10 @@ build_postgres() {
 		"GOSU_VERSION=$(json '.tools.postgres.gosu.version')" \
 		--build-arg \
 		"GOSU_COMMIT=$(json '.tools.postgres.gosu.commit')" \
+		--build-arg \
+		"GOSU_MOBY_USER_VERSION=$(json '.tools.postgres.gosu.dependency_overrides["github.com/moby/sys/user"]')" \
+		--build-arg \
+		"GOSU_X_SYS_VERSION=$(json '.tools.postgres.gosu.dependency_overrides["golang.org/x/sys"]')" \
 		--build-arg \
 		"PGVECTOR_VERSION=$(json '.tools.postgres.pgvector')" \
 		--build-arg \

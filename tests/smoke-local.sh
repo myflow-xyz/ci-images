@@ -40,25 +40,39 @@ if [[ $target == all || $target == base ]]; then
 		--env "EXPECTED_CI_UID=$(json '.ci_user.uid')" \
 		--env "EXPECTED_CI_GID=$(json '.ci_user.gid')" \
 		--env "EXPECTED_TOOLCHAIN_GO_VERSION=$(json '.tools.go.runtime')" \
+		--env \
+		"EXPECTED_COMPOSE_X_NET_VERSION=$(json '.tools.base.compose.dependency_overrides["golang.org/x/net"]')" \
 		--env "EXPECTED_BASH_VERSION=$(json '.tools.base.bash.version')" \
 		--env \
 		"EXPECTED_ACTIONLINT_VERSION=$(json '.tools.base.actionlint.version')" \
+		--env \
+		"EXPECTED_ACTIONLINT_X_SYS_VERSION=$(json '.tools.base.actionlint.dependency_overrides["golang.org/x/sys"]')" \
 		--env "EXPECTED_GH_VERSION=$(json '.tools.base.gh.version')" \
+		--env \
+		"EXPECTED_GH_X_NET_VERSION=$(json '.tools.base.gh.dependency_overrides["golang.org/x/net"]')" \
 		--env \
 		"EXPECTED_GIT_VERSION=$(json '.tools.base.git.version')" \
 		--env \
 		"EXPECTED_GIT_LFS_VERSION=$(json '.tools.base.git_lfs.version')" \
 		--env \
+		"EXPECTED_GIT_LFS_X_NET_VERSION=$(json '.tools.base.git_lfs.dependency_overrides["golang.org/x/net"]')" \
+		--env \
 		"EXPECTED_GIT_LFS_X_CRYPTO_VERSION=$(json '.tools.base.git_lfs.dependency_overrides["golang.org/x/crypto"]')" \
 		--env \
 		"EXPECTED_GITLEAKS_VERSION=$(json '.tools.base.gitleaks.version')" \
 		--env \
+		"EXPECTED_GITLEAKS_COMPRESS_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["github.com/klauspost/compress"]')" \
+		--env \
 		"EXPECTED_GITLEAKS_X_CRYPTO_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["golang.org/x/crypto"]')" \
 		--env \
 		"EXPECTED_GITLEAKS_XZ_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["github.com/ulikunitz/xz"]')" \
+		--env \
+		"EXPECTED_GITLEAKS_RARDECODE_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["github.com/nwaples/rardecode/v2"]')" \
 		--env "EXPECTED_JQ_VERSION=$(json '.tools.base.jq.version')" \
 		--env \
 		"EXPECTED_OSV_SCANNER_VERSION=$(json '.tools.base.osv_scanner.version')" \
+		--env \
+		"EXPECTED_OSV_SCANNER_X_NET_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["golang.org/x/net"]')" \
 		--env "EXPECTED_PYTHON_VERSION=$(json '.tools.base.python.version')" \
 		--env \
 		"EXPECTED_RIPGREP_VERSION=$(json '.tools.base.ripgrep.version')" \
@@ -67,8 +81,12 @@ if [[ $target == all || $target == base ]]; then
 		--env "EXPECTED_SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
 		--env "EXPECTED_TRIVY_VERSION=$(json '.tools.base.trivy.version')" \
 		--env \
+		"EXPECTED_TRIVY_X_NET_VERSION=$(json '.tools.base.trivy.dependency_overrides["golang.org/x/net"]')" \
+		--env \
 		"EXPECTED_TRIVY_GRPC_VERSION=$(json '.tools.base.trivy.dependency_overrides["google.golang.org/grpc"]')" \
 		--env "EXPECTED_YQ_VERSION=$(json '.tools.base.yq.version')" \
+		--env \
+		"EXPECTED_YQ_X_NET_VERSION=$(json '.tools.base.yq.dependency_overrides["golang.org/x/net"]')" \
 		--env \
 		"EXPECTED_YQ_X_TEXT_VERSION=$(json '.tools.base.yq.dependency_overrides["golang.org/x/text"]')"
 	smoke_script \
@@ -85,6 +103,8 @@ if [[ $target == all || $target == go ]]; then
 		go \
 		--env "EXPECTED_GO_VERSION=$(json '.tools.go.runtime')" \
 		--env "EXPECTED_SQLC_VERSION=$(json '.tools.go.sqlc.version')" \
+		--env \
+		"EXPECTED_SQLC_CEL_GO_VERSION=$(json '.tools.go.sqlc.dependency_overrides["github.com/google/cel-go"]')" \
 		--env "EXPECTED_GOOSE_VERSION=$(json '.tools.go.goose.version')" \
 		--env \
 		"EXPECTED_GOOSE_X_CRYPTO_VERSION=$(json '.tools.go.goose.dependency_overrides["golang.org/x/crypto"]')" \
@@ -119,11 +139,17 @@ if [[ $target == all || $target == node ]]; then
 		--env \
 		"EXPECTED_MARKDOWNLINT_SMOL_TOML_VERSION=$(json '.tools.node.markdownlint_cli2.dependency_overrides["smol-toml"]')" \
 		--env \
+		"EXPECTED_MARKDOWNLINT_KATEX_VERSION=$(json '.tools.node.markdownlint_cli2.dependency_overrides.katex')" \
+		--env \
 		"EXPECTED_NODE_BUNDLE_VERSION=$(json '.tools.node.bundle_version')" \
 		--env \
 		"EXPECTED_NPM_BRACE_EXPANSION_VERSION=$(json '.tools.node.npm.dependency_replacements["brace-expansion"]')" \
 		--env \
 		"EXPECTED_NPM_IP_ADDRESS_VERSION=$(json '.tools.node.npm.dependency_replacements["ip-address"]')" \
+		--env \
+		"EXPECTED_NPM_HTTP_CACHE_SEMANTICS_VERSION=$(json '.tools.node.npm.dependency_replacements["http-cache-semantics"]')" \
+		--env \
+		"EXPECTED_NPM_POSTCSS_SELECTOR_PARSER_VERSION=$(json '.tools.node.npm.dependency_replacements["postcss-selector-parser"]')" \
 		--env \
 		"EXPECTED_NPM_TAR_VERSION=$(json '.tools.node.npm.dependency_replacements.tar')" \
 		--env \

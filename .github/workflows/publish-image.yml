@@ -25,7 +25,7 @@ permissions:
   packages: write
 
 env:
-  BUILDX_VERSION: v0.37.2
+  BUILDX_VERSION: v0.38.0
   BUILDKIT_IMAGE: >-
     docker.io/moby/buildkit@sha256:6c2fa84a6b61ccd72899dde4239f8d5717f05f9a8ca6f3cad185fb1a95a94de3
   CI_IMAGES_SBOM_GENERATOR: >-
@@ -76,7 +76,7 @@ jobs:
             "$PARENT_IMAGE"
 
       - name: Upload platform record
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: candidate-${{ inputs.image }}-${{ matrix.architecture }}
           path: ${{ runner.temp }}/published-image.json
@@ -112,7 +112,7 @@ jobs:
           password: ${{ github.token }}
 
       - name: Download platform records
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: candidate-${{ inputs.image }}-*
           path: ${{ runner.temp }}/platforms

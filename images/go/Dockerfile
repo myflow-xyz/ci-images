@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.27.1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+# syntax=docker/dockerfile:1.28.0@sha256:bb22d9815c728170f72750f4e5b0d672e06176142e1d602c7e66c050100b7e5b
 # check=skip=InvalidDefaultArgInFrom
 
 ARG BASE_IMAGE
@@ -23,6 +23,7 @@ ARG HURL_SHA256_ARM64
 ARG HURL_VERSION
 ARG MANIFEST_SHA=unknown
 ARG SQLC_VERSION
+ARG SQLC_CEL_GO_VERSION
 ARG SQLC_GRPC_VERSION
 ARG SQLC_X_NET_VERSION
 ARG TARGETARCH
@@ -111,6 +112,7 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       done; \
       CGO_ENABLED=0 /usr/local/go/bin/go build \
           -buildvcs=false \
+          -mod=mod \
           -trimpath \
           -o "${output_directory}/${name}" \
           "${package}"; \
@@ -124,6 +126,7 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       sqlc \
       github.com/sqlc-dev/sqlc/cmd/sqlc \
       "${SQLC_VERSION}" \
+      "github.com/google/cel-go@${SQLC_CEL_GO_VERSION}" \
       "golang.org/x/net@${SQLC_X_NET_VERSION}" \
       "google.golang.org/grpc@${SQLC_GRPC_VERSION}"; \
     build_tool \

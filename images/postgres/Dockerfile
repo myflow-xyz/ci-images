@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.27.1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+# syntax=docker/dockerfile:1.28.0@sha256:bb22d9815c728170f72750f4e5b0d672e06176142e1d602c7e66c050100b7e5b
 # check=skip=InvalidDefaultArgInFrom
 
 ARG PGVECTOR_IMAGE
@@ -6,6 +6,8 @@ FROM ${PGVECTOR_IMAGE} AS gosu-builder
 
 ARG DEBIAN_SNAPSHOT
 ARG GOSU_COMMIT
+ARG GOSU_MOBY_USER_VERSION
+ARG GOSU_X_SYS_VERSION
 ARG GO_SHA256_AMD64
 ARG GO_SHA256_ARM64
 ARG GO_VERSION
@@ -57,16 +59,24 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
     --mount=type=cache,target=/var/cache/go/build,sharing=locked \
     set -eu; \
     install -d /out; \
+    install -d /var/tmp/gosu-build; \
+    cd /var/tmp/gosu-build; \
+    export \
+      GOCACHE=/var/cache/go/build \
+      GOMODCACHE=/var/cache/go/mod \
+      GOPATH=/var/lib/go \
+      GOTOOLCHAIN=local; \
+    /usr/local/go/bin/go mod init ci.invalid/gosu; \
+    /usr/local/go/bin/go get "github.com/tianon/gosu@${GOSU_COMMIT}"; \
+    /usr/local/go/bin/go get \
+      "github.com/moby/sys/user@${GOSU_MOBY_USER_VERSION}" \
+      "golang.org/x/sys@${GOSU_X_SYS_VERSION}"; \
     CGO_ENABLED=0 \
-    GOBIN=/out \
-    GOCACHE=/var/cache/go/build \
-    GOMODCACHE=/var/cache/go/mod \
-    GOPATH=/var/lib/go \
-    GOTOOLCHAIN=local \
-      /usr/local/go/bin/go install \
+      /usr/local/go/bin/go build \
         -buildvcs=false \
         -trimpath \
-        "github.com/tianon/gosu@${GOSU_COMMIT}"
+        -o /out/gosu \
+        github.com/tianon/gosu
 
 FROM ${PGVECTOR_IMAGE}
 

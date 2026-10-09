@@ -7,17 +7,21 @@ CI tasks that do not require the Vite frontend toolchain.
 
 The initial image contract includes:
 
-- Node.js 26.10.0 imported from the digest-pinned official Node image;
+- Node.js 26.11.1 imported from checksum-pinned official Linux archives;
 - npm and npx 12.2.0 from a hash-verified release artifact;
-- pnpm 12.8.1 from hash-verified native Linux release artifacts;
+- pnpm 12.10.1 from hash-verified native Linux release artifacts;
 - `markdownlint-cli2` 0.23.3;
-- Redocly CLI 2.57.0 for OpenAPI validation;
+- Redocly CLI 2.60.0 for OpenAPI validation;
 - explicit npm and pnpm cache paths.
 
 The npm release artifact is hash-verified, and its reviewed bundled dependency
 replacements are installed from a committed lockfile. They include the current
-compatible `undici` 6.x release to fix the older copy bundled with npm. The
-Markdown tool lockfile overrides `smol-toml` with its fixed release. The architecture-matched
+compatible `undici` 6.x release and the fixed `postcss-selector-parser` release.
+The `http-cache-semantics` replacement uses the current compatible 4.3.0
+release. Its remaining advisory scenario is recorded in the
+[suite security qualification](../security/0.0.16.md#remaining-library-findings).
+The Markdown tool lockfile overrides `smol-toml` and KaTeX with their reviewed
+fixed releases. The architecture-matched
 pnpm archive is installed independently of npm and includes its native
 executable. Other Node tool dependency trees are installed from committed
 lockfiles into immutable versioned directories. Stable command links are
@@ -29,7 +33,7 @@ This image adds these variables to the
 [`ci-base` environment](base.md#runtime-environment):
 
 ```text
-NODE_VERSION=26.10.0
+NODE_VERSION=26.11.1
 NPM_CONFIG_CACHE=/var/cache/npm
 PNPM_CONFIG_STORE_DIR=/var/cache/pnpm/store
 ```
@@ -54,7 +58,7 @@ pnpm store=/var/cache/pnpm/store
 ```
 
 pnpm creates a store-format directory below the configured store root. pnpm
-12.8.1 retains the compatible `v11` store format; the manifest records the CLI
+12.10.1 retains the compatible `v11` store format; the manifest records the CLI
 and store-format versions independently. The caches contain package content
 only. Do not persist `node_modules`, build output, or a repository workspace.
 

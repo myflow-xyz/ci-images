@@ -7,9 +7,9 @@ smoke and E2E jobs.
 
 The initial image contract includes:
 
-- Playwright compatibility metadata for `@playwright/test` 1.63.0;
+- Playwright compatibility metadata for `@playwright/test` 1.64.0;
 - Chromium installed for that exact Playwright release;
-- compatible Debian Bookworm browser libraries;
+- compatible Debian Trixie browser libraries;
 - a fixed browser path readable by the unprivileged CI user;
 - stable `playwright` and version-check command links in `/opt/ci-tools/bin`;
 - `tini` as the container entrypoint for browser subprocess cleanup.
@@ -25,7 +25,7 @@ The effective environment is the
 
 ```text
 PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-PLAYWRIGHT_VERSION=1.63.0
+PLAYWRIGHT_VERSION=1.64.0
 ```
 
 `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD` is scoped to the image build and is not

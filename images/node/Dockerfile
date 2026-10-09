@@ -1,9 +1,32 @@
-# syntax=docker/dockerfile:1.27.1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+# syntax=docker/dockerfile:1.28.0@sha256:bb22d9815c728170f72750f4e5b0d672e06176142e1d602c7e66c050100b7e5b
 # check=skip=InvalidDefaultArgInFrom
 
 ARG BASE_IMAGE
-ARG NODE_IMAGE
-FROM ${NODE_IMAGE} AS node-runtime
+FROM ${BASE_IMAGE} AS node-runtime
+
+ARG NODE_ASSET_URL_AMD64
+ARG NODE_ASSET_URL_ARM64
+ARG NODE_SHA256_AMD64
+ARG NODE_SHA256_ARM64
+ARG NODE_VERSION
+ARG TARGETARCH
+
+USER root
+
+RUN set -eu; \
+    case "${TARGETARCH}" in \
+      amd64) node_asset_url="${NODE_ASSET_URL_AMD64}"; node_sha256="${NODE_SHA256_AMD64}" ;; \
+      arm64) node_asset_url="${NODE_ASSET_URL_ARM64}"; node_sha256="${NODE_SHA256_ARM64}" ;; \
+      *) exit 1 ;; \
+    esac; \
+    /usr/local/libexec/ci/fetch-verified \
+      "${node_asset_url}" "${node_sha256}" /var/tmp/node.tar.xz; \
+    tar -xJf /var/tmp/node.tar.xz --strip-components=1 -C /usr/local; \
+    rm -f /var/tmp/node.tar.xz; \
+    install -d /usr/local/share/doc/node; \
+    cp /usr/local/LICENSE /usr/local/CHANGELOG.md /usr/local/README.md \
+      /usr/local/share/doc/node/; \
+    test -x /usr/local/bin/node
 
 FROM ${BASE_IMAGE}
 
@@ -12,11 +35,14 @@ ARG BUILD_REVISION=unknown
 ARG MANIFEST_SHA=unknown
 ARG MARKDOWNLINT_CLI2_VERSION
 ARG MARKDOWNLINT_SMOL_TOML_VERSION
+ARG MARKDOWNLINT_KATEX_VERSION
 ARG NODE_TOOLS_BUNDLE_VERSION
 ARG NODE_VERSION
 ARG NPM_ASSET_URL
 ARG NPM_BRACE_EXPANSION_VERSION
+ARG NPM_HTTP_CACHE_SEMANTICS_VERSION
 ARG NPM_IP_ADDRESS_VERSION
+ARG NPM_POSTCSS_SELECTOR_PARSER_VERSION
 ARG NPM_SHA256
 ARG NPM_TAR_VERSION
 ARG NPM_UNDICI_VERSION
@@ -115,8 +141,14 @@ RUN --mount=from=node-runtime,source=/usr/local/lib/node_modules/npm,target=/usr
       "require('/var/tmp/npm-runtime/node_modules/brace-expansion/package.json').version")" \
       = "${NPM_BRACE_EXPANSION_VERSION}"; \
     test "$(node --print \
+      "require('/var/tmp/npm-runtime/node_modules/http-cache-semantics/package.json').version")" \
+      = "${NPM_HTTP_CACHE_SEMANTICS_VERSION}"; \
+    test "$(node --print \
       "require('/var/tmp/npm-runtime/node_modules/ip-address/package.json').version")" \
       = "${NPM_IP_ADDRESS_VERSION}"; \
+    test "$(node --print \
+      "require('/var/tmp/npm-runtime/node_modules/postcss-selector-parser/package.json').version")" \
+      = "${NPM_POSTCSS_SELECTOR_PARSER_VERSION}"; \
     test "$(node --print \
       "require('/var/tmp/npm-runtime/node_modules/tar/package.json').version")" \
       = "${NPM_TAR_VERSION}"; \
@@ -125,15 +157,23 @@ RUN --mount=from=node-runtime,source=/usr/local/lib/node_modules/npm,target=/usr
       = "${NPM_UNDICI_VERSION}"; \
     rm -rf \
       /var/tmp/npm-package/node_modules/brace-expansion \
+      /var/tmp/npm-package/node_modules/http-cache-semantics \
       /var/tmp/npm-package/node_modules/ip-address \
+      /var/tmp/npm-package/node_modules/postcss-selector-parser \
       /var/tmp/npm-package/node_modules/tar \
       /var/tmp/npm-package/node_modules/undici; \
     mv \
       /var/tmp/npm-runtime/node_modules/brace-expansion \
       /var/tmp/npm-package/node_modules/brace-expansion; \
     mv \
+      /var/tmp/npm-runtime/node_modules/http-cache-semantics \
+      /var/tmp/npm-package/node_modules/http-cache-semantics; \
+    mv \
       /var/tmp/npm-runtime/node_modules/ip-address \
       /var/tmp/npm-package/node_modules/ip-address; \
+    mv \
+      /var/tmp/npm-runtime/node_modules/postcss-selector-parser \
+      /var/tmp/npm-package/node_modules/postcss-selector-parser; \
     mv \
       /var/tmp/npm-runtime/node_modules/tar \
       /var/tmp/npm-package/node_modules/tar; \
@@ -186,6 +226,9 @@ RUN --mount=type=cache,target=/var/cache/npm \
     test "$(node --print \
       "require('/var/tmp/markdownlint-tools/node_modules/smol-toml/package.json').version")" \
       = "${MARKDOWNLINT_SMOL_TOML_VERSION}"; \
+    test "$(node --print \
+      "require('/var/tmp/markdownlint-tools/node_modules/katex/package.json').version")" \
+      = "${MARKDOWNLINT_KATEX_VERSION}"; \
     install -d /opt/ci-tools/markdownlint-cli2; \
     mv \
       /var/tmp/markdownlint-tools \

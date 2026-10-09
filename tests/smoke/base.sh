@@ -8,12 +8,21 @@ expected_go=${EXPECTED_TOOLCHAIN_GO_VERSION:?EXPECTED_TOOLCHAIN_GO_VERSION is no
 expected_python=${EXPECTED_PYTHON_VERSION:?EXPECTED_PYTHON_VERSION is not set}
 expected_bash=${EXPECTED_BASH_VERSION:?EXPECTED_BASH_VERSION is not set}
 : "${EXPECTED_ACTIONLINT_VERSION:?EXPECTED_ACTIONLINT_VERSION is not set}"
+: "${EXPECTED_COMPOSE_X_NET_VERSION:?EXPECTED_COMPOSE_X_NET_VERSION is not set}"
+: "${EXPECTED_GH_X_NET_VERSION:?EXPECTED_GH_X_NET_VERSION is not set}"
+: "${EXPECTED_GIT_LFS_X_NET_VERSION:?EXPECTED_GIT_LFS_X_NET_VERSION is not set}"
+: "${EXPECTED_OSV_SCANNER_X_NET_VERSION:?EXPECTED_OSV_SCANNER_X_NET_VERSION is not set}"
+: "${EXPECTED_TRIVY_X_NET_VERSION:?EXPECTED_TRIVY_X_NET_VERSION is not set}"
+: "${EXPECTED_GITLEAKS_COMPRESS_VERSION:?EXPECTED_GITLEAKS_COMPRESS_VERSION is not set}"
+: "${EXPECTED_YQ_X_NET_VERSION:?EXPECTED_YQ_X_NET_VERSION is not set}"
+: "${EXPECTED_ACTIONLINT_X_SYS_VERSION:?EXPECTED_ACTIONLINT_X_SYS_VERSION is not set}"
 : "${EXPECTED_GH_VERSION:?EXPECTED_GH_VERSION is not set}"
 : "${EXPECTED_GIT_VERSION:?EXPECTED_GIT_VERSION is not set}"
 : "${EXPECTED_GIT_LFS_VERSION:?EXPECTED_GIT_LFS_VERSION is not set}"
 : "${EXPECTED_GIT_LFS_X_CRYPTO_VERSION:?EXPECTED_GIT_LFS_X_CRYPTO_VERSION is not set}"
 : "${EXPECTED_GITLEAKS_X_CRYPTO_VERSION:?EXPECTED_GITLEAKS_X_CRYPTO_VERSION is not set}"
 : "${EXPECTED_GITLEAKS_XZ_VERSION:?EXPECTED_GITLEAKS_XZ_VERSION is not set}"
+: "${EXPECTED_GITLEAKS_RARDECODE_VERSION:?EXPECTED_GITLEAKS_RARDECODE_VERSION is not set}"
 : "${EXPECTED_GITLEAKS_VERSION:?EXPECTED_GITLEAKS_VERSION is not set}"
 : "${EXPECTED_JQ_VERSION:?EXPECTED_JQ_VERSION is not set}"
 : "${EXPECTED_OSV_SCANNER_VERSION:?EXPECTED_OSV_SCANNER_VERSION is not set}"
@@ -137,6 +146,12 @@ PY
 
 actionlint --version 2>&1 |
 	grep --fixed-strings "$EXPECTED_ACTIONLINT_VERSION" >/dev/null
+grep \
+	--binary-files=text \
+	--fixed-strings \
+	$'dep\tgolang.org/x/sys\t'"${EXPECTED_ACTIONLINT_X_SYS_VERSION}" \
+	"$(command -v actionlint)" \
+	>/dev/null
 gh --version |
 	grep --fixed-strings "gh version ${EXPECTED_GH_VERSION}" >/dev/null
 [[ $(git version) == "git version ${EXPECTED_GIT_VERSION}" ]]
@@ -188,6 +203,12 @@ grep \
 grep \
 	--binary-files=text \
 	--fixed-strings \
+	$'dep\tgithub.com/nwaples/rardecode/v2\t'"${EXPECTED_GITLEAKS_RARDECODE_VERSION}" \
+	"$(command -v gitleaks)" \
+	>/dev/null
+grep \
+	--binary-files=text \
+	--fixed-strings \
 	$'dep\tgolang.org/x/crypto\t'"${EXPECTED_GITLEAKS_X_CRYPTO_VERSION}" \
 	"$(command -v gitleaks)" \
 	>/dev/null
@@ -202,7 +223,69 @@ grep \
 	"$(command -v yq)" \
 	>/dev/null
 
-for command in actionlint git-lfs gitleaks osv-scanner shfmt yq; do
+(
+	gitleaks_smoke_directory=$(mktemp -d /var/tmp/gitleaks-archive-smoke.XXXXXX)
+	trap 'rm -rf "$gitleaks_smoke_directory"' EXIT
+	mkdir "$gitleaks_smoke_directory/input"
+	printf '%s\n' 'CI_SECURITY_FIXTURE_12345678' >"$gitleaks_smoke_directory/fixture.txt"
+	zip -q -j "$gitleaks_smoke_directory/input/secrets.zip" "$gitleaks_smoke_directory/fixture.txt"
+	cat >"$gitleaks_smoke_directory/config.toml" <<'TOML'
+[[rules]]
+id = "ci-security-smoke"
+regex = '''CI_SECURITY_FIXTURE_[0-9]{8}'''
+TOML
+	if gitleaks dir "$gitleaks_smoke_directory/input" \
+		--config "$gitleaks_smoke_directory/config.toml" \
+		--max-archive-depth 1 --exit-code 7 --no-banner --redact \
+		--report-format json --report-path "$gitleaks_smoke_directory/report.json" \
+		>"$gitleaks_smoke_directory/scan.log" 2>&1; then
+		printf 'gitleaks did not detect the archive fixture\n' >&2
+		exit 1
+	else
+		[[ $? == 7 ]]
+	fi
+	jq --exit-status 'length == 1 and .[0].RuleID == "ci-security-smoke" and .[0].Secret == "REDACTED"' \
+		"$gitleaks_smoke_directory/report.json" >/dev/null
+)
+
+assert_dependency_version() {
+	local binary=$1
+	local module=$2
+	local version=$3
+	grep --binary-files=text --fixed-strings \
+		$'dep\t'"${module}"$'\t'"${version}"$'\t' "$binary" >/dev/null
+}
+
+assert_dependency_version \
+	/usr/local/lib/docker/cli-plugins/docker-compose \
+	golang.org/x/net \
+	"$EXPECTED_COMPOSE_X_NET_VERSION"
+assert_dependency_version \
+	"$(command -v gh)" \
+	golang.org/x/net \
+	"$EXPECTED_GH_X_NET_VERSION"
+assert_dependency_version \
+	"$(command -v git-lfs)" \
+	golang.org/x/net \
+	"$EXPECTED_GIT_LFS_X_NET_VERSION"
+assert_dependency_version \
+	"$(command -v osv-scanner)" \
+	golang.org/x/net \
+	"$EXPECTED_OSV_SCANNER_X_NET_VERSION"
+assert_dependency_version \
+	"$(command -v trivy)" \
+	golang.org/x/net \
+	"$EXPECTED_TRIVY_X_NET_VERSION"
+assert_dependency_version \
+	"$(command -v gitleaks)" \
+	github.com/klauspost/compress \
+	"$EXPECTED_GITLEAKS_COMPRESS_VERSION"
+assert_dependency_version \
+	"$(command -v yq)" \
+	golang.org/x/net \
+	"$EXPECTED_YQ_X_NET_VERSION"
+
+for command in actionlint gh docker git-lfs gitleaks osv-scanner shfmt yq; do
 	grep \
 		--binary-files=text \
 		--fixed-strings \
@@ -210,6 +293,13 @@ for command in actionlint git-lfs gitleaks osv-scanner shfmt yq; do
 		"$(command -v "$command")" \
 		>/dev/null
 done
+
+grep \
+	--binary-files=text \
+	--fixed-strings \
+	"go${expected_go}" \
+	/usr/local/lib/docker/cli-plugins/docker-compose \
+	>/dev/null
 
 for command in \
 	actionlint \

@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.27.1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+# syntax=docker/dockerfile:1.28.0@sha256:bb22d9815c728170f72750f4e5b0d672e06176142e1d602c7e66c050100b7e5b
 # check=skip=InvalidDefaultArgInFrom
 
 ARG BASE_IMAGE
@@ -201,27 +201,21 @@ RUN set -eu; \
 FROM --platform=${BUILDPLATFORM} ${BASE_IMAGE} AS base-go-tools-builder
 
 ARG ACTIONLINT_VERSION
+ARG ACTIONLINT_X_SYS_VERSION
 ARG BUILDARCH
-ARG COMPOSE_ASSET_URL_AMD64
-ARG COMPOSE_ASSET_URL_ARM64
-ARG COMPOSE_SHA256_AMD64
-ARG COMPOSE_SHA256_ARM64
 ARG COMPOSE_VERSION
+ARG COMPOSE_X_NET_VERSION
 ARG DEBIAN_SNAPSHOT
-ARG DOCKER_ASSET_URL_AMD64
-ARG DOCKER_ASSET_URL_ARM64
-ARG DOCKER_PACKAGE_VERSION
-ARG DOCKER_SHA256_AMD64
-ARG DOCKER_SHA256_ARM64
+ARG DOCKER_COMMIT
 ARG DOCKER_VERSION
-ARG GH_ASSET_URL_AMD64
-ARG GH_ASSET_URL_ARM64
-ARG GH_SHA256_AMD64
-ARG GH_SHA256_ARM64
 ARG GH_VERSION
+ARG GH_X_NET_VERSION
 ARG GIT_LFS_VERSION
+ARG GIT_LFS_X_NET_VERSION
 ARG GIT_LFS_X_CRYPTO_VERSION
 ARG GITLEAKS_VERSION
+ARG GITLEAKS_COMPRESS_VERSION
+ARG GITLEAKS_RARDECODE_VERSION
 ARG GITLEAKS_X_CRYPTO_VERSION
 ARG GITLEAKS_XZ_VERSION
 ARG GO_SHA256_AMD64
@@ -233,6 +227,7 @@ ARG JQ_SHA256_AMD64
 ARG JQ_SHA256_ARM64
 ARG JQ_VERSION
 ARG OSV_SCANNER_VERSION
+ARG OSV_SCANNER_X_NET_VERSION
 ARG RIPGREP_ASSET_URL_AMD64
 ARG RIPGREP_ASSET_URL_ARM64
 ARG RIPGREP_SHA256_AMD64
@@ -247,7 +242,9 @@ ARG SHFMT_VERSION
 ARG TARGETARCH
 ARG TRIVY_GRPC_VERSION
 ARG TRIVY_VERSION
+ARG TRIVY_X_NET_VERSION
 ARG YQ_VERSION
+ARG YQ_X_NET_VERSION
 ARG YQ_X_TEXT_VERSION
 
 USER root
@@ -323,6 +320,7 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
           GOMODCACHE=/var/cache/go/trivy-mod \
           /usr/local/go/bin/go build \
           -buildvcs=false \
+          -mod=mod \
           -ldflags \
           "-s -w -X=github.com/aquasecurity/trivy/pkg/version/app.ver=${TRIVY_VERSION}" \
           -trimpath \
@@ -330,9 +328,28 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
           ./cmd/trivy; \
         return; \
       fi; \
-      cd "${build_directory}"; \
-      /usr/local/go/bin/go mod init "ci.invalid/${name}"; \
-      /usr/local/go/bin/go get "${package}@${version}"; \
+      case "${name}" in \
+        docker|docker-compose) \
+          if [ "${name}" = docker ]; then \
+            module=github.com/docker/cli; \
+          else \
+            module=github.com/docker/compose/v5; \
+          fi; \
+          /usr/local/go/bin/go mod download "${module}@${version}"; \
+          cp -R "/var/cache/go/mod/${module}@${version}/." "${build_directory}/"; \
+          chmod -R u+w "${build_directory}"; \
+          cd "${build_directory}"; \
+          if [ "${name}" = docker ]; then \
+            cp vendor.mod go.mod; \
+            cp vendor.sum go.sum; \
+          fi \
+          ;; \
+        *) \
+          cd "${build_directory}"; \
+          /usr/local/go/bin/go mod init "ci.invalid/${name}"; \
+          /usr/local/go/bin/go get "${package}@${version}" \
+          ;; \
+      esac; \
       for dependency in "$@"; do \
         /usr/local/go/bin/go get "${dependency}"; \
       done; \
@@ -340,15 +357,31 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
         CGO_ENABLED=0 GOARCH="${TARGETARCH}" GOOS=linux \
           /usr/local/go/bin/go build \
           -buildvcs=false \
+          -mod=mod \
           -ldflags \
           "-s -w -X=github.com/zricethezav/gitleaks/v8/version.Version=${GITLEAKS_VERSION}" \
           -trimpath \
           -o "${output_directory}/${name}" \
           "${package}"; \
       else \
+        ldflags='-s -w'; \
+        case "${name}" in \
+          gh) \
+            ldflags="${ldflags} -X=github.com/cli/cli/v2/internal/build.Version=${GH_VERSION}" \
+            ;; \
+          docker) \
+            ldflags="${ldflags} -X=github.com/docker/cli/cli/version.Version=${DOCKER_VERSION}"; \
+            ldflags="${ldflags} -X=github.com/docker/cli/cli/version.GitCommit=${DOCKER_COMMIT}" \
+            ;; \
+          docker-compose) \
+            ldflags="${ldflags} -X=github.com/docker/compose/v5/internal.Version=v${COMPOSE_VERSION}" \
+            ;; \
+        esac; \
         CGO_ENABLED=0 GOARCH="${TARGETARCH}" GOOS=linux \
           /usr/local/go/bin/go build \
           -buildvcs=false \
+          -mod=mod \
+          -ldflags "${ldflags}" \
           -trimpath \
           -o "${output_directory}/${name}" \
           "${package}"; \
@@ -362,22 +395,42 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
     build_tool \
       actionlint \
       github.com/rhysd/actionlint/cmd/actionlint \
-      "v${ACTIONLINT_VERSION}"; \
+      "v${ACTIONLINT_VERSION}" \
+      "golang.org/x/sys@${ACTIONLINT_X_SYS_VERSION}"; \
+    build_tool \
+      gh \
+      github.com/cli/cli/v2/cmd/gh \
+      "v${GH_VERSION}" \
+      "golang.org/x/net@${GH_X_NET_VERSION}"; \
+    build_tool \
+      docker \
+      ./cmd/docker \
+      "v${DOCKER_VERSION}+incompatible"; \
+    mv "/out/docker/${DOCKER_VERSION}+incompatible" "/out/docker/${DOCKER_VERSION}"; \
+    build_tool \
+      docker-compose \
+      ./cmd \
+      "v${COMPOSE_VERSION}" \
+      "golang.org/x/net@${COMPOSE_X_NET_VERSION}"; \
     build_tool \
       git-lfs \
       github.com/git-lfs/git-lfs/v3 \
       "v${GIT_LFS_VERSION}" \
-      "golang.org/x/crypto@${GIT_LFS_X_CRYPTO_VERSION}"; \
+      "golang.org/x/crypto@${GIT_LFS_X_CRYPTO_VERSION}" \
+      "golang.org/x/net@${GIT_LFS_X_NET_VERSION}"; \
     build_tool \
       gitleaks \
       github.com/zricethezav/gitleaks/v8 \
       "v${GITLEAKS_VERSION}" \
       "github.com/ulikunitz/xz@${GITLEAKS_XZ_VERSION}" \
-      "golang.org/x/crypto@${GITLEAKS_X_CRYPTO_VERSION}"; \
+      "github.com/nwaples/rardecode/v2@${GITLEAKS_RARDECODE_VERSION}" \
+      "golang.org/x/crypto@${GITLEAKS_X_CRYPTO_VERSION}" \
+      "github.com/klauspost/compress@${GITLEAKS_COMPRESS_VERSION}"; \
     build_tool \
       osv-scanner \
       github.com/google/osv-scanner/v2/cmd/osv-scanner \
-      "v${OSV_SCANNER_VERSION}"; \
+      "v${OSV_SCANNER_VERSION}" \
+      "golang.org/x/net@${OSV_SCANNER_X_NET_VERSION}"; \
     build_tool \
       shfmt \
       mvdan.cc/sh/v3/cmd/shfmt \
@@ -386,51 +439,18 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       trivy \
       github.com/aquasecurity/trivy/cmd/trivy \
       "v${TRIVY_VERSION}" \
-      "google.golang.org/grpc@${TRIVY_GRPC_VERSION}"; \
+      "google.golang.org/grpc@${TRIVY_GRPC_VERSION}" \
+      "golang.org/x/net@${TRIVY_X_NET_VERSION}"; \
     build_tool \
       yq \
       github.com/mikefarah/yq/v4 \
       "v${YQ_VERSION}" \
-      "golang.org/x/text@${YQ_X_TEXT_VERSION}"
+      "golang.org/x/text@${YQ_X_TEXT_VERSION}" \
+      "golang.org/x/net@${YQ_X_NET_VERSION}"
 
 RUN set -eu; \
     case "${TARGETARCH}" in \
       amd64) \
-        docker_asset_url="${DOCKER_ASSET_URL_AMD64}"; \
-        docker_sha256="${DOCKER_SHA256_AMD64}"; \
-        compose_asset_url="${COMPOSE_ASSET_URL_AMD64}"; \
-        compose_sha256="${COMPOSE_SHA256_AMD64}" \
-        ;; \
-      arm64) \
-        docker_asset_url="${DOCKER_ASSET_URL_ARM64}"; \
-        docker_sha256="${DOCKER_SHA256_ARM64}"; \
-        compose_asset_url="${COMPOSE_ASSET_URL_ARM64}"; \
-        compose_sha256="${COMPOSE_SHA256_ARM64}" \
-        ;; \
-      *) exit 1 ;; \
-    esac; \
-    /usr/local/libexec/ci/fetch-verified \
-      "${docker_asset_url}" "${docker_sha256}" /var/tmp/docker-cli.deb; \
-    test "$(dpkg-deb --field /var/tmp/docker-cli.deb Architecture)" = "${TARGETARCH}"; \
-    test "$(dpkg-deb --field /var/tmp/docker-cli.deb Version)" = "${DOCKER_PACKAGE_VERSION}"; \
-    dpkg-deb --extract /var/tmp/docker-cli.deb /var/tmp/docker-cli; \
-    install -d "/out/docker/${DOCKER_VERSION}" "/out/docker-compose/${COMPOSE_VERSION}"; \
-    install -m 0755 /var/tmp/docker-cli/usr/bin/docker "/out/docker/${DOCKER_VERSION}/docker"; \
-    install -m 0644 /var/tmp/docker-cli/usr/share/doc/docker-ce-cli/changelog.Debian.gz "/out/docker/${DOCKER_VERSION}/changelog.Debian.gz"; \
-    /usr/local/libexec/ci/fetch-verified \
-      "${compose_asset_url}" "${compose_sha256}" "/out/docker-compose/${COMPOSE_VERSION}/docker-compose"; \
-    chmod 0755 "/out/docker-compose/${COMPOSE_VERSION}/docker-compose"; \
-    if [ "${BUILDARCH}" = "${TARGETARCH}" ]; then \
-      "/out/docker/${DOCKER_VERSION}/docker" --version | grep --fixed-strings "Docker version ${DOCKER_VERSION}," >/dev/null; \
-      test "$(/out/docker-compose/${COMPOSE_VERSION}/docker-compose version --short)" = "${COMPOSE_VERSION}"; \
-    fi; \
-    rm -rf /var/tmp/docker-cli /var/tmp/docker-cli.deb
-
-RUN set -eu; \
-    case "${TARGETARCH}" in \
-      amd64) \
-        gh_asset_url="${GH_ASSET_URL_AMD64}"; \
-        gh_sha256="${GH_SHA256_AMD64}"; \
         jq_asset_url="${JQ_ASSET_URL_AMD64}"; \
         jq_sha256="${JQ_SHA256_AMD64}"; \
         ripgrep_asset_url="${RIPGREP_ASSET_URL_AMD64}"; \
@@ -440,8 +460,6 @@ RUN set -eu; \
         shellcheck_sha256="${SHELLCHECK_SHA256_AMD64}" \
         ;; \
       arm64) \
-        gh_asset_url="${GH_ASSET_URL_ARM64}"; \
-        gh_sha256="${GH_SHA256_ARM64}"; \
         jq_asset_url="${JQ_ASSET_URL_ARM64}"; \
         jq_sha256="${JQ_SHA256_ARM64}"; \
         ripgrep_asset_url="${RIPGREP_ASSET_URL_ARM64}"; \
@@ -456,23 +474,9 @@ RUN set -eu; \
         ;; \
     esac; \
     install -d \
-      "/out/gh/${GH_VERSION}" \
       "/out/jq/${JQ_VERSION}" \
       "/out/ripgrep/${RIPGREP_VERSION}" \
       "/out/shellcheck/${SHELLCHECK_VERSION}"; \
-    /usr/local/libexec/ci/fetch-verified \
-      "${gh_asset_url}" \
-      "${gh_sha256}" \
-      /var/tmp/gh.tar.gz; \
-    tar -xzf /var/tmp/gh.tar.gz \
-      --strip-components=2 \
-      -C "/out/gh/${GH_VERSION}" \
-      "gh_${GH_VERSION}_linux_${TARGETARCH}/bin/gh"; \
-    if [ "${BUILDARCH}" = "${TARGETARCH}" ]; then \
-      "/out/gh/${GH_VERSION}/gh" --version \
-        | grep --fixed-strings "gh version ${GH_VERSION}" >/dev/null; \
-    fi; \
-    printf 'verified GitHub CLI %s for %s\n' "${GH_VERSION}" "${TARGETARCH}"; \
     /usr/local/libexec/ci/fetch-verified \
       "${jq_asset_url}" \
       "${jq_sha256}" \
@@ -515,7 +519,6 @@ RUN set -eu; \
       "${SHELLCHECK_VERSION}" \
       "${TARGETARCH}"; \
     rm -f \
-      /var/tmp/gh.tar.gz \
       /var/tmp/ripgrep.tar.gz \
       /var/tmp/shellcheck.tar.gz
 

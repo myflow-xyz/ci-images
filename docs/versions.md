@@ -17,8 +17,8 @@ revisions, checksums, and upstream image digests.
 | `Git LFS` | `3.8.0` |
 | `GitHub CLI` | `2.102.0` |
 | `CPython` | `3.14.8` |
-| `Docker CLI` | `29.8.2` |
-| `Docker Compose` | `5.5.1` |
+| `Docker CLI` | `29.9.0` |
+| `Docker Compose` | `5.6.0` |
 | `actionlint` | `1.7.12` |
 | `gitleaks` | `8.30.1` |
 | `jq` | `1.8.2` |
@@ -65,30 +65,30 @@ version listed above.
 | `tzdata` | `2026c-0+deb13u1` |
 | `unzip` | `6.0-29+deb13u1` |
 | `wget` | `1.25.0-2` |
-| `xz-utils` | `5.8.1-1+deb13u1` |
+| `xz-utils` | `5.8.1-1+deb13u2` |
 | `zip` | `3.0-15+deb13u1` |
 
 ## `ci-go`
 
 | Component | Version |
 | --- | --- |
-| `Go` | `1.27.1` |
+| `Go` | `1.27.2` |
 | `Hurl` | `8.0.1` |
 | `sqlc` | `1.31.1` |
 | `goose` | `3.28.0` |
 | `golangci-lint` | `2.14.0` |
-| `goimports` | `0.50.0` |
+| `goimports` | `0.51.0` |
 | `govulncheck` | `1.8.0` |
 
 ## `ci-node`
 
 | Component | Version |
 | --- | --- |
-| `Node.js` | `26.10.0` |
+| `Node.js` | `26.11.1` |
 | `npm` | `12.2.0` |
-| `pnpm` | `12.8.1` |
+| `pnpm` | `12.10.1` |
 | `markdownlint-cli2` | `0.23.3` |
-| `@redocly/cli` | `2.57.0` |
+| `@redocly/cli` | `2.60.0` |
 
 ## `ci-vite`
 
@@ -97,18 +97,18 @@ version listed above.
 | `@typescript/native` | `7.0.2` |
 | `TypeScript compatibility package` | `6.0.2` |
 | `TypeScript legacy compiler` | `6.0.3` |
-| `vite` | `8.3.2` |
+| `vite` | `8.3.4` |
 | `vitest` | `5.0.3` |
 | `@vitest/coverage-v8` | `5.0.3` |
-| `oxlint` | `1.86.0` |
+| `oxlint` | `1.87.0` |
 | `oxlint-tsgolint` | `7.0.2003` |
-| `oxfmt` | `0.71.0` |
+| `oxfmt` | `0.72.0` |
 
 ## `ci-playwright`
 
 | Component | Version |
 | --- | --- |
-| `@playwright/test` | `1.63.0` |
+| `@playwright/test` | `1.64.0` |
 
 ## `ci-postgres`
 
