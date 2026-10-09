@@ -212,6 +212,9 @@ jobs:
           CI_IMAGES_DOCKER_SOCKET: /var/run/docker.sock
         run: tests/docker-integration.sh
 
+      - name: Verify guarded cleanup on a disposable daemon
+        run: tests/utils-docker.sh
+
       - name: Run image-hosted policy checks
         run: |
           docker run --rm \

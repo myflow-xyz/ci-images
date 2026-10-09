@@ -121,6 +121,13 @@ separate. Logical reclamation is not proof that a VM disk image shrank.
 
 ## Schedule and run maintenance
 
+`tests/utils-docker.sh` qualifies the packaged utility against a fresh,
+digest-pinned Docker daemon. It checks guarded deletion, retained volume
+contents, cache behavior, concurrent Compose projects, and explicit recovery.
+The harness creates and removes its own test containers and volumes. Only the
+test daemon is privileged; it receives no host Docker socket or host-root mount.
+These tests do not replace qualification of the runner's complete job lifecycle.
+
 After the rollout gates below pass, review and install the
 [systemd examples](../scripts/examples/ci-utils/). They use the same adapter for
 daily and weekly profiles. Adjust the selected Docker service/socket and the
