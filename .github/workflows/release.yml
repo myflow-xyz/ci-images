@@ -31,6 +31,8 @@ jobs:
     permissions:
       contents: write
       packages: write
+    outputs:
+      images: ${{ steps.promote.outputs.images }}
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -84,10 +86,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Promote verified digests
+        id: promote
         env:
           GIT_TAG: ${{ steps.release.outputs.git_tag }}
           OUTPUT_FILE: ${{ runner.temp }}/released-images.json
-        run: .github/scripts/release-images.sh "$GIT_TAG" "$OUTPUT_FILE"
+        run: |
+          .github/scripts/release-images.sh "$GIT_TAG" "$OUTPUT_FILE"
+          printf 'images=%s\n' "$(jq -c . "$OUTPUT_FILE")" >>"$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         env:
@@ -138,3 +143,41 @@ jobs:
               '.[] | "| \(.release_ref) | \(.digest) |"' \
               "$OUTPUT_FILE"
           } >>"$GITHUB_STEP_SUMMARY"
+
+  latest:
+    name: Update latest release tags
+    needs: release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        with:
+          version: ${{ env.BUILDX_VERSION }}
+          driver: docker
+
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Promote published release to latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASED_IMAGES: ${{ needs.release.outputs.images }}
+          OUTPUT_FILE: ${{ runner.temp }}/released-images.json
+        run: |
+          printf '%s\n' "$RELEASED_IMAGES" >"$OUTPUT_FILE"
+          .github/scripts/promote-latest.sh "$OUTPUT_FILE"
+          printf 'All six latest tags match the published release digests.\n' \
+            >>"$GITHUB_STEP_SUMMARY"

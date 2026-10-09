@@ -24,6 +24,7 @@ required_files=(
 	.github/scripts/collect-published-images.sh
 	.github/scripts/merge-image.sh
 	.github/scripts/next-version.sh
+	.github/scripts/promote-latest.sh
 	.github/scripts/publish-image.sh
 	.github/scripts/release-images.sh
 	.github/workflows/images.yml

@@ -39,7 +39,18 @@ printf '%s\n' "$GHCR_TOKEN" |
   docker login ghcr.io --username <github-user> --password-stdin
 ```
 
-Use a stable version to discover the release digest:
+To follow the most recent stable release automatically, pull `:latest`:
+
+```bash
+docker pull ghcr.io/myflow-xyz/ci-go:latest
+```
+
+The same tag is available on `ci-base`, `ci-node`, `ci-vite`, `ci-playwright`,
+and `ci-postgres`. It advances after each published stable suite release;
+ordinary `main` builds do not change it. Tags use `:latest`; `@` introduces a
+digest. A later pull can select a newer release.
+
+For a reproducible build, use a stable version to discover the release digest:
 
 ```bash
 docker buildx imagetools inspect ghcr.io/myflow-xyz/ci-go:0.1.0
@@ -56,10 +67,9 @@ docker pull ghcr.io/myflow-xyz/ci-go:0.1.0@sha256:<digest>
 The container runtime selects AMD64 or ARM64 from the index automatically.
 Architecture-specific suffix tags are not required. Use `X.Y.Z` for stable
 image discovery; the corresponding Git tag and GitHub Release use `vX.Y.Z`.
-Use `latest` only to inspect the current verified `main` suite, and `edge` only
-when optional `develop` publication is enabled for integration testing. The
-default workflow does not update `edge`. Do not consume candidate or
-run-specific tags.
+Use `edge` only when optional `develop` publication is enabled for integration
+testing. The default workflow does not update `edge`. Do not consume candidate
+or run-specific tags.
 
 For a private package in GitHub Actions, grant the consumer repository read
 access to each package, set `packages: read`, and authenticate with its
