@@ -104,6 +104,7 @@ def run(settings, policy, args, emit):
                     "CI_DOCKER_JOB_ID": lease.id,
                     "CI_DOCKER_JOB_TOKEN": token,
                     "CI_DOCKER_JOB_RECEIPT": str(receipt),
+                    "CI_DOCKER_ENDPOINT": policy["endpoint"],
                 }
                 emit(
                     "job_admitted",
