@@ -179,5 +179,5 @@ jobs:
         run: |
           printf '%s\n' "$RELEASED_IMAGES" >"$OUTPUT_FILE"
           .github/scripts/promote-latest.sh "$OUTPUT_FILE"
-          printf 'All six latest tags match the published release digests.\n' \
+          printf 'All seven latest tags match the published release digests.\n' \
             >>"$GITHUB_STEP_SUMMARY"

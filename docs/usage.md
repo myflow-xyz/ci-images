@@ -12,6 +12,8 @@ security surface, and accidental tool coupling.
 - Use `ci-vite` for TypeScript and Vite quality, test, and build jobs.
 - Use `ci-playwright` only when a job launches Chromium.
 - Use `ci-postgres` as a service beside a job image, never as the job image.
+- Use `ci-utils` for shared maintenance tools. Docker cleanup requires the
+  [trusted host adapter](maintenance.md) and complete daemon-user coordination.
 
 ## Workload patterns
 

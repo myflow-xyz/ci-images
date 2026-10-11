@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "policy_path": "/etc/ci-utils/cleanup.json",
+  "image": "ghcr.io/myflow-xyz/ci-utils@sha256:REPLACE_WITH_VERIFIED_DIGEST",
+  "gate_directory": "/var/lib/ci-utils/gate",
+  "job_gid": "REPLACE_WITH_TRUSTED_PARTICIPANT_GROUP_GID",
+  "participants": ["REPLACE_WITH_EVERY_DAEMON_PARTICIPANT"],
+  "admission_evidence": "REPLACE_WITH_REVIEWED_COMPLETE_LIFECYCLE_TEST_EVIDENCE",
+  "docker_cli": "/usr/bin/docker",
+  "storage": {
+    "docker": "/var/lib/docker",
+    "containerd": "/var/lib/containerd",
+    "other": []
+  }
+}

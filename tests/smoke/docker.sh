@@ -23,7 +23,13 @@ for command in dockerd containerd ctr runc docker-compose; do
 		exit 1
 	fi
 done
-[[ ! -e /usr/local/lib/docker/cli-plugins/docker-buildx ]]
+if [[ -n ${EXPECTED_BUILDX_VERSION:-} ]]; then
+	[[ -x /usr/local/lib/docker/cli-plugins/docker-buildx ]]
+	[[ ! -w /usr/local/lib/docker/cli-plugins/docker-buildx ]]
+	docker buildx version | grep --fixed-strings "v${EXPECTED_BUILDX_VERSION}" >/dev/null
+else
+	[[ ! -e /usr/local/lib/docker/cli-plugins/docker-buildx ]]
+fi
 
 test_directory=$(mktemp -d)
 trap 'rm -rf "$test_directory"' EXIT

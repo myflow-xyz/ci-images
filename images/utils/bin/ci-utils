@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+"""Discover the utility image's maintained commands without daemon access."""
+
+import argparse
+
+parser = argparse.ArgumentParser(
+    prog="ci-utils",
+    description="Reusable CI operations tools. Invoke each command directly.",
+    epilog="Available: ci-docker-cleanup check|plan|apply|version. Cleanup defaults to plan.",
+)
+parser.add_argument("operation", nargs="?", choices=("help",), default="help")
+parser.parse_args()
+parser.print_help()

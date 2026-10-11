@@ -2,17 +2,18 @@
 
 set -euo pipefail
 
-if [[ $# -ne 3 ]]; then
-	printf 'usage: %s <image> <output-json> <parent-reference>\n' "$0" >&2
+if [[ $# -ne 3 && $# -ne 4 ]]; then
+	printf 'usage: %s <image> <output-json> <parent-reference> [go-builder-reference]\n' "$0" >&2
 	exit 64
 fi
 
 name=$1
 output_file=$2
 parent_reference=$3
+go_reference=${4:-}
 
 case "$name" in
-base | go | node | playwright | postgres | vite) ;;
+base | go | node | playwright | postgres | vite | utils) ;;
 *)
 	printf 'unsupported image: %s\n' "$name" >&2
 	exit 64
@@ -44,7 +45,7 @@ sha256_file() {
 
 expected_parent=
 case "$name" in
-go | node) expected_parent=base ;;
+go | node | utils) expected_parent=base ;;
 vite) expected_parent=node ;;
 playwright) expected_parent=vite ;;
 esac
@@ -62,6 +63,19 @@ if [[ -n $expected_parent ]]; then
 	fi
 elif [[ -n $parent_reference ]]; then
 	printf 'image %s does not accept a parent reference\n' "$name" >&2
+	exit 1
+fi
+
+if [[ $name == utils ]]; then
+	expected_go_image=$(json '.images.go.name')
+	go_digest=${go_reference##*@}
+	if [[ ! $go_digest =~ ^sha256:[0-9a-f]{64}$ ||
+		$go_reference != "${expected_go_image}@${go_digest}" ]]; then
+		printf 'utils requires a verified digest-pinned ci-go build image\n' >&2
+		exit 1
+	fi
+elif [[ -n $go_reference ]]; then
+	printf 'image %s does not accept a Go build image\n' "$name" >&2
 	exit 1
 fi
 
@@ -184,6 +198,16 @@ publish_image() {
 }
 
 case "$name" in
+utils)
+	publish_image \
+		--build-arg "BASE_IMAGE=${parent_reference}" \
+		--build-arg "GO_IMAGE=${go_reference}" \
+		--build-arg "GO_VERSION=$(json '.tools.go.runtime')" \
+		--build-arg "BUILDX_VERSION=$(json '.tools.utils.buildx.version')" \
+		--build-arg "BUILDX_MODULE_SUM=$(json '.tools.utils.buildx.module_sum')" \
+		--build-arg "BUILDX_COMMIT=$(json '.tools.utils.buildx.commit')" \
+		--build-arg "BUILDX_GO_ARCHIVE_VERSION=$(json '.tools.utils.buildx.dependency_overrides["github.com/moby/go-archive"]')"
+	;;
 base)
 	debian_image=$(image_reference debian)
 	publish_image \

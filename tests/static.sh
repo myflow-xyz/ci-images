@@ -41,6 +41,8 @@ required_files=(
 	docs/images/vite.md
 	docs/images/playwright.md
 	docs/images/postgres.md
+	docs/images/utils.md
+	docs/maintenance.md
 	images/base/Dockerfile
 	images/base/bash-5.3-patches.sha256
 	images/base/debian-packages.amd64.lock
@@ -56,6 +58,7 @@ required_files=(
 	images/vite/Dockerfile
 	images/playwright/Dockerfile
 	images/postgres/Dockerfile
+	images/utils/Dockerfile
 	manifests/versions.json
 	tests/docker-integration.sh
 	tests/docker-integration_spec.sh
@@ -90,6 +93,7 @@ done < <(
       ["CPython", .tools.base.python.version],
       ["Docker CLI", .tools.base.docker.version],
       ["Docker Compose", .tools.base.compose.version],
+      ["Docker Buildx", .tools.utils.buildx.version],
       ["actionlint", .tools.base.actionlint.version],
       ["GitHub CLI", .tools.base.gh.version],
       ["Git LFS", .tools.base.git_lfs.version],
@@ -181,10 +185,16 @@ jq --exit-status '
     "ghcr.io/myflow-xyz/ci-node",
     "ghcr.io/myflow-xyz/ci-playwright",
     "ghcr.io/myflow-xyz/ci-postgres",
+    "ghcr.io/myflow-xyz/ci-utils",
     "ghcr.io/myflow-xyz/ci-vite"
   ] | sort) and
   .images.base.parent == "upstream_images.debian" and
   .images.go.parent == "images.base" and
+  .images.utils.parent == "images.base" and
+  (.tools.utils.buildx as $buildx |
+    ($buildx.commit | test("^[0-9a-f]{40}$")) and
+    ($buildx.module_sum | test("^h1:[A-Za-z0-9+/]{43}=$")) and
+    $buildx.dependency_overrides["github.com/moby/go-archive"] == "v0.3.0") and
   .images.node.parent == "images.base" and
   .images.vite.parent == "images.node" and
   .images.playwright.parent == "images.vite" and

@@ -8,6 +8,15 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      utils_runner:
+        description: Optional self-hosted runner label for isolated utility tests
+        type: string
+        default: ""
+      utils_image:
+        description: Published ghcr.io/myflow-xyz/ci-utils@sha256 digest for those tests
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -22,6 +31,7 @@ env:
 jobs:
   contract:
     name: Repository contract
+    if: github.event_name != 'workflow_dispatch' || inputs.utils_runner == ''
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -50,6 +60,18 @@ jobs:
             .github/scripts/*.sh
           tests/static.sh
           git diff --check
+
+      - name: Verify utility policy and host protocol
+        run: sudo python3 -B -m unittest discover -s tests/utils -p 'test_*.py'
+
+      - name: Verify systemd example syntax
+        run: |
+          unit_directory=$(mktemp -d)
+          trap 'rm -rf "$unit_directory"' EXIT
+          cp scripts/examples/ci-utils/*.service scripts/examples/ci-utils/*.timer "$unit_directory/"
+          sed -i "s|/usr/local/libexec/ci-utils/ci-docker-maintenance|$GITHUB_WORKSPACE/scripts/ci-docker-maintenance|" \
+            "$unit_directory/ci-docker-maintenance@.service"
+          systemd-analyze verify "$unit_directory"/*.service "$unit_directory"/*.timer
 
       - name: Verify documentation
         run: |
@@ -137,6 +159,9 @@ jobs:
               ! git diff --quiet "$diff_range" -- \
                 .github/scripts \
                 .github/workflows \
+                scripts/ci-docker-maintenance \
+                'scripts/ci_docker_*.py' \
+                scripts/examples/ci-utils \
                 tests; then
               smoke_changed=true
             fi
@@ -144,6 +169,64 @@ jobs:
 
           printf 'publish_changed=%s\n' "$publish_changed" >>"$GITHUB_OUTPUT"
           printf 'smoke_changed=%s\n' "$smoke_changed" >>"$GITHUB_OUTPUT"
+
+  utils-runner:
+    name: Utility qualification (${{ inputs.utils_runner }})
+    if: github.event_name == 'workflow_dispatch' && inputs.utils_runner != ''
+    runs-on: [self-hosted, "${{ inputs.utils_runner }}"]
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    defaults:
+      run:
+        shell: bash
+    env:
+      CI_UTILS_TEST_IMAGE: ${{ inputs.utils_image }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Inspect runner and selected Docker daemon
+        run: |
+          if [[ ! $CI_UTILS_TEST_IMAGE =~ ^ghcr\.io/myflow-xyz/ci-utils@sha256:[0-9a-f]{64}$ ]]; then
+            printf 'utils_image must identify a published ci-utils digest\n' >&2
+            exit 2
+          fi
+          uname -sm
+          python3 --version
+          endpoint=${DOCKER_HOST:-}
+          if [[ -n ${DOCKER_CONTEXT:-} || -z $endpoint ]]; then
+            endpoint=$(docker context inspect --format '{{.Endpoints.docker.Host}}' "$(docker context show)")
+          fi
+          if [[ $endpoint != unix:///* || $endpoint == *$'\n'* || $endpoint == *$'\r'* ]]; then
+            printf 'isolated runner tests require a local Unix Docker endpoint\n' >&2
+            exit 2
+          fi
+          unset DOCKER_CONTEXT
+          docker --host "$endpoint" version --format '{{json .}}'
+          docker --host "$endpoint" info --format \
+            '{"id":{{json .ID}},"os":{{json .OSType}},"arch":{{json .Architecture}},"storage":{{json .Driver}},"root":{{json .DockerRootDir}},"cpu":{{.NCPU}},"memory":{{.MemTotal}}}'
+          test "$(docker --host "$endpoint" info --format '{{.OSType}}')" = linux
+          printf '%s\n' "DOCKER_HOST=$endpoint" 'DOCKER_CONTEXT=' >>"$GITHUB_ENV"
+
+      - name: Pull published utility image
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_ACTOR: ${{ github.actor }}
+        run: |
+          auth_directory=$(mktemp -d "$RUNNER_TEMP/ci-utils-auth.XXXXXX")
+          trap 'rm -rf "$auth_directory"' EXIT
+          printf '%s' "$GH_TOKEN" |
+            docker --config "$auth_directory" login ghcr.io --username "$GH_ACTOR" --password-stdin
+          docker --config "$auth_directory" --host "$DOCKER_HOST" pull "$CI_UTILS_TEST_IMAGE"
+
+      - name: Verify guarded cleanup on a disposable daemon
+        run: |
+          tests/utils-docker.sh
+          CI_UTILS_TEST_IMAGE_STORE=classic tests/utils-docker.sh
 
   smoke:
     name: Smoke (${{ matrix.platform }})
@@ -182,10 +265,28 @@ jobs:
       - name: Run native image smoke tests
         run: tests/smoke-local.sh all
 
+      - name: Verify utility policy and host protocol fixtures
+        run: |
+          # The test controller sets child identities/capabilities and inspects gate records.
+          docker run --rm --pull=never --network=none --read-only \
+            --user=0 --cap-drop=ALL --security-opt=no-new-privileges \
+            --cap-add=CHOWN --cap-add=DAC_OVERRIDE --cap-add=FSETID \
+            --cap-add=SETUID --cap-add=SETGID --cap-add=KILL --cap-add=SETPCAP \
+            --env TMPDIR=/tmp \
+            --tmpfs /tmp:rw,exec,nosuid,nodev,size=64m,mode=1777 \
+            --volume "$GITHUB_WORKSPACE:/workspace:ro" \
+            --workdir /workspace ci-base:test \
+            python3 -B -m unittest discover -s tests/utils -p 'test_*.py'
+
       - name: Verify non-root Compose fixtures and owned cleanup
         env:
           CI_IMAGES_DOCKER_SOCKET: /var/run/docker.sock
         run: tests/docker-integration.sh
+
+      - name: Verify guarded cleanup on a disposable daemon
+        run: |
+          tests/utils-docker.sh
+          CI_UTILS_TEST_IMAGE_STORE=classic tests/utils-docker.sh
 
       - name: Run image-hosted policy checks
         run: |
@@ -235,6 +336,20 @@ jobs:
     with:
       image: go
       parent_image: ${{ needs.publish-base.outputs.reference }}
+
+  publish-utils:
+    name: Publish candidate (utils)
+    needs:
+      - publish-base
+      - publish-go
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish-image.yml
+    with:
+      image: utils
+      parent_image: ${{ needs.publish-base.outputs.reference }}
+      go_image: ${{ needs.publish-go.outputs.reference }}
 
   publish-node:
     name: Publish candidate (node)
@@ -296,6 +411,7 @@ jobs:
       - publish-vite
       - publish-playwright
       - publish-postgres
+      - publish-utils
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -319,6 +435,7 @@ jobs:
           PLAYWRIGHT_RECORD: ${{ needs.publish-playwright.outputs.record }}
           POSTGRES_RECORD: ${{ needs.publish-postgres.outputs.record }}
           VITE_RECORD: ${{ needs.publish-vite.outputs.record }}
+          UTILS_RECORD: ${{ needs.publish-utils.outputs.record }}
         run: |
           .github/scripts/collect-published-images.sh \
             "$OUTPUT_FILE" \
@@ -327,7 +444,8 @@ jobs:
             "$NODE_RECORD" \
             "$VITE_RECORD" \
             "$PLAYWRIGHT_RECORD" \
-            "$POSTGRES_RECORD"
+            "$POSTGRES_RECORD" \
+            "$UTILS_RECORD"
           base_image=$(
             jq --exit-status --raw-output '
               map(select(.name == "base")) |

@@ -10,6 +10,7 @@ without making them authoritative for application dependencies.
 debian:trixie-slim@<digest>
 └── ci-base
     ├── ci-go
+    ├── ci-utils
     └── ci-node
         └── ci-vite
             └── ci-playwright
@@ -27,6 +28,8 @@ release with the reviewed Debian snapshot.
   repository policy tools.
 - `ghcr.io/myflow-xyz/ci-go`: Go toolchain, native race-test prerequisites,
   and reusable Go CI executables.
+- `ghcr.io/myflow-xyz/ci-utils`: inherited base tools, pinned Buildx, and guarded
+  Docker cleanup. Its build reuses `ci-go`; its runtime inherits `ci-base`.
 - `ghcr.io/myflow-xyz/ci-node`: generic Node.js, Markdown, and OpenAPI jobs
   that do not require a frontend toolchain.
 - `ghcr.io/myflow-xyz/ci-vite`: TypeScript, Vite, Vitest, Oxlint, and Oxfmt
@@ -72,7 +75,7 @@ After building a target with `tests/build-local-image.sh <target>`, use
 before pushing. The helper requires Trivy in the developer environment,
 restricts the image source to the local Docker daemon, and applies the publish
 policy: fixed HIGH or CRITICAL operating-system and library vulnerabilities
-fail the scan. Use `all` to scan all six local images. Local verification covers
+fail the scan. Use `all` to scan all seven local images. Local verification covers
 the host platform; CI remains responsible for both published architectures.
 
 ## Design boundaries

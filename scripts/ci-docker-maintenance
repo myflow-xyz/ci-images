@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+"""Run from the repository or a root-owned host adapter installation."""
+
+import pathlib
+import sys
+
+sys.dont_write_bytecode = True
+here = pathlib.Path(__file__).resolve().parent
+sys.path[:0] = [str(here), str(here.parent / "images/utils")]
+
+from ci_docker_maintenance import main
+
+raise SystemExit(main())

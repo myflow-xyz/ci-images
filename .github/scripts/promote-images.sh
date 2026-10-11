@@ -22,13 +22,14 @@ fi
 
 if ! jq --exit-status --arg run_id "$run_id" '
 	type == "array" and
-	length == 6 and
+	length == 7 and
 	([.[].name] | sort) == [
 		"base",
 		"go",
 		"node",
 		"playwright",
 		"postgres",
+		"utils",
 		"vite"
 	] and
 	([

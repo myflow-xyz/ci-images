@@ -1,6 +1,6 @@
 # Releasing the CI images
 
-A release assigns one semantic numeric version to the verified six-image
+A release assigns one semantic numeric version to the verified seven-image
 suite. Git tags and GitHub Releases use `vX.Y.Z`; stable OCI image tags use
 `X.Y.Z`. The workflow promotes existing OCI index digests; it does not rebuild
 or rescan images.
@@ -8,7 +8,7 @@ or rescan images.
 ## Preconditions
 
 The release workflow accepts only the current `main` commit. The CI images
-workflow for that commit must have completed successfully and promoted all six
+workflow for that commit must have completed successfully and promoted all seven
 images to `sha-<full-commit>` tags for immutable source identity.
 
 The immutable revision tags are the release inputs. The mutable `latest` tag
@@ -40,8 +40,8 @@ Earlier `v`-prefixed image tags remain immutable and do not receive unprefixed
 aliases.
 
 One version always covers `ci-base`, `ci-go`, `ci-node`, `ci-vite`,
-`ci-playwright`, and `ci-postgres`. Individual images do not advance versions
-independently.
+`ci-playwright`, `ci-postgres`, and `ci-utils`. Individual images do not advance
+versions independently.
 
 ## Release transaction
 
@@ -54,8 +54,8 @@ The workflow:
    digest;
 5. assigns the image tag to each verified OCI index and verifies the result;
 6. creates the `vX.Y.Z` Git tag and GitHub Release at the source revision,
-   including the six index digests;
-7. updates `latest` on all six images to those same index digests in a separate
+   including the seven index digests;
+7. updates `latest` on all seven images to those same index digests in a separate
    job, after confirming that this is the current published stable release.
 
 The Git tag is created only after registry promotion succeeds. A stable image
@@ -88,7 +88,7 @@ A release is successful only when:
 
 - the Release CI images workflow completed successfully;
 - the GitHub Release and Git tag point to the intended `main` commit;
-- all six unprefixed release tags exist in GHCR;
+- all seven unprefixed release tags exist in GHCR;
 - each release tag resolves to the digest recorded in the GitHub Release;
 - that digest also matches the commit's immutable revision tag;
 - for the most recent release, each `latest` tag resolves to the same digest
@@ -121,7 +121,7 @@ the stable tag to force a release.
 
 If only **Update latest release tags** fails, rerun failed jobs in the same
 workflow run. This retries the aliases without creating another version. The
-job validates all six versioned image tags before moving any alias and rejects
+job validates all seven versioned image tags before moving any alias and rejects
 an old run if a newer stable release has been published. GHCR updates each
 image tag separately, so a partial failure can temporarily leave `latest` tags
 on different suite versions until the retry succeeds.

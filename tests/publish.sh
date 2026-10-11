@@ -17,7 +17,7 @@ fail() {
 
 output_file="${temporary_directory}/published-images.json"
 failure_output="${temporary_directory}/failure.log"
-names=(base go node vite playwright postgres)
+names=(base go node vite playwright postgres utils)
 declare -a records
 
 for index in "${!names[@]}"; do
@@ -40,7 +40,7 @@ done
 jq --exit-status \
 	--argjson expected_names "$(printf '%s\n' "${names[@]}" | jq -R . | jq -s .)" \
 	'
-		length == 6 and
+		length == 7 and
 		[.[].name] == $expected_names and
 		([
 			.[] |
@@ -62,6 +62,7 @@ if "$collector" \
 	"${records[3]}" \
 	"${records[4]}" \
 	"${records[0]}" \
+	"${records[6]}" \
 	>"$failure_output" 2>&1; then
 	fail 'duplicate image records were accepted'
 fi
@@ -81,6 +82,7 @@ if "$collector" \
 	"${records[3]}" \
 	"${records[4]}" \
 	"${records[5]}" \
+	"${records[6]}" \
 	>"$failure_output" 2>&1; then
 	fail 'invalid image reference was accepted'
 fi
@@ -100,6 +102,7 @@ if "$collector" \
 	"${records[3]}" \
 	"${records[4]}" \
 	"${records[5]}" \
+	"${records[6]}" \
 	>"$failure_output" 2>&1; then
 	fail 'candidate for another image was accepted'
 fi
@@ -235,7 +238,7 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 	platform="linux/${architecture}"
 	export CI_IMAGES_PLATFORM="$platform"
 	case "$name" in
-	go | node)
+	go | node | utils)
 		parent="ghcr.io/myflow-xyz/ci-base@${base_digest}"
 		;;
 	vite)
@@ -249,8 +252,12 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 		;;
 	esac
 
+	build_parent=
+	if [[ $name == utils ]]; then
+		build_parent="ghcr.io/myflow-xyz/ci-go@${base_digest}"
+	fi
 	: >"$fake_log"
-	"$publisher" "$name" "$output_file" "$parent"
+	"$publisher" "$name" "$output_file" "$parent" "$build_parent"
 
 	jq --exit-status \
 		--arg name "$name" \
@@ -278,6 +285,16 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 	if [[ -n $parent ]]; then
 		grep -Fq -- "BASE_IMAGE=${parent}" "$fake_log" ||
 			fail "missing ${name} parent reference"
+	fi
+	if [[ $name == utils ]]; then
+		grep -Fq -- "GO_IMAGE=${build_parent}" "$fake_log" ||
+			fail 'utils does not reuse the pinned ci-go builder'
+		for build_arg in \
+			"BUILDX_MODULE_SUM=$(jq -r '.tools.utils.buildx.module_sum' "$manifest")" \
+			"BUILDX_COMMIT=$(jq -r '.tools.utils.buildx.commit' "$manifest")" \
+			"BUILDX_GO_ARCHIVE_VERSION=$(jq -r '.tools.utils.buildx.dependency_overrides["github.com/moby/go-archive"]' "$manifest")"; do
+			grep -Fq -- "$build_arg" "$fake_log" || fail 'missing pinned Buildx source or dependency'
+		done
 	fi
 	if [[ $name == base ]]; then
 		cp "$output_file" "${temporary_directory}/base-${architecture}.json"
@@ -352,6 +369,16 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 				fail "missing postgres build argument: ${build_arg%%=*}"
 		done
 	fi
+done
+
+for invalid_go in '' 'ghcr.io/myflow-xyz/ci-go:latest' "ghcr.io/myflow-xyz/ci-base@$(printf 'sha256:%064d' 1)"; do
+	: >"$fake_log"
+	if "$publisher" utils "$output_file" "ghcr.io/myflow-xyz/ci-base@$(printf 'sha256:%064d' 1)" "$invalid_go" \
+		>"$failure_output" 2>&1; then
+		fail 'utils accepted an absent, mutable, or incorrect build parent'
+	fi
+	grep -q 'verified digest-pinned ci-go' "$failure_output" || fail 'build parent diagnostic'
+	[[ ! -s $fake_log ]] || fail 'invalid build parent reached the registry'
 done
 
 if CI_IMAGES_PLATFORM=linux/ppc64le "$publisher" base "$output_file" "" \
