@@ -5,6 +5,7 @@ import http.server
 import json
 import os
 import pathlib
+import select
 import signal
 import socketserver
 import subprocess
@@ -16,6 +17,7 @@ import uuid
 
 sys.path.insert(0, "/workspace/images/utils")
 from ci_utils.engine import Engine, UnixConnection
+from service_fixture import service_command
 
 ROOT = pathlib.Path("/run/ci-utils-test")
 SOCKET = "unix:///run/ci-utils-test/docker.sock"
@@ -213,11 +215,14 @@ class DockerE2E(unittest.TestCase):
     def host_args(self, *args):
         return [*HOST, "--config", str(self.root / "host.json"), *args]
 
-    def host(self, *args, expected=0, **identity):
+    def host(self, *args, expected=0, service=False, **identity):
+        arguments = self.host_args(*args)
+        if service:
+            arguments = service_command(arguments, self.settings["job_gid"])
         return [
             json.loads(line)
             for line in command(
-                self.host_args(*args), expected=expected, timeout=90, **identity
+                arguments, expected=expected, timeout=90, **identity
             ).splitlines()
         ]
 
@@ -736,6 +741,85 @@ with Gate(sys.argv[1]).job(participant='fixture', daemon_id=sys.argv[3]) as leas
             umask=0o077,
         )
         self.assertEqual(self.host("status")[-1]["jobs"], [])
+
+    def test_service_recovers_after_interrupted_non_root_job(self):
+        self.settings["gate_directory"] = str(self.root / "service-gate")
+        self.settings["job_gid"] = 2001
+        self.save()
+        self.host("init")
+        candidate = self.create("--label", OWNED)
+        code = """
+import signal, sys
+sys.path[:0] = ['/workspace/scripts', '/workspace/images/utils']
+from ci_docker_gate import Gate
+from ci_utils.engine import Engine
+with Gate(sys.argv[1]).job(participant='fixture', daemon_id=sys.argv[3]):
+    Engine(sys.argv[2]).preflight(sys.argv[3])
+    print('ready', flush=True)
+    signal.pause()
+"""
+        child = subprocess.Popen(
+            [
+                sys.executable,
+                "-B",
+                "-c",
+                code,
+                self.settings["gate_directory"],
+                SOCKET,
+                self.daemon,
+            ],
+            user=1001,
+            group=2001,
+            extra_groups=[os.stat(SOCKET[len("unix://") :]).st_gid],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+        try:
+            ready, _, _ = select.select([child.stdout], [], [], 5)
+            self.assertTrue(ready, "participant did not finish daemon preflight")
+            self.assertEqual(child.stdout.readline().strip(), "ready")
+        finally:
+            child.kill()
+            child.communicate(timeout=5)
+        self.assertEqual(child.returncode, -signal.SIGKILL)
+        records = list(
+            (pathlib.Path(self.settings["gate_directory"]) / "jobs").glob("*.json")
+        )
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0].stat().st_uid, 1001)
+        identifier = json.loads(records[0].read_text())["id"]
+        self.host("apply", "--wait", "1s", expected=4, service=True)
+        self.assertIsNone(self.host("status")[-1]["maintenance"])
+        self.assertTrue(self.exists("container", candidate))
+        evidence = self.root / "reconcile-service-job.json"
+        evidence.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "record_id": identifier,
+                    "daemon_id": self.daemon,
+                    "observed_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+                    "observer": "isolated-test-controller",
+                    "evidence": "Read-only daemon preflight completed before the isolated participant was killed; no daemon operation remains active.",
+                    "participants_drained": True,
+                    "daemon_operations_complete": True,
+                }
+            )
+        )
+        self.host(
+            "reconcile",
+            "--record-id",
+            identifier,
+            "--evidence",
+            str(evidence),
+            service=True,
+        )
+        self.assertEqual(self.host("status", service=True)[-1]["jobs"], [])
+        time.sleep(1.1)
+        self.host("apply", service=True)
+        self.assertFalse(self.exists("container", candidate))
+        self.assertIsNone(self.host("status", service=True)[-1]["maintenance"])
 
     def test_interrupted_job_launch_preserves_admission(self):
         candidate = self.create("--label", OWNED)

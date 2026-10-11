@@ -148,6 +148,13 @@ daily and weekly profiles. Adjust the selected Docker service/socket and the
 writable state path to match the host settings. Check the unit files with the
 host's `systemd-analyze verify` before enabling timers.
 
+Replace `REPLACE_WITH_JOB_GID` in the service's `SupplementaryGroups=` with the
+numeric `job_gid` from the reviewed `host.json`. The service drops all
+capabilities, so its root identity needs this group membership to read
+participant-owned `0640` gate records. Qualify interrupted-job recovery with this
+same group and capability profile before enabling scheduling. Retain the empty
+`CapabilityBoundingSet=` and the existing gate permissions.
+
 The service uses `Requisite=` so it does not start an inactive Docker service.
 Its explicit start deadline bounds the one-shot process. Timers use persistent
 calendar scheduling to catch up missed runs. See the Debian manuals for

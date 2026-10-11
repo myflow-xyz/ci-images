@@ -8,6 +8,8 @@ ConditionPathIsSocket=/var/run/docker.sock
 Type=oneshot
 User=root
 Group=root
+# Replace with the numeric job_gid from the reviewed host.json.
+SupplementaryGroups=REPLACE_WITH_JOB_GID
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
 ExecStart=/usr/local/libexec/ci-utils/ci-docker-maintenance --config /etc/ci-utils/host.json apply --profile %i --wait 15m
 TimeoutStartSec=40min

@@ -4,6 +4,7 @@ import datetime as dt
 import json
 import os
 import pathlib
+import shutil
 import signal
 import socket
 import subprocess
@@ -12,6 +13,7 @@ import tempfile
 import unittest
 
 from host_fixture import HostDocker
+from service_fixture import service_command
 from test_apply_cli import DIGEST, ROOT, StatefulAPI
 
 sys.path[:0] = [str(ROOT / "scripts"), str(ROOT / "images/utils")]
@@ -27,6 +29,7 @@ class HostCLITests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory(prefix="cu-host-", dir="/tmp")
         self.addCleanup(self.temporary.cleanup)
         self.root = pathlib.Path(self.temporary.name)
+        self.launcher = ROOT / "scripts/ci-docker-maintenance"
         self.api = self.enterContext(StatefulAPI())
         self.docker = self.enterContext(HostDocker(self.root, self.api.endpoint))
         (self.root / "docker-data").mkdir()
@@ -68,16 +71,19 @@ class HostCLITests(unittest.TestCase):
             path.write_text(json.dumps(value))
             path.chmod(0o644)
 
-    def invoke(self, *args, **identity):
+    def invoke(self, *args, service=False, **identity):
+        command = [
+            sys.executable,
+            "-B",
+            str(self.launcher),
+            "--config",
+            str(self.root / "host.json"),
+            *args,
+        ]
+        if service:
+            command = service_command(command, self.settings["job_gid"])
         result = subprocess.run(
-            [
-                sys.executable,
-                "-B",
-                str(ROOT / "scripts/ci-docker-maintenance"),
-                "--config",
-                str(self.root / "host.json"),
-                *args,
-            ],
+            command,
             text=True,
             capture_output=True,
             timeout=25,
@@ -413,6 +419,75 @@ class HostCLITests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         result, _ = self.invoke("apply")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_service_recovery_reads_non_root_participant_records(self):
+        self.root.chmod(0o755)
+        # The installed service cannot rely on access to a private checkout.
+        adapter = self.root / "adapter"
+        adapter.mkdir()
+        for source in [self.launcher, *(ROOT / "scripts").glob("ci_docker_*.py")]:
+            shutil.copyfile(source, adapter / source.name)
+        shutil.copytree(ROOT / "images/utils/ci_utils", adapter / "ci_utils")
+        self.launcher = adapter / self.launcher.name
+        self.api.path.parent.chmod(0o755)
+        os.chown(self.api.path, -1, 2001)
+        self.api.path.chmod(0o660)
+        self.settings["gate_directory"] = str(self.root / "service-gate")
+        self.settings["job_gid"] = 2001
+        self.policy["pressure"] = {"reserve_bytes": 1}
+        self.save()
+        result, _ = self.invoke("init")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        result, _ = self.invoke(
+            "job",
+            "--participant",
+            "test-runner",
+            "--",
+            sys.executable,
+            "-c",
+            self.job_program(complete=False),
+            user=1001,
+            group=2001,
+            extra_groups=[],
+        )
+        self.assertEqual(result.returncode, 6, result.stdout + result.stderr)
+        gate = Gate(self.settings["gate_directory"])
+        identifier = gate.status()["jobs"][0]["id"]
+        record = gate.directory / "jobs" / (identifier + ".json")
+        self.assertEqual(record.stat().st_uid, 1001)
+        self.assertEqual(record.stat().st_gid, 2001)
+        result, _ = self.invoke("apply", "--wait", "1s", service=True)
+        self.assertEqual(result.returncode, 4, result.stdout + result.stderr)
+        self.assertIsNone(gate.status()["maintenance"])
+        self.assertFalse(any(method == "DELETE" for method, _ in self.api.requests))
+        path = self.root / "reconcile-job.json"
+        path.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "record_id": identifier,
+                    "daemon_id": "fixture-daemon",
+                    "observed_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+                    "observer": "fixture-operator",
+                    "evidence": "The fixture job exited and no daemon operations remain active.",
+                    "participants_drained": True,
+                    "daemon_operations_complete": True,
+                }
+            )
+        )
+        result, _ = self.invoke(
+            "reconcile",
+            "--record-id",
+            identifier,
+            "--evidence",
+            str(path),
+            service=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(gate.status()["jobs"], [])
+        result, _ = self.invoke("apply", service=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIsNone(gate.status()["maintenance"])
 
 
 if __name__ == "__main__":
