@@ -9,7 +9,7 @@
     "uid": 1001,
     "gid": 2001
   },
-  "debian_snapshot": "20261008T203843Z",
+  "debian_snapshot": "20261011T082723Z",
   "upstream_images": {
     "dockerfile_frontend": {
       "reference": "docker.io/docker/dockerfile:1.28.0",
