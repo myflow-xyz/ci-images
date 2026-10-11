@@ -67,7 +67,7 @@ class Engine:
             )
         return min(remaining, self.operation_timeout)
 
-    def _request(self, method, path):
+    def _request(self, method, path, body=None):
         connection = UnixConnection(self.socket_path, self.remaining())
         expired = threading.Event()
 
@@ -84,7 +84,10 @@ class Engine:
         timer.daemon = True
         timer.start()
         try:
-            connection.request(method, path, headers={"Host": "localhost"})
+            headers = {"Host": "localhost"}
+            if body is not None:
+                headers["Content-Type"] = "application/x-www-form-urlencoded"
+            connection.request(method, path, body=body, headers=headers)
             response = connection.getresponse()
             # Never print daemon error bodies: they may contain untrusted or secret data.
             if not 200 <= response.status < 300:
@@ -165,6 +168,58 @@ class Engine:
             raise Failure(2, "unsupported resource class")
         suffix = "" if kind == "networks" else "/json"
         return self.get(f"/{kind}/{urllib.parse.quote(identifier, safe='')}{suffix}")
+
+    def prune_cache(
+        self, identifiers, guard, *, include_internal, unused=None, max_used_space=None
+    ):
+        if not identifiers or any(
+            not isinstance(key, str) or not re.fullmatch(r"[a-zA-Z0-9_-]{1,256}", key)
+            for key in identifiers
+        ):
+            raise Failure(2, "cache prune requires a nonempty set of exact IDs")
+        if not self.verified:
+            raise Failure(3, "daemon preflight is required before cleanup")
+        filters = {
+            "id": ["^(" + "|".join(re.escape(key) for key in identifiers) + ")$"]
+        }
+        if unused is not None:
+            filters["until"] = [f"{unused}s"]
+        fields = {
+            "filters": json.dumps(filters),
+            "all": "true" if include_internal else "false",
+        }
+        if max_used_space is not None:
+            fields["max-used-space"] = str(max_used_space)
+        # A form body avoids shell argument limits without splitting dependencies
+        # or backend eviction ordering across separate prune requests.
+        body = urllib.parse.urlencode(fields).encode("ascii")
+        if len(body) > 1024 * 1024:
+            raise Failure(2, "cache prune selection exceeds the 1 MiB request limit")
+        guard()
+        self.remaining()
+        self.mutation_started = True
+        try:
+            result = self._request("POST", self.api + "/build/prune", body)
+        except APIError as error:
+            raise Failure(
+                6, "cache prune failed; completion requires reconciliation"
+            ) from error
+        if (
+            not isinstance(result, dict)
+            or type(result.get("SpaceReclaimed")) is not int
+            or result["SpaceReclaimed"] < 0
+            or (
+                result.get("CachesDeleted") is not None
+                and (
+                    not isinstance(result["CachesDeleted"], list)
+                    or any(not isinstance(key, str) for key in result["CachesDeleted"])
+                )
+            )
+        ):
+            raise Failure(
+                6, "invalid cache prune response; completion requires reconciliation"
+            )
+        return result
 
     def remove(self, kind, identifier, guard):
         if kind not in ("containers", "networks", "images"):

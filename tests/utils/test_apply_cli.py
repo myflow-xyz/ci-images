@@ -370,6 +370,10 @@ class ApplyCLITests(unittest.TestCase):
 
     def test_scheduled_cache_uses_engine_accounting_before_and_after_prune(self):
         with StatefulAPI() as api, CacheTools() as tools:
+            tools.state["records"] = [
+                {**tools.state["records"][0], "ID": f"record-{i}"} for i in range(105)
+            ]
+            tools.save()
             api.routes.update(tools.routes())
             code, events, stderr = self.invoke(
                 api,
@@ -385,6 +389,35 @@ class ApplyCLITests(unittest.TestCase):
             self.assertEqual(budget["remaining_bytes"], 0)
             self.assertEqual(budget["status"], "achieved")
             self.assertFalse(any("du" in call for call in tools.calls()))
+            self.assertEqual(len(tools.prunes), 1)
+            age = next(e for e in events if e["event"] == "cache_stage")
+            self.assertEqual(age["submitted_candidates"], 105)
+            self.assertIn(("POST", "/v1.48/build/prune"), api.requests)
+
+    def test_uncertain_cache_completion_stops_later_cleanup(self):
+        for response in ((200, b"bad-json"), (500, {})):
+            with (
+                self.subTest(response=response),
+                StatefulAPI() as api,
+                CacheTools() as tools,
+            ):
+                api.routes.update(tools.routes())
+                api.routes[("POST", "/v1.48/build/prune")] = response
+                code, events, stderr = self.invoke(
+                    api,
+                    config={"cache": {"mode": "scheduled"}},
+                    environ={"PATH": str(tools.path)},
+                )
+                self.assertEqual(code, 6, stderr)
+                self.assertFalse(events[-1]["completion_known"])
+                request = ("POST", "/v1.48/build/prune")
+                self.assertEqual(api.requests.count(request), 1)
+                self.assertFalse(
+                    any(
+                        method in ("POST", "DELETE")
+                        for method, _ in api.requests[api.requests.index(request) + 1 :]
+                    )
+                )
 
     def test_shared_cache_does_not_trigger_budget_pruning(self):
         with StatefulAPI() as api, CacheTools() as tools:
@@ -405,7 +438,7 @@ class ApplyCLITests(unittest.TestCase):
             budget = next(e for e in events if e["event"] == "cache_budget")
             self.assertTrue(budget["target_met"])
             self.assertEqual(budget["remaining_bytes"], 0)
-            self.assertFalse(any("--max-used-space" in call for call in tools.calls()))
+            self.assertEqual(tools.prunes, [])
             self.assertIn(("GET", "/v1.48/system/df?type=build-cache"), api.requests)
 
     def test_missing_cache_accounting_prevents_every_resource_deletion(self):
@@ -418,9 +451,7 @@ class ApplyCLITests(unittest.TestCase):
             )
             self.assertEqual(code, 2, stderr)
             self.assertFalse(any(method == "DELETE" for method, _ in api.requests))
-            self.assertFalse(
-                any("prune" in call and "--help" not in call for call in tools.calls())
-            )
+            self.assertEqual(tools.prunes, [])
 
     def test_cache_preflight_failure_prevents_every_resource_deletion(self):
         with StatefulAPI() as api, CacheTools() as tools:

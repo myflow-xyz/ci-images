@@ -55,6 +55,11 @@ unless explicitly enabled. The budget stage can remove recent records. Its
 target is not a hard quota or a guaranteed physical-space saving. Native GC can
 continue independently in every mode.
 
+Each stage sends its complete eligible ID selection to the Engine's BuildKit
+prune endpoint, so dependencies and eviction order remain under backend control.
+The form request is limited to 1 MiB; larger selections fail without submitting
+that stage. Requests are not split or retried after uncertain completion.
+
 The budget and `cache_budget.remaining_bytes` use non-shared cache bytes, matching
 BuildKit. Usage observations report total, shared, and non-shared bytes separately.
 

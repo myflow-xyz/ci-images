@@ -7,6 +7,7 @@ import socketserver
 import tempfile
 import threading
 import time
+import urllib.parse
 
 
 class UnixHTTP(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
@@ -17,6 +18,7 @@ class APIFixture:
     def __init__(self, routes):
         self.routes = routes
         self.requests = []
+        self.posts = []
         self.root = tempfile.TemporaryDirectory(prefix="ci-utils-api-", dir="/tmp")
         self.path = pathlib.Path(self.root.name) / "docker.sock"
         fixture = self
@@ -28,11 +30,22 @@ class APIFixture:
             def do_DELETE(self):
                 self.respond("DELETE")
 
-            def respond(self, method):
+            def do_POST(self):
+                body = self.rfile.read(int(self.headers.get("Content-Length", 0)))
+                fixture.posts.append(
+                    {
+                        "path": self.path,
+                        "content_type": self.headers.get("Content-Type"),
+                        "body": body,
+                    }
+                )
+                self.respond("POST", urllib.parse.parse_qs(body.decode("ascii")))
+
+            def respond(self, method, form=None):
                 fixture.requests.append((method, self.path))
                 response = fixture.routes.get((method, self.path), (404, {}))
                 if callable(response):
-                    response = response()
+                    response = response(form) if method == "POST" else response()
                 status, payload, *delays = response
                 data = (
                     payload

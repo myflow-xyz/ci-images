@@ -207,9 +207,7 @@ class CleanupCLITests(unittest.TestCase):
             self.assertEqual(result.returncode, 2, result.stderr)
             self.assertEqual(events[-1]["exit_code"], 2)
             self.assertFalse(any(method == "DELETE" for method, path in api.requests))
-            self.assertFalse(
-                any("prune" in call and "--help" not in call for call in tools.calls())
-            )
+            self.assertEqual(tools.prunes, [])
 
     def test_cache_plan_reports_budget_limitations_without_pruning(self):
         with CacheTools() as tools, APIFixture(routes() | tools.routes()) as api:
@@ -225,9 +223,7 @@ class CleanupCLITests(unittest.TestCase):
             self.assertIn(("GET", "/v1.48/system/df?type=build-cache"), api.requests)
             self.assertFalse(planned["exact_native_candidates"])
             self.assertIsNone(planned["exact_reclaimed_bytes"])
-            self.assertFalse(
-                any("prune" in call and "--help" not in call for call in tools.calls())
-            )
+            self.assertEqual(tools.prunes, [])
 
 
 if __name__ == "__main__":

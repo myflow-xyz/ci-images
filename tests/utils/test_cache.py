@@ -1,8 +1,10 @@
 """T-14–17: cache preflight, ownership, modes, and truthful accounting."""
 
 import datetime as dt
+import json
 import os
 import pathlib
+import re
 import sys
 import unittest
 from unittest.mock import patch
@@ -25,6 +27,59 @@ class Events:
 
 
 class CacheTests(unittest.TestCase):
+    def test_each_stage_submits_the_complete_eligible_set(self):
+        now = dt.datetime.now(dt.timezone.utc)
+        for stage in ("age", "budget"):
+            for include_internal in (False, True):
+                with (
+                    self.subTest(stage=stage, include_internal=include_internal),
+                    CacheTools() as tools,
+                    APIFixture(daemon_routes() | tools.routes()) as api,
+                    patch.dict(os.environ, {"PATH": str(tools.path)}),
+                ):
+                    base = tools.state["records"][0]
+                    if stage == "budget":
+                        base["LastUsedAt"] = now.isoformat()
+                    selected = [{**base, "ID": f"record-{i}"} for i in range(105)]
+                    excluded = [
+                        {**base, "ID": "unknown-age", "LastUsedAt": None},
+                        {**base, "ID": "unknown-type", "Type": "unknown"},
+                        {**base, "ID": "in-use", "InUse": True},
+                    ]
+                    internal = {**base, "ID": "internal", "Type": "internal"}
+                    (selected if include_internal else excluded).append(internal)
+                    tools.state["records"] = selected + excluded
+                    tools.state["after_age"] = excluded
+                    tools.state["after_budget"] = excluded
+                    tools.save()
+                    engine = Engine(api.endpoint)
+                    engine.preflight()
+                    with BuildCache(
+                        engine,
+                        configured(
+                            cache={
+                                "max_used_space": "1gb" if stage == "age" else "1b",
+                                "include_internal": include_internal,
+                            }
+                        ),
+                        "fixture-daemon",
+                        Events(),
+                    ) as cache:
+                        cache.preflight()
+                        cache.prune(now, lambda: None)
+                    self.assertEqual(len(tools.prunes), 1)
+                    form = tools.prunes[0]
+                    filters = json.loads(form["filters"][0])
+                    self.assertEqual(len(filters["id"]), 1)
+                    pattern = filters["id"][0]
+                    for item in selected:
+                        self.assertRegex(item["ID"], pattern)
+                    for item in excluded:
+                        self.assertIsNone(re.search(pattern, item["ID"]))
+                    self.assertEqual("until" in filters, stage == "age")
+                    self.assertEqual("max-used-space" in form, stage == "budget")
+                    self.assertEqual(form["all"], [str(include_internal).lower()])
+
     def test_budget_ignores_shared_bytes_before_and_after_pruning(self):
         now = dt.datetime.now(dt.timezone.utc)
         for needs_prune in (False, True):
@@ -51,8 +106,10 @@ class CacheTests(unittest.TestCase):
                 tools.state["after_budget"] = [shared, retained]
                 tools.save()
                 events = Events()
+                engine = Engine(api.endpoint)
+                engine.preflight()
                 with BuildCache(
-                    Engine(api.endpoint),
+                    engine,
                     configured(cache={"max_used_space": "1kb"}),
                     "fixture-daemon",
                     events,
@@ -60,7 +117,7 @@ class CacheTests(unittest.TestCase):
                     cache.preflight()
                     cache.prune(now, lambda: None)
                     sample = cache.observe()
-                calls = [call for call in tools.calls() if "--max-used-space" in call]
+                calls = [form for form in tools.prunes if "max-used-space" in form]
                 self.assertEqual(len(calls), int(needs_prune))
                 budget = next(e for e in events.items if e["event"] == "cache_budget")
                 self.assertEqual(budget["status"], "achieved")
@@ -86,11 +143,7 @@ class CacheTests(unittest.TestCase):
                 with self.assertRaises(Failure) as raised:
                     cache.prune(dt.datetime.now(dt.timezone.utc), lambda: None)
                 self.assertEqual(raised.exception.code, 5)
-            calls = [
-                call
-                for call in tools.calls()
-                if "prune" in call and "--help" not in call
-            ]
+            calls = tools.prunes
             self.assertEqual(len(calls), 1)
             outcome = next(
                 event for event in events.items if event["event"] == "cache_budget"
@@ -110,13 +163,9 @@ class CacheTests(unittest.TestCase):
             with BuildCache(engine, configured(), "fixture-daemon", events) as cache:
                 cache.preflight()
                 cache.prune(dt.datetime.now(dt.timezone.utc), lambda: None)
-            calls = [
-                call
-                for call in tools.calls()
-                if "prune" in call and "--help" not in call
-            ]
+            calls = tools.prunes
             self.assertEqual(len(calls), 1)
-            self.assertNotIn("--max-used-space", calls[0])
+            self.assertNotIn("max-used-space", calls[0])
             budget = next(
                 event for event in events.items if event["event"] == "cache_budget"
             )
@@ -145,12 +194,7 @@ class CacheTests(unittest.TestCase):
                     self.assertRaises(Failure),
                 ):
                     cache.preflight()
-                self.assertFalse(
-                    any(
-                        "prune" in call and "--help" not in call
-                        for call in tools.calls()
-                    )
-                )
+                self.assertEqual(tools.prunes, [])
 
     def test_exact_cache_accounting_is_separate_from_physical_reclamation(self):
         with (
@@ -236,12 +280,7 @@ class CacheTests(unittest.TestCase):
                         dt.datetime.now(dt.timezone.utc),
                         lambda: self.fail("guard should not be needed"),
                     )
-                self.assertFalse(
-                    any(
-                        "prune" in call and "--help" not in call
-                        for call in tools.calls()
-                    )
-                )
+                self.assertEqual(tools.prunes, [])
 
     def test_missing_cache_inventory_is_not_an_empty_backend(self):
         for usage in (None, {}, {"BuildCache": None}, {"BuildCache": {}}):
@@ -293,14 +332,10 @@ class CacheTests(unittest.TestCase):
                 cache.prune(
                     dt.datetime.now(dt.timezone.utc), lambda: guard_calls.append(1)
                 )
-            calls = [
-                call
-                for call in tools.calls()
-                if "prune" in call and "--help" not in call
-            ]
+            calls = tools.prunes
             self.assertEqual(len(calls), 2)
-            self.assertIn("--filter", calls[0])
-            self.assertIn("--max-used-space", calls[1])
+            self.assertIn("until", json.loads(calls[0]["filters"][0]))
+            self.assertEqual(calls[1]["max-used-space"], ["1024"])
             self.assertEqual(guard_calls, [1, 1])
             budget = next(
                 event for event in events.items if event["event"] == "cache_budget"
@@ -336,12 +371,7 @@ class CacheTests(unittest.TestCase):
                         dt.datetime.now(dt.timezone.utc),
                         lambda: self.fail("no eligible record"),
                     )
-                self.assertFalse(
-                    any(
-                        "prune" in call and "--help" not in call
-                        for call in tools.calls()
-                    )
-                )
+                self.assertEqual(tools.prunes, [])
                 budget = next(
                     event for event in events.items if event["event"] == "cache_budget"
                 )

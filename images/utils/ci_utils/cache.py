@@ -45,10 +45,8 @@ class BuildCache:
         if self.directory is not None:
             self.directory.cleanup()
 
-    def _command(self, args, mutation=False):
+    def _command(self, args):
         timeout = self.engine.remaining()
-        if mutation:
-            self.engine.mutation_started = True
         failure_code = 6 if self.engine.mutation_started else 2
         try:
             with (
@@ -67,12 +65,7 @@ class BuildCache:
                 if result.returncode:
                     raise Failure(
                         failure_code,
-                        "cache command failed; "
-                        + (
-                            "completion requires reconciliation"
-                            if mutation
-                            else "required backend capability is unavailable"
-                        ),
+                        "cache command failed; required backend capability is unavailable",
                     )
                 output.seek(0)
                 data = output.read(32 * 1024 * 1024 + 1)
@@ -153,13 +146,6 @@ class BuildCache:
             raise Failure(
                 2, "Buildx does not select the existing local default backend"
             )
-        if self.policy["mode"] == "scheduled":
-            help_text = self._command(self._buildx("prune", "--help"))
-            if any(
-                flag not in help_text
-                for flag in ("--filter", "--max-used-space", "--all")
-            ):
-                raise Failure(2, "Buildx lacks a required cache prune flag")
         self.report.emit(
             "cache",
             mode=self.policy["mode"],
@@ -299,30 +285,16 @@ class BuildCache:
             and timestamp(item.get("LastUsedAt")) is not None
             and timestamp(item["LastUsedAt"]) < threshold
         ]
-        extra = ["--all"] if self.policy["include_internal"] else []
         started = time.monotonic()
-        # Bound argument size. Exact IDs protect age-indeterminate records from this stage.
-        for offset in range(0, len(candidates), 100):
-            guard()
+        if candidates:
             unused = math.ceil(
                 (dt.datetime.now(dt.timezone.utc) - threshold).total_seconds()
             )
-            identifiers = (
-                "^("
-                + "|".join(re.escape(key) for key in candidates[offset : offset + 100])
-                + ")$"
-            )
-            self._command(
-                self._buildx(
-                    "prune",
-                    "--force",
-                    "--filter",
-                    f"until={unused}s",
-                    "--filter",
-                    "id=" + identifiers,
-                    *extra,
-                ),
-                mutation=True,
+            self.engine.prune_cache(
+                candidates,
+                guard,
+                include_internal=self.policy["include_internal"],
+                unused=unused,
             )
         self.report.emit(
             "cache_stage",
@@ -341,30 +313,13 @@ class BuildCache:
         ]
         eligible = len(candidates)
         # BuildKit's space budget excludes records shared with retained images.
-        if before["non_shared_reported_bytes"] > target:
-            for offset in range(0, len(candidates), 100):
-                guard()
-                identifiers = (
-                    "^("
-                    + "|".join(
-                        re.escape(key) for key in candidates[offset : offset + 100]
-                    )
-                    + ")$"
-                )
-                self._command(
-                    self._buildx(
-                        "prune",
-                        "--force",
-                        "--filter",
-                        "id=" + identifiers,
-                        "--max-used-space",
-                        self.policy["max_used_space"],
-                        *extra,
-                    ),
-                    mutation=True,
-                )
-                if self._apply_observation()["non_shared_reported_bytes"] <= target:
-                    break
+        if candidates and before["non_shared_reported_bytes"] > target:
+            self.engine.prune_cache(
+                candidates,
+                guard,
+                include_internal=self.policy["include_internal"],
+                max_used_space=target,
+            )
         after = self._apply_observation()
         status = (
             "achieved"

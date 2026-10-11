@@ -1,4 +1,4 @@
-"""External-command fixtures; these do not qualify a BuildKit backend."""
+"""Cache command/API fixtures; these do not qualify a BuildKit backend."""
 
 import json
 import pathlib
@@ -12,6 +12,7 @@ class CacheTools:
         self.path = pathlib.Path(self.root.name)
         self.state_path = self.path / "state.json"
         self.calls_path = self.path / "calls.jsonl"
+        self.prunes = []
         self.state = {
             "capabilities": {
                 "daemon_id": "fixture-daemon",
@@ -33,9 +34,7 @@ class CacheTools:
             ],
             "after_age": [],
             "after_budget": [],
-            "prune_count": 0,
             "driver": "docker",
-            "flags": "--filter --max-used-space --all",
         }
         program = f"""#!{sys.executable}
 import json, pathlib, sys
@@ -47,8 +46,6 @@ with calls_path.open("a") as out:
     out.write(json.dumps([pathlib.Path(sys.argv[0]).name, *args]) + "\\n")
 if pathlib.Path(sys.argv[0]).name == "ci-buildkit-probe":
     print(json.dumps(state["capabilities"]))
-elif "--help" in args:
-    print(state["flags"])
 elif "version" in args or "--version" in args:
     print("github.com/docker/buildx v0.38.0 fixture" if "buildx" in args else "Docker version 29.9.0")
 elif "inspect" in args:
@@ -56,11 +53,6 @@ elif "inspect" in args:
 elif "du" in args:
     for record in state["records"]:
         print(json.dumps({{**record, "Size": "512B", "LastUsedAt": "9 months ago", "Reclaimable": not record["InUse"]}}))
-elif "prune" in args:
-    state["prune_count"] += 1
-    state["records"] = state["after_budget"] if "--max-used-space" in args else state["after_age"]
-    state_path.write_text(json.dumps(state))
-    print("Total: 0B")
 else:
     sys.exit(2)
 """
@@ -74,11 +66,23 @@ else:
         self.state_path.write_text(json.dumps(self.state))
 
     def routes(self):
+        def prune(form):
+            self.prunes.append(form)
+            state = json.loads(self.state_path.read_text())
+            state["records"] = (
+                state["after_budget"]
+                if "max-used-space" in form
+                else state["after_age"]
+            )
+            self.state_path.write_text(json.dumps(state))
+            return 200, {"SpaceReclaimed": 0, "CachesDeleted": None}
+
         return {
             ("GET", "/v1.48/system/df?type=build-cache"): lambda: (
                 200,
                 {"BuildCache": json.loads(self.state_path.read_text())["records"]},
-            )
+            ),
+            ("POST", "/v1.48/build/prune"): prune,
         }
 
     def calls(self):

@@ -346,11 +346,17 @@ class DockerE2E(unittest.TestCase):
         self.assertFalse(any(e["event"] == "removed" for e in again))
         docker("stop", "--time", "1", running)
 
-    def build(self, tag):
+    def build(self, tag, layers=1):
         context = self.root / tag
         context.mkdir(exist_ok=True)
-        (context / "Dockerfile").write_text("FROM scratch\nCOPY payload /payload\n")
-        (context / "payload").write_bytes(os.urandom(1024 * 1024))
+        instructions = ["FROM scratch"]
+        for index in range(layers):
+            name = "payload" if layers == 1 else f"payload-{index}"
+            (context / name).write_bytes(
+                os.urandom(1024 * 1024 if layers == 1 else 1024)
+            )
+            instructions.append(f"COPY {name} /{name}")
+        (context / "Dockerfile").write_text("\n".join(instructions) + "\n")
         reference = "ci-utils-test/" + self.root.name + ":" + tag
         docker(
             "buildx",
@@ -362,6 +368,7 @@ class DockerE2E(unittest.TestCase):
             "--tag",
             reference,
             str(context),
+            timeout=120,
         )
         return reference, docker("image", "inspect", reference, "--format", "{{.Id}}")
 
@@ -502,6 +509,55 @@ class DockerE2E(unittest.TestCase):
         self.assertTrue(budget["target_met"])
         self.assertEqual(budget["remaining_bytes"], private)
         self.assertTrue(self.exists("image", reference))
+
+    def test_cache_dependencies_over_100_records_complete_in_one_apply(self):
+        for stage in ("age", "budget"):
+            with self.subTest(stage=stage):
+                existing = {
+                    item["ID"]
+                    for item in Engine(SOCKET).get("/system/df?type=build-cache")[
+                        "BuildCache"
+                    ]
+                }
+                reference, _ = self.build("dependency-" + stage, layers=105)
+                docker("image", "rm", reference)
+                records = Engine(SOCKET).get("/system/df?type=build-cache")[
+                    "BuildCache"
+                ]
+                eligible = {
+                    item["ID"]
+                    for item in records
+                    if item["ID"] not in existing
+                    and not item["InUse"]
+                    and item["Type"] == "regular"
+                    and item.get("LastUsedAt")
+                }
+                self.assertGreater(len(eligible), 100)
+                self.policy["cache"] = {
+                    "mode": "scheduled",
+                    "max_unused_age": "1s" if stage == "age" else "1h",
+                    "max_used_space": "1gb" if stage == "age" else "1b",
+                }
+                self.save()
+                if stage == "age":
+                    time.sleep(2)
+                events = self.host("apply")
+                age = next(event for event in events if event["event"] == "cache_stage")
+                if stage == "age":
+                    self.assertGreater(age["submitted_candidates"], 100)
+                else:
+                    self.assertEqual(age["submitted_candidates"], 0)
+                remaining = {
+                    item["ID"]
+                    for item in Engine(SOCKET).get("/system/df?type=build-cache")[
+                        "BuildCache"
+                    ]
+                }
+                self.assertEqual(
+                    len(eligible & remaining),
+                    0,
+                    "dependent records need a second apply",
+                )
 
     def start_job(self, code, *args):
         return subprocess.Popen(
