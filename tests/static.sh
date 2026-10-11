@@ -68,6 +68,7 @@ required_files=(
 	tests/release.sh
 	tests/scan-local-image.sh
 	tests/scan-local-image_spec.sh
+	tests/net-helpers_spec.sh
 )
 
 for relative_path in "${required_files[@]}"; do
@@ -500,6 +501,7 @@ fi
 "${repository_root}/tests/release.sh"
 "${repository_root}/tests/publish.sh"
 "${repository_root}/tests/scan-local-image_spec.sh"
+"${repository_root}/tests/net-helpers_spec.sh"
 "${repository_root}/tests/docker-integration_spec.sh"
 
 printf 'static verification passed\n'

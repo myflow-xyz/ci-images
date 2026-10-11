@@ -7,10 +7,10 @@ manifest="${repository_root}/manifests/versions.json"
 target=${1:-all}
 
 case "$target" in
-all | base | go | node | vite | playwright | postgres | utils) ;;
+all | base | go | node | vite | playwright | postgres | utils | net) ;;
 *)
 	printf \
-		'usage: %s [all|base|go|node|vite|playwright|postgres|utils]\n' \
+		'usage: %s [all|base|go|node|vite|playwright|postgres|utils|net]\n' \
 		"$0" \
 		>&2
 	exit 64
@@ -93,6 +93,13 @@ if [[ $target == all || $target == base ]]; then
 		ci-base:test \
 		base-git \
 		--user 0:0 \
+		--env "EXPECTED_CI_UID=$(json '.ci_user.uid')" \
+		--env "EXPECTED_CI_GID=$(json '.ci_user.gid')"
+fi
+
+if [[ $target == all || $target == net ]]; then
+	smoke_script ci-net:test net \
+		--network=none --read-only --cap-drop=ALL --security-opt=no-new-privileges \
 		--env "EXPECTED_CI_UID=$(json '.ci_user.uid')" \
 		--env "EXPECTED_CI_GID=$(json '.ci_user.gid')"
 fi
@@ -214,7 +221,7 @@ if [[ $target == all || $target == postgres ]]; then
 fi
 
 if [[ $target == all ]]; then
-	docker_targets=(base go node vite playwright utils)
+	docker_targets=(base go node vite playwright utils net)
 elif [[ $target != postgres ]]; then
 	docker_targets=("$target")
 else
