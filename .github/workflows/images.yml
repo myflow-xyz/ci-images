@@ -74,8 +74,10 @@ jobs:
             README.md \
             "docs/**/*.md"
 
-      - name: Verify manual utility workflow boundaries
-        run: node --test tests/utils-workflow.mjs
+      - name: Verify manual utility workflow boundaries and image resolution
+        run: |
+          node --test tests/utils-workflow.mjs
+          python3 -B -m unittest discover -s tests/qualification -p 'test_*.py'
 
       - name: Verify workflows
         env:

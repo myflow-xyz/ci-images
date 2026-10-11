@@ -8,9 +8,10 @@ on:
         type: string
         required: true
       utils_image:
-        description: Published ghcr.io/myflow-xyz/ci-utils@sha256 index digest
+        description: "Image: blank/latest, version 0.0.17, sha256:<64 hex> or bare 64-character index digest"
         type: string
-        required: true
+        required: false
+        default: latest
 
 permissions:
   contents: read
@@ -31,7 +32,7 @@ jobs:
       run:
         shell: bash
     env:
-      CI_UTILS_TEST_IMAGE: ${{ inputs.utils_image }}
+      CI_UTILS_IMAGE_SELECTOR: ${{ inputs.utils_image }}
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -40,10 +41,6 @@ jobs:
 
       - name: Inspect runner and selected Docker daemon
         run: |
-          if [[ ! $CI_UTILS_TEST_IMAGE =~ ^ghcr\.io/myflow-xyz/ci-utils@sha256:[0-9a-f]{64}$ ]]; then
-            printf 'utils_image must identify a published ci-utils digest\n' >&2
-            exit 2
-          fi
           uname -sm
           python3 --version
           endpoint=${DOCKER_HOST:-}
@@ -61,7 +58,7 @@ jobs:
           test "$(docker --host "$endpoint" info --format '{{.OSType}}')" = linux
           printf '%s\n' "DOCKER_HOST=$endpoint" 'DOCKER_CONTEXT=' >>"$GITHUB_ENV"
 
-      - name: Pull published utility image
+      - name: Resolve and pull the published utility index
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_ACTOR: ${{ github.actor }}
@@ -70,7 +67,10 @@ jobs:
           trap 'rm -rf "$auth_directory"' EXIT
           printf '%s' "$GH_TOKEN" |
             docker --config "$auth_directory" login ghcr.io --username "$GH_ACTOR" --password-stdin
-          docker --config "$auth_directory" --host "$DOCKER_HOST" pull "$CI_UTILS_TEST_IMAGE"
+          export DOCKER_CONFIG="$auth_directory"
+          python3 -B .github/scripts/resolve-utils-image.py \
+            --image="$CI_UTILS_IMAGE_SELECTOR" \
+            --output "$RUNNER_TEMP/ci-utils-image.json"
 
       - name: Verify guarded cleanup on a disposable daemon
         run: |

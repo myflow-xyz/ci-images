@@ -22,6 +22,7 @@ command -v jq >/dev/null 2>&1 || fail 'jq is required'
 
 required_files=(
 	.github/scripts/collect-published-images.sh
+	.github/scripts/resolve-utils-image.py
 	.github/scripts/merge-image.sh
 	.github/scripts/next-version.sh
 	.github/scripts/promote-latest.sh

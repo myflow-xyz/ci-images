@@ -48,3 +48,12 @@ test('normal image CI retains both utility stores without manual utility routing
   assert.match(commands, /tests\/utils-docker\.sh/);
   assert.match(commands, /CI_UTILS_TEST_IMAGE_STORE=classic tests\/utils-docker\.sh/);
 });
+
+test('image selection is optional and defaults to the published latest alias', () => {
+  const input = workflow('utils-test.yml').on.workflow_dispatch.inputs.utils_image;
+  assert.equal(input.required, false);
+  assert.equal(input.default, 'latest');
+  for (const hint of ['latest', '0.0.17', 'sha256:', '64']) {
+    assert.ok(input.description.includes(hint), `missing input-format hint: ${hint}`);
+  }
+});
