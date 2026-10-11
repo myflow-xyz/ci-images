@@ -82,6 +82,7 @@ def run(settings, policy, args, emit):
         duration(args.wait), args.participant, policy["expected_daemon_id"]
     ) as lease:
         process = None
+        launch_attempted = False
         try:
             engine = Engine(policy["endpoint"])
             info = engine.preflight(policy["expected_daemon_id"])
@@ -112,6 +113,8 @@ def run(settings, policy, args, emit):
                     participant=args.participant,
                     daemon_id=info["ID"],
                 )
+                # Cancellation can interrupt Popen after it creates the child.
+                launch_attempted = True
                 process = subprocess.Popen(
                     command, env=environment, start_new_session=True
                 )
@@ -147,9 +150,9 @@ def run(settings, policy, args, emit):
                 )
                 return code
         except BaseException:
-            if process is None:
+            if not launch_attempted:
                 lease.complete()
-            elif not process_group_gone(process.pid):
+            elif process is not None and not process_group_gone(process.pid):
                 try:
                     os.killpg(process.pid, signal.SIGTERM)
                 except ProcessLookupError:

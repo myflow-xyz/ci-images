@@ -4,6 +4,7 @@ import datetime as dt
 import json
 import os
 import pathlib
+import signal
 import socket
 import subprocess
 import sys
@@ -233,6 +234,45 @@ class HostCLITests(unittest.TestCase):
             Gate(self.root / "gate").job(wait_seconds=0.02),
         ):
             self.fail("missing completion receipt reopened admission")
+
+    def test_interrupted_job_launch_keeps_admission_blocked(self):
+        self.policy["pressure"] = {"reserve_bytes": 1}
+        self.save()
+        pid_path = self.root / "child.pid"
+        try:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "-B",
+                    str(ROOT / "tests/utils/interrupt_job_launch.py"),
+                    str(pid_path),
+                    str(ROOT / "scripts/ci-docker-maintenance"),
+                    "--config",
+                    str(self.root / "host.json"),
+                    "job",
+                    "--participant",
+                    "test-runner",
+                    "--",
+                    sys.executable,
+                    "-c",
+                    "import time; time.sleep(60)",
+                ],
+                text=True,
+                capture_output=True,
+                timeout=10,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 6, result.stdout + result.stderr)
+            os.kill(int(pid_path.read_text()), 0)
+            gate = Gate(self.root / "gate")
+            self.assertEqual(len(gate.status()["jobs"]), 1)
+            self.assertEqual(gate.status()["jobs"][0]["phase"], "uncertain")
+            result, _ = self.invoke("apply", "--wait", "1s")
+            self.assertEqual(result.returncode, 4, result.stdout + result.stderr)
+            self.assertFalse(any(method == "DELETE" for method, _ in self.api.requests))
+        finally:
+            if pid_path.exists():
+                os.killpg(int(pid_path.read_text()), signal.SIGTERM)
 
     def test_background_client_prevents_completion_even_with_receipt(self):
         self.policy["pressure"] = {"reserve_bytes": 1}

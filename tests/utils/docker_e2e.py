@@ -619,6 +619,48 @@ os.kill(os.getppid(), signal.SIGKILL)
         self.assertFalse(marker.exists())
         self.assertEqual(list((self.root / "gate/jobs").glob("*.json")), [])
 
+    def test_interrupted_job_launch_preserves_admission(self):
+        candidate = self.create("--label", OWNED)
+        pid_path = self.root / "child.pid"
+        marker = self.root / "daemon-read-complete"
+        code = """
+import os, pathlib, subprocess, sys, time
+subprocess.run(['docker', '--host', os.environ['CI_DOCKER_ENDPOINT'], 'info'], check=True)
+pathlib.Path(sys.argv[1]).touch()
+time.sleep(60)
+"""
+        try:
+            command(
+                [
+                    sys.executable,
+                    "-B",
+                    "/workspace/tests/utils/interrupt_job_launch.py",
+                    str(pid_path),
+                    *self.host_args(
+                        "job",
+                        "--participant",
+                        "fixture",
+                        "--",
+                        sys.executable,
+                        "-c",
+                        code,
+                        str(marker),
+                    )[2:],
+                ],
+                expected=6,
+            )
+            wait_for(marker.exists)
+            os.kill(int(pid_path.read_text()), 0)
+            self.finish(self.start_job("raise SystemExit('must not start')"), 4)
+            self.host("apply", "--wait", "1s", expected=4)
+            self.assertTrue(self.exists("container", candidate))
+            records = list((self.root / "gate/jobs").glob("*.json"))
+            self.assertEqual(len(records), 1)
+            self.assertEqual(json.loads(records[0].read_text())["phase"], "uncertain")
+        finally:
+            if pid_path.exists():
+                os.killpg(int(pid_path.read_text()), signal.SIGTERM)
+
     def test_interrupted_deletion_stops_later_mutations(self):
         for fault in ("crash", "cancel", "timeout", "disconnect"):
             with self.subTest(fault=fault):
