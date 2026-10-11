@@ -28,6 +28,13 @@ class GateTests(unittest.TestCase):
     )
     def test_shared_group_admission_ignores_restrictive_umask(self):
         pathlib.Path(self.root.name).chmod(0o755)
+        # Participant UIDs may not be able to traverse the runner's checkout.
+        source = (
+            pathlib.Path(__file__).resolve().parents[2] / "scripts/ci_docker_gate.py"
+        )
+        module = pathlib.Path(self.root.name) / source.name
+        module.write_bytes(source.read_bytes())
+        module.chmod(0o644)
         program = """
 import sys
 from ci_docker_gate import Gate, GateError
@@ -58,10 +65,7 @@ except GateError as error:
                             [sys.executable, "-B", "-c", program, str(gate.directory)],
                             env={
                                 **os.environ,
-                                "PYTHONPATH": str(
-                                    pathlib.Path(__file__).resolve().parents[2]
-                                    / "scripts"
-                                ),
+                                "PYTHONPATH": self.root.name,
                             },
                             user=uid,
                             group=gid,
