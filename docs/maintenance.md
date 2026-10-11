@@ -128,19 +128,109 @@ The harness creates and removes its own test containers and volumes. Only the
 test daemon is privileged; it receives no host Docker socket or host-root mount.
 These tests do not replace qualification of the runner's complete job lifecycle.
 
-To test an existing published image on a selected self-hosted runner, dispatch
-the `CI images` workflow with `utils_runner` set to its additional runner label
-and `utils_image` set to the full `ghcr.io/myflow-xyz/ci-utils@sha256:...` reference.
-This mode reports the runner and Docker environment, pulls that image, and runs
-both disposable-daemon image stores. It does not rebuild or publish the suite.
-It does not install host services or qualify the runner's shared daemon for
-maintenance. A macOS runner can host these isolated tests when Linux Docker is
-available; the native Linux host adapter still requires separate qualification.
-
 CI runs both the default containerd image store and
 `CI_UTILS_TEST_IMAGE_STORE=classic`. The dangling-image fixture uses classic
 `overlay2`: the containerd store removes the fixture's old image metadata during
 tag replacement, before cleanup runs. Other cases run against both stores.
+
+### Test a published utility image
+
+Open **Actions → Isolated utility tests → Run workflow**. This separate workflow
+(`utils-test.yml`) pulls an existing image and runs both disposable-daemon stores.
+It does not build or publish images, install host services, or qualify maintenance
+against the runner's shared daemon. Normal `CI images` runs retain both stores.
+The workflow must first exist on the default branch for
+[manual dispatch](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow).
+
+Set `utils_runner` to an additional self-hosted runner label that uniquely selects
+the target host, such as `utils-lab-01`. A runner name must also be a registered
+label. In the repository or organization **Settings → Actions →
+Runners**, open the runner and inspect or assign its
+[labels](https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners/apply-labels).
+The runner needs Bash, Python 3, Git, and Docker CLI access to a local Unix socket
+for a Linux `amd64` or `arm64` daemon. A macOS runner with Linux Docker can run
+these isolated tests; the native Linux host adapter needs separate qualification.
+Runs using the same target label are serialized across source branches, with
+concurrency separate from normal image CI.
+
+`utils_image` is optional and always selects `ghcr.io/myflow-xyz/ci-utils`:
+
+| Input | Selection |
+| --- | --- |
+| Omitted, blank, whitespace only, or `latest` | Published `latest` alias |
+| `0.0.17` | Published version `X.Y.Z`; omit the Git-tag `v` prefix |
+| `sha256:<64 lowercase hex characters>` | Published index digest |
+| `<64 lowercase hex characters>` | Same index digest, with `sha256:` added |
+| `ghcr.io/myflow-xyz/ci-utils@sha256:<64 hex>` | Full-reference form |
+
+Use exactly 64 characters from `0-9` and `a-f` for the digest. `sha256:abc...` and
+`abc...` only illustrate the shapes; an ellipsis is not valid input. Supply the
+registry's OCI index or Docker manifest-list digest, not a per-platform manifest,
+local image/config ID, or layer digest. The index must contain the runner's
+platform. Other repositories and embedded whitespace/control characters are
+rejected. Leading and trailing spaces around a valid selector are ignored.
+
+`latest` means the published stable alias, not a candidate tag, the highest
+discovered version, or the selected Git branch. The workflow resolves a tag once,
+then pulls and tests that immutable index digest in both stores. A missing tag,
+denied access, registry error, or unavailable platform stops the run without
+fallback. If `latest` is absent, select an existing version/digest or wait for
+release publication.
+
+**Use workflow from** selects the workflow, tests, and repository maintenance
+helpers. The image input independently selects the published container. For
+ordinary qualification, use `main` with blank input or a fixed version/digest.
+For harness or compatibility work, select the branch containing those changes
+and keep a fixed image. Selecting `0.0.17` does not switch checkout to `v0.0.17`.
+The result qualifies the selected source-and-image combination.
+
+The run summary records the requested selector, normalized reference, immutable
+index/reference, platform and child digest, workflow ref, actual checkout commit,
+and image source-revision label when available. An absent image label is reported
+as `null`. The checkout commit is never substituted for it.
+
+Equivalent CLI examples follow. Replace the runner label and version with
+registered and published values:
+
+```sh
+gh workflow run utils-test.yml --repo myflow-xyz/ci-images --ref main \
+  -f utils_runner=utils-lab-01
+gh workflow run utils-test.yml --repo myflow-xyz/ci-images --ref main \
+  -f utils_runner=utils-lab-01 -f utils_image=0.0.17
+```
+
+### Verify workflow changes locally
+
+The workflow contract tests and controlled registry API tests run in normal CI:
+
+```sh
+npm ci --fund=false --ignore-scripts --no-audit --prefix images/node/markdownlint
+node --test tests/utils-workflow.mjs
+python3 -B -m unittest discover -s tests/qualification -p 'test_*.py'
+```
+
+For opt-in live registry and Docker API checks, choose a published selector and
+an explicit local Docker endpoint. The registry checks verify immutable digest
+forms, provenance, and rejection of child/missing digests. The runtime suites then
+exercise guarded cleanup inside disposable daemons; they remove their own
+fixtures. Run these commands from the repository root:
+
+```sh
+set -eu
+utils_image_selector='0.0.17' # Replace with an existing version or index digest.
+export DOCKER_HOST="$(docker context inspect --format '{{.Endpoints.docker.Host}}')"
+unset DOCKER_CONTEXT
+qualification_report=$(mktemp)
+trap 'rm -f "$qualification_report"' EXIT
+python3 -B tests/qualification/registry_e2e.py \
+  --image="$utils_image_selector" --output "$qualification_report"
+CI_UTILS_TEST_IMAGE=$(jq -r '.resolved_reference' "$qualification_report")
+export CI_UTILS_TEST_IMAGE
+tests/utils-docker.sh
+CI_UTILS_TEST_IMAGE_STORE=classic tests/utils-docker.sh
+```
+
+### Install maintenance scheduling
 
 After the rollout gates below pass, review and install the
 [systemd examples](../scripts/examples/ci-utils/). They use the same adapter for
