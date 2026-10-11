@@ -112,9 +112,9 @@ image or `wireguard` metapackage is installed.
 | --- | --- |
 | `Node.js` | `26.11.1` |
 | `npm` | `12.2.0` |
-| `pnpm` | `12.10.1` |
+| `pnpm` | `12.11.2` |
 | `markdownlint-cli2` | `0.23.3` |
-| `@redocly/cli` | `2.60.0` |
+| `@redocly/cli` | `2.62.1` |
 
 ## `ci-vite`
 

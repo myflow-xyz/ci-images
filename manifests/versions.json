@@ -318,9 +318,9 @@
       "markdownlint_cli2": {
         "version": "0.23.3",
         "lockfile": "images/node/markdownlint/package-lock.json",
-        "lockfile_sha256": "e5852530d47a9c45c3fde0316af0a6ef5c9265fc54420f611c4725ca6737e7f2",
+        "lockfile_sha256": "ca16c5c5b8bf382e1d83d612b4c3d90a48eebd30cbe5204715bed4a68f5763d5",
         "dependency_overrides": {
-          "smol-toml": "1.9.0",
+          "smol-toml": "1.9.1",
           "katex": "0.19.0"
         },
         "security_patches": {
@@ -332,25 +332,25 @@
           }
         }
       },
-      "bundle_version": "11",
+      "bundle_version": "12",
       "lockfile": "images/node/npm/package-lock.json",
-      "lockfile_sha256": "c7f2dd8b11d8a571cc5af10089cfa12670f000f8d61eeac48125e5c1e98bb9db",
+      "lockfile_sha256": "ec80001e7e4128e123c3d3e45ad34b4d23e8c76a57352c5ec0f26e7387599d10",
       "pnpm": {
-        "version": "12.10.1",
+        "version": "12.11.2",
         "store_version": "11",
         "source": "https://github.com/pnpm/pnpm",
         "assets": {
           "amd64": {
-            "url": "https://github.com/pnpm/pnpm/releases/download/v12.10.1/pnpm-linux-x64.tar.gz",
-            "sha256": "502a275984a4cd01e5579ac72049a241091cac5118e44becf84951130c3e079e"
+            "url": "https://github.com/pnpm/pnpm/releases/download/v12.11.2/pnpm-linux-x64.tar.gz",
+            "sha256": "358f30541b42371360c0d48a8daddc0c0850a90c36fcbea598032a9850e2c9ab"
           },
           "arm64": {
-            "url": "https://github.com/pnpm/pnpm/releases/download/v12.10.1/pnpm-linux-arm64.tar.gz",
-            "sha256": "18dbb118de1dbef0e4516c17bf847d6ee206fc4deffb2bb488ec8e1d2814e078"
+            "url": "https://github.com/pnpm/pnpm/releases/download/v12.11.2/pnpm-linux-arm64.tar.gz",
+            "sha256": "ad444fa06d7ff344d74ba1e4933f2ed71cc6357cc2d33707a5c60958b7d83085"
           }
         }
       },
-      "redocly": "2.60.0",
+      "redocly": "2.62.1",
       "source": "https://nodejs.org/dist/",
       "assets": {
         "amd64": {
