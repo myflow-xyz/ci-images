@@ -27,6 +27,16 @@ executable. Other Node tool dependency trees are installed from committed
 lockfiles into immutable versioned directories. Stable command links are
 exposed through `/opt/ci-tools/bin`.
 
+The Markdown bundle also applies a source-checked local patch for
+[GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm).
+The parser and recursive tree walkers reject nesting deeper than 128 containers
+with a controlled syntax error. Regression tests cover string and AST APIs,
+CLI and configuration globs, and ordinary file selection and lint failures.
+The build rejects unexpected source hashes so a dependency update requires
+review of the patch. The upstream package remains identified as `braces` 3.0.3;
+no patched release is available, so dependency alerts may still report it.
+Remove the local patch only after adopting and testing an upstream fixed release.
+
 ## Runtime environment
 
 This image adds these variables to the

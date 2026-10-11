@@ -58,6 +58,8 @@ required_files=(
 	images/node/Dockerfile
 	images/node/markdownlint/package.json
 	images/node/markdownlint/package-lock.json
+	images/node/markdownlint/patch-braces.cjs
+	tests/smoke/braces-security.cjs
 	images/node/npm/package.json
 	images/node/npm/package-lock.json
 	images/node/npm-runtime/package.json
@@ -386,6 +388,10 @@ assert_package_version \
 	images/node/markdownlint/package-lock.json \
 	smol-toml \
 	"$(jq -r '.tools.node.markdownlint_cli2.dependency_overrides["smol-toml"]' "$manifest")"
+assert_package_version \
+	images/node/markdownlint/package-lock.json \
+	braces \
+	"$(jq -r '.tools.node.markdownlint_cli2.security_patches.braces.version' "$manifest")"
 assert_package_version \
 	images/node/markdownlint/package-lock.json \
 	katex \

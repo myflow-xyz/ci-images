@@ -322,6 +322,14 @@
         "dependency_overrides": {
           "smol-toml": "1.9.0",
           "katex": "0.19.0"
+        },
+        "security_patches": {
+          "braces": {
+            "version": "3.0.3",
+            "advisory": "GHSA-vfj7-8cjw-p6xm",
+            "script": "images/node/markdownlint/patch-braces.cjs",
+            "max_depth": 128
+          }
         }
       },
       "bundle_version": "11",
