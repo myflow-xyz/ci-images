@@ -19,6 +19,8 @@ expected_pnpm=${EXPECTED_PNPM_VERSION:?EXPECTED_PNPM_VERSION is not set}
 : "${EXPECTED_REDOCLY_VERSION:?EXPECTED_REDOCLY_VERSION is not set}"
 expected_bundle=$EXPECTED_NODE_BUNDLE_VERSION
 expected_markdownlint=$EXPECTED_MARKDOWNLINT_VERSION
+node "$(dirname "${BASH_SOURCE[0]}")/braces-security.cjs" \
+	"/opt/ci-tools/markdownlint-cli2/${expected_markdownlint}"
 expected_redocly=$EXPECTED_REDOCLY_VERSION
 bundle_root="/opt/ci-tools/node/${expected_bundle}/node_modules"
 npm_root="/opt/ci-tools/npm/${EXPECTED_NPM_VERSION}/node_modules"

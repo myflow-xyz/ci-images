@@ -17,7 +17,7 @@ fail() {
 
 output_file="${temporary_directory}/published-images.json"
 failure_output="${temporary_directory}/failure.log"
-names=(base go node vite playwright postgres utils)
+names=(base go node vite playwright postgres utils net)
 declare -a records
 
 for index in "${!names[@]}"; do
@@ -40,7 +40,7 @@ done
 jq --exit-status \
 	--argjson expected_names "$(printf '%s\n' "${names[@]}" | jq -R . | jq -s .)" \
 	'
-		length == 7 and
+		length == 8 and
 		[.[].name] == $expected_names and
 		([
 			.[] |
@@ -63,6 +63,7 @@ if "$collector" \
 	"${records[4]}" \
 	"${records[0]}" \
 	"${records[6]}" \
+	"${records[7]}" \
 	>"$failure_output" 2>&1; then
 	fail 'duplicate image records were accepted'
 fi
@@ -83,6 +84,7 @@ if "$collector" \
 	"${records[4]}" \
 	"${records[5]}" \
 	"${records[6]}" \
+	"${records[7]}" \
 	>"$failure_output" 2>&1; then
 	fail 'invalid image reference was accepted'
 fi
@@ -103,6 +105,7 @@ if "$collector" \
 	"${records[4]}" \
 	"${records[5]}" \
 	"${records[6]}" \
+	"${records[7]}" \
 	>"$failure_output" 2>&1; then
 	fail 'candidate for another image was accepted'
 fi
@@ -117,6 +120,13 @@ grep -q 'unsupported image' "$failure_output" ||
 	fail 'unknown image diagnostic'
 
 base_digest=$(printf 'sha256:%064d' 1)
+for invalid_parent in '' 'ghcr.io/myflow-xyz/ci-base:latest' "ghcr.io/myflow-xyz/ci-node@${base_digest}"; do
+	if "$publisher" net "$output_file" "$invalid_parent" >"$failure_output" 2>&1; then
+		fail 'net accepted an absent, mutable, or incorrect parent'
+	fi
+	grep -q 'invalid parent reference' "$failure_output" || fail 'net parent diagnostic'
+done
+
 if "$publisher" \
 	go \
 	"$output_file" \
@@ -238,7 +248,7 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 	platform="linux/${architecture}"
 	export CI_IMAGES_PLATFORM="$platform"
 	case "$name" in
-	go | node | utils)
+	go | node | utils | net)
 		parent="ghcr.io/myflow-xyz/ci-base@${base_digest}"
 		;;
 	vite)
@@ -292,9 +302,13 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 		for build_arg in \
 			"BUILDX_MODULE_SUM=$(jq -r '.tools.utils.buildx.module_sum' "$manifest")" \
 			"BUILDX_COMMIT=$(jq -r '.tools.utils.buildx.commit' "$manifest")" \
-			"BUILDX_GO_ARCHIVE_VERSION=$(jq -r '.tools.utils.buildx.dependency_overrides["github.com/moby/go-archive"]' "$manifest")"; do
+			"BUILDX_GO_ARCHIVE_VERSION=$(jq -r '.tools.utils.buildx.dependency_overrides["github.com/moby/go-archive"]' "$manifest")" \
+			"BUILDX_X_NET_VERSION=$(jq -r '.tools.utils.buildx.dependency_overrides["golang.org/x/net"]' "$manifest")"; do
 			grep -Fq -- "$build_arg" "$fake_log" || fail 'missing pinned Buildx source or dependency'
 		done
+	fi
+	if [[ $name == net ]]; then
+		cp "$output_file" "${temporary_directory}/net-${architecture}.json"
 	fi
 	if [[ $name == base ]]; then
 		cp "$output_file" "${temporary_directory}/base-${architecture}.json"
@@ -409,6 +423,16 @@ grep -Fq -- "$(jq -r .ref "$amd64_record")" "$fake_log" ||
 	fail 'merge did not use immutable platform references'
 grep -Fq -- "$(jq -r .ref "$arm64_record")" "$fake_log" ||
 	fail 'merge omitted the ARM64 platform reference'
+
+"$merger" net "$output_file" \
+	"${temporary_directory}/net-amd64.json" \
+	"${temporary_directory}/net-arm64.json"
+jq --exit-status '
+	.name == "net" and
+	.image == "ghcr.io/myflow-xyz/ci-net" and
+	.ref == (.image + "@" + .digest) and
+	(has("platform") | not)
+' "$output_file" >/dev/null || fail 'invalid net multi-architecture publication record'
 
 for fault in duplicate wrong-image wrong-run wrong-digest wrong-architecture; do
 	case "$fault" in

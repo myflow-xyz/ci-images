@@ -18,6 +18,7 @@ overview.
 
 - [`ci-base`](images/base.md)
 - [`ci-go`](images/go.md)
+- [`ci-net`](images/net.md)
 - [`ci-node`](images/node.md)
 - [`ci-vite`](images/vite.md)
 - [`ci-playwright`](images/playwright.md)

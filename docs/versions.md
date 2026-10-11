@@ -80,6 +80,20 @@ version listed above.
 | `xz-utils` | `5.8.1-1+deb13u2` |
 | `zip` | `3.0-15+deb13u1` |
 
+## `ci-net`
+
+The runtime inherits `ci-base` and adds these snapshot-pinned packages on both
+architectures. WireGuard kernel support is a Docker host prerequisite; no kernel
+image or `wireguard` metapackage is installed.
+
+| Package | Version |
+| --- | --- |
+| `iproute2` | `6.15.0-1` |
+| `iputils-ping` | `3:20240905-3` |
+| `nftables` | `1.1.3-1` |
+| `tcpdump` | `4.99.5-2` |
+| `wireguard-tools` | `1.0.20210914-3` |
+
 ## `ci-go`
 
 | Component | Version |
@@ -89,8 +103,8 @@ version listed above.
 | `sqlc` | `1.31.1` |
 | `goose` | `3.28.0` |
 | `golangci-lint` | `2.14.0` |
-| `goimports` | `0.51.0` |
-| `govulncheck` | `1.8.0` |
+| `goimports` | `0.52.0` |
+| `govulncheck` | `1.9.0` |
 
 ## `ci-node`
 
@@ -98,9 +112,9 @@ version listed above.
 | --- | --- |
 | `Node.js` | `26.11.1` |
 | `npm` | `12.2.0` |
-| `pnpm` | `12.10.1` |
+| `pnpm` | `12.11.2` |
 | `markdownlint-cli2` | `0.23.3` |
-| `@redocly/cli` | `2.60.0` |
+| `@redocly/cli` | `2.62.1` |
 
 ## `ci-vite`
 
@@ -113,7 +127,7 @@ version listed above.
 | `vitest` | `5.0.3` |
 | `@vitest/coverage-v8` | `5.0.3` |
 | `oxlint` | `1.87.0` |
-| `oxlint-tsgolint` | `7.0.2003` |
+| `oxlint-tsgolint` | `7.0.2004` |
 | `oxfmt` | `0.72.0` |
 
 ## `ci-playwright`
