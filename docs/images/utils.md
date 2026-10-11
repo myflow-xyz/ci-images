@@ -7,9 +7,10 @@ cleanup image. It follows the suite's existing version and digest promotion rule
 The build reuses `ci-go` to compile Buildx and the internal capability checker.
 The final image copies those binaries into `ci-base`; it does not add the Go
 toolchain or the `ci-go` runtime environment. Buildx source and its required
-security fix are pinned in `manifests/versions.json`. The upstream binary failed
-the image scan on fixed Go and `go-archive` vulnerabilities. The internal BuildKit
-probe checks the selected backend's advertised cache-space capability before
+security fixes are pinned in `manifests/versions.json`. The upstream binary failed
+the image scan on fixed Go, `go-archive`, and `golang.org/x/net` vulnerabilities.
+The internal BuildKit probe checks the selected backend's advertised cache-space
+capability before
 cleanup. The cleanup policy and execution use Python's standard library.
 
 ## Commands

@@ -207,6 +207,7 @@ RUN --mount=from=node-runtime,source=/usr/local/lib/node_modules/npm,target=/usr
 
 COPY images/node/markdownlint/package.json \
   images/node/markdownlint/package-lock.json \
+  images/node/markdownlint/patch-braces.cjs \
   /var/tmp/markdownlint-tools/
 
 RUN --mount=type=cache,target=/var/cache/npm \
@@ -220,6 +221,9 @@ RUN --mount=type=cache,target=/var/cache/npm \
       --no-audit \
       --omit=dev \
       --prefix /var/tmp/markdownlint-tools; \
+    node /var/tmp/markdownlint-tools/patch-braces.cjs \
+      /var/tmp/markdownlint-tools/node_modules/braces; \
+    rm /var/tmp/markdownlint-tools/patch-braces.cjs; \
     test "$(node --print \
       "require('/var/tmp/markdownlint-tools/node_modules/markdownlint-cli2/package.json').version")" \
       = "${MARKDOWNLINT_CLI2_VERSION}"; \

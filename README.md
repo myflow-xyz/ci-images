@@ -11,6 +11,7 @@ debian:trixie-slim@<digest>
 └── ci-base
     ├── ci-go
     ├── ci-utils
+    ├── ci-net
     └── ci-node
         └── ci-vite
             └── ci-playwright
@@ -30,6 +31,9 @@ release with the reviewed Debian snapshot.
   and reusable Go CI executables.
 - `ghcr.io/myflow-xyz/ci-utils`: inherited base tools, pinned Buildx, and guarded
   Docker cleanup. Its build reuses `ci-go`; its runtime inherits `ci-base`.
+- `ghcr.io/myflow-xyz/ci-net`: network diagnostics and isolated network tests,
+  with explicit namespace and capability constraints in its
+  [image contract](docs/images/net.md).
 - `ghcr.io/myflow-xyz/ci-node`: generic Node.js, Markdown, and OpenAPI jobs
   that do not require a frontend toolchain.
 - `ghcr.io/myflow-xyz/ci-vite`: TypeScript, Vite, Vitest, Oxlint, and Oxfmt
@@ -39,7 +43,7 @@ release with the reviewed Debian snapshot.
 - `ghcr.io/myflow-xyz/ci-postgres`: PostgreSQL 18 service jobs requiring
   pgvector and PostgreSQL contrib extensions.
 
-The five job images support GitHub Actions `jobs.<job_id>.container`.
+The seven job images support GitHub Actions `jobs.<job_id>.container`.
 `ci-postgres` is an independent service-image lineage and never inherits from a
 job image.
 
@@ -75,7 +79,7 @@ After building a target with `tests/build-local-image.sh <target>`, use
 before pushing. The helper requires Trivy in the developer environment,
 restricts the image source to the local Docker daemon, and applies the publish
 policy: fixed HIGH or CRITICAL operating-system and library vulnerabilities
-fail the scan. Use `all` to scan all seven local images. Local verification covers
+fail the scan. Use `all` to scan all eight local images. Local verification covers
 the host platform; CI remains responsible for both published architectures.
 
 ## Design boundaries

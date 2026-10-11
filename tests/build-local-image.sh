@@ -7,10 +7,10 @@ manifest="${repository_root}/manifests/versions.json"
 target=${1:-all}
 
 case "$target" in
-all | base | go | node | vite | playwright | postgres | utils) ;;
+all | base | go | node | vite | playwright | postgres | utils | net) ;;
 *)
 	printf \
-		'usage: %s [all|base|go|node|vite|playwright|postgres|utils]\n' \
+		'usage: %s [all|base|go|node|vite|playwright|postgres|utils|net]\n' \
 		"$0" \
 		>&2
 	exit 64
@@ -170,6 +170,14 @@ build_base() {
 		"$repository_root"
 }
 
+build_net() {
+	build_image "${repository_root}/images/net/Dockerfile" \
+		--load --tag ci-net:test \
+		"${common_labels[@]}" \
+		--build-arg BASE_IMAGE=ci-base:test \
+		"$repository_root"
+}
+
 build_utils() {
 	build_image "${repository_root}/images/utils/Dockerfile" \
 		--load --tag ci-utils:test \
@@ -181,6 +189,7 @@ build_utils() {
 		--build-arg "BUILDX_MODULE_SUM=$(json '.tools.utils.buildx.module_sum')" \
 		--build-arg "BUILDX_COMMIT=$(json '.tools.utils.buildx.commit')" \
 		--build-arg "BUILDX_GO_ARCHIVE_VERSION=$(json '.tools.utils.buildx.dependency_overrides["github.com/moby/go-archive"]')" \
+		--build-arg "BUILDX_X_NET_VERSION=$(json '.tools.utils.buildx.dependency_overrides["golang.org/x/net"]')" \
 		"$repository_root"
 }
 
@@ -356,8 +365,12 @@ build_postgres() {
 }
 
 if [[ $target == all || $target == base || $target == go ||
-	$target == node || $target == vite || $target == playwright || $target == utils ]]; then
+	$target == node || $target == vite || $target == playwright || $target == utils || $target == net ]]; then
 	build_base
+fi
+
+if [[ $target == all || $target == net ]]; then
+	build_net
 fi
 
 if [[ $target == all || $target == go || $target == utils ]]; then

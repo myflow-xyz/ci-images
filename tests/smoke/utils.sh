@@ -3,6 +3,7 @@
 set -euo pipefail
 
 : "${EXPECTED_BUILDX_VERSION:?EXPECTED_BUILDX_VERSION is not set}"
+: "${EXPECTED_BUILDX_X_NET_VERSION:?EXPECTED_BUILDX_X_NET_VERSION is not set}"
 : "${EXPECTED_CI_UID:?EXPECTED_CI_UID is not set}"
 : "${EXPECTED_CI_GID:?EXPECTED_CI_GID is not set}"
 
@@ -29,6 +30,9 @@ assert value["policy_schema"] == 1 and value["host_protocol"] == 1
 assert value["revision"] not in ("unknown", "unbuilt", "")
 '
 docker buildx version | grep --fixed-strings "v${EXPECTED_BUILDX_VERSION}" >/dev/null
+grep --binary-files=text --fixed-strings \
+	$'dep\tgolang.org/x/net\t'"${EXPECTED_BUILDX_X_NET_VERSION}"$'\t' \
+	"/opt/ci-tools/buildx/${EXPECTED_BUILDX_VERSION}/docker-buildx" >/dev/null
 probe_error=$(mktemp)
 trap 'rm -f "$probe_error"' EXIT
 if ci-buildkit-probe >"$probe_error" 2>&1; then

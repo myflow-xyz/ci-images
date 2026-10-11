@@ -37,6 +37,7 @@ required_files=(
 	docs/versions.md
 	docs/images/base.md
 	docs/images/go.md
+	docs/images/net.md
 	docs/images/node.md
 	docs/images/vite.md
 	docs/images/playwright.md
@@ -48,9 +49,17 @@ required_files=(
 	images/base/debian-packages.amd64.lock
 	images/base/debian-packages.arm64.lock
 	images/go/Dockerfile
+	images/net/Dockerfile
+	images/net/debian-packages.amd64.lock
+	images/net/debian-packages.arm64.lock
+	tests/smoke/net.sh
+	tests/smoke/net-rules.sh
+	tests/net-e2e.py
 	images/node/Dockerfile
 	images/node/markdownlint/package.json
 	images/node/markdownlint/package-lock.json
+	images/node/markdownlint/patch-braces.cjs
+	tests/smoke/braces-security.cjs
 	images/node/npm/package.json
 	images/node/npm/package-lock.json
 	images/node/npm-runtime/package.json
@@ -68,6 +77,7 @@ required_files=(
 	tests/release.sh
 	tests/scan-local-image.sh
 	tests/scan-local-image_spec.sh
+	tests/net-helpers_spec.sh
 )
 
 for relative_path in "${required_files[@]}"; do
@@ -136,26 +146,28 @@ done < <(
   ' "$manifest"
 )
 
-debian_package_lock_amd64=$(
-	jq -r '.tools.base.debian_packages.lockfiles.amd64.lockfile' "$manifest"
-)
-debian_package_lock_arm64=$(
-	jq -r '.tools.base.debian_packages.lockfiles.arm64.lockfile' "$manifest"
-)
-while IFS='=' read -r package amd64_version arm64_version; do
-	version=$amd64_version
-	if [[ $amd64_version != "$arm64_version" ]]; then
-		version="${amd64_version} (amd64) / ${arm64_version} (arm64)"
-	fi
-	row="| \`${package}\` | \`${version}\` |"
-	grep --fixed-strings --line-regexp "$row" "$versions_doc" >/dev/null ||
-		fail "missing Debian package inventory row: ${package}"
-done < <(
-	join \
-		-t '=' \
-		"${repository_root}/${debian_package_lock_amd64}" \
-		"${repository_root}/${debian_package_lock_arm64}"
-)
+for image in base net; do
+	debian_package_lock_amd64=$(
+		jq -r --arg image "$image" '.tools[$image].debian_packages.lockfiles.amd64.lockfile' "$manifest"
+	)
+	debian_package_lock_arm64=$(
+		jq -r --arg image "$image" '.tools[$image].debian_packages.lockfiles.arm64.lockfile' "$manifest"
+	)
+	while IFS='=' read -r package amd64_version arm64_version; do
+		version=$amd64_version
+		if [[ $amd64_version != "$arm64_version" ]]; then
+			version="${amd64_version} (amd64) / ${arm64_version} (arm64)"
+		fi
+		row="| \`${package}\` | \`${version}\` |"
+		grep --fixed-strings --line-regexp "$row" "$versions_doc" >/dev/null ||
+			fail "missing Debian package inventory row: ${package}"
+	done < <(
+		join \
+			-t '=' \
+			"${repository_root}/${debian_package_lock_amd64}" \
+			"${repository_root}/${debian_package_lock_arm64}"
+	)
+done
 
 jq --exit-status '
   .schema_version == 1 and
@@ -182,6 +194,7 @@ jq --exit-status '
   ([.images[].name] | sort) == ([
     "ghcr.io/myflow-xyz/ci-base",
     "ghcr.io/myflow-xyz/ci-go",
+    "ghcr.io/myflow-xyz/ci-net",
     "ghcr.io/myflow-xyz/ci-node",
     "ghcr.io/myflow-xyz/ci-playwright",
     "ghcr.io/myflow-xyz/ci-postgres",
@@ -190,11 +203,13 @@ jq --exit-status '
   ] | sort) and
   .images.base.parent == "upstream_images.debian" and
   .images.go.parent == "images.base" and
+  .images.net.parent == "images.base" and
   .images.utils.parent == "images.base" and
   (.tools.utils.buildx as $buildx |
     ($buildx.commit | test("^[0-9a-f]{40}$")) and
     ($buildx.module_sum | test("^h1:[A-Za-z0-9+/]{43}=$")) and
-    $buildx.dependency_overrides["github.com/moby/go-archive"] == "v0.3.0") and
+    $buildx.dependency_overrides["github.com/moby/go-archive"] == "v0.3.3" and
+    $buildx.dependency_overrides["golang.org/x/net"] == "v0.61.0") and
   .images.node.parent == "images.base" and
   .images.vite.parent == "images.node" and
   .images.playwright.parent == "images.vite" and
@@ -330,7 +345,7 @@ while IFS= read -r debian_package_lock; do
 			fail "invalid Debian package lock entry: ${package}"
 	done <"$debian_package_lock_path"
 done < <(
-	jq -r '.tools.base.debian_packages.lockfiles[].lockfile' "$manifest"
+	jq -r '.tools[].debian_packages.lockfiles[]?.lockfile' "$manifest"
 )
 
 cmp \
@@ -374,6 +389,10 @@ assert_package_version \
 	images/node/markdownlint/package-lock.json \
 	smol-toml \
 	"$(jq -r '.tools.node.markdownlint_cli2.dependency_overrides["smol-toml"]' "$manifest")"
+assert_package_version \
+	images/node/markdownlint/package-lock.json \
+	braces \
+	"$(jq -r '.tools.node.markdownlint_cli2.security_patches.braces.version' "$manifest")"
 assert_package_version \
 	images/node/markdownlint/package-lock.json \
 	katex \
@@ -500,6 +519,7 @@ fi
 "${repository_root}/tests/release.sh"
 "${repository_root}/tests/publish.sh"
 "${repository_root}/tests/scan-local-image_spec.sh"
+"${repository_root}/tests/net-helpers_spec.sh"
 "${repository_root}/tests/docker-integration_spec.sh"
 
 printf 'static verification passed\n'

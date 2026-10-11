@@ -265,6 +265,9 @@ jobs:
       - name: Run native image smoke tests
         run: tests/smoke-local.sh all
 
+      - name: Verify isolated network behavior and Engine API constraints
+        run: python3 tests/net-e2e.py
+
       - name: Verify utility policy and host protocol fixtures
         run: |
           # The test controller sets child identities/capabilities and inspects gate records.
@@ -351,6 +354,17 @@ jobs:
       parent_image: ${{ needs.publish-base.outputs.reference }}
       go_image: ${{ needs.publish-go.outputs.reference }}
 
+  publish-net:
+    name: Publish candidate (net)
+    needs: publish-base
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish-image.yml
+    with:
+      image: net
+      parent_image: ${{ needs.publish-base.outputs.reference }}
+
   publish-node:
     name: Publish candidate (node)
     needs: publish-base
@@ -412,6 +426,7 @@ jobs:
       - publish-playwright
       - publish-postgres
       - publish-utils
+      - publish-net
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -436,6 +451,7 @@ jobs:
           POSTGRES_RECORD: ${{ needs.publish-postgres.outputs.record }}
           VITE_RECORD: ${{ needs.publish-vite.outputs.record }}
           UTILS_RECORD: ${{ needs.publish-utils.outputs.record }}
+          NET_RECORD: ${{ needs.publish-net.outputs.record }}
         run: |
           .github/scripts/collect-published-images.sh \
             "$OUTPUT_FILE" \
@@ -445,7 +461,8 @@ jobs:
             "$VITE_RECORD" \
             "$PLAYWRIGHT_RECORD" \
             "$POSTGRES_RECORD" \
-            "$UTILS_RECORD"
+            "$UTILS_RECORD" \
+            "$NET_RECORD"
           base_image=$(
             jq --exit-status --raw-output '
               map(select(.name == "base")) |
