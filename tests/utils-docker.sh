@@ -16,7 +16,7 @@ classic) snapshotter=false ;;
 esac
 fixture="ci-utils-e2e-$(python3 -c 'import uuid; print(uuid.uuid4().hex)')"
 socket=unix:///run/ci-utils-test/docker.sock
-image_id=$(docker image inspect ci-utils:test --format '{{.Id}}')
+image_id=$(docker image inspect "${CI_UTILS_TEST_IMAGE:-ci-utils:test}" --format '{{.Id}}')
 outer_daemon=$(docker info --format '{{.ID}}')
 
 cleanup() {

@@ -128,6 +128,15 @@ The harness creates and removes its own test containers and volumes. Only the
 test daemon is privileged; it receives no host Docker socket or host-root mount.
 These tests do not replace qualification of the runner's complete job lifecycle.
 
+To test an existing published image on a selected self-hosted runner, dispatch
+the `CI images` workflow with `utils_runner` set to its additional runner label
+and `utils_image` set to the full `ghcr.io/myflow-xyz/ci-utils@sha256:...` reference.
+This mode reports the runner and Docker environment, pulls that image, and runs
+both disposable-daemon image stores. It does not rebuild or publish the suite.
+It does not install host services or qualify the runner's shared daemon for
+maintenance. A macOS runner can host these isolated tests when Linux Docker is
+available; the native Linux host adapter still requires separate qualification.
+
 CI runs both the default containerd image store and
 `CI_UTILS_TEST_IMAGE_STORE=classic`. The dangling-image fixture uses classic
 `overlay2`: the containerd store removes the fixture's old image metadata during
