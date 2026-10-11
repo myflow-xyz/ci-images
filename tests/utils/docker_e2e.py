@@ -371,7 +371,10 @@ class DockerE2E(unittest.TestCase):
         alias = "ci-utils-test/rollback:" + self.root.name
         docker("tag", keep_ref, alias)
         time.sleep(2)
-        self.host("apply", "--profile", "weekly")
+        excluded = self.host("apply", "--profile", "weekly")
+        self.assertFalse(
+            any(e["event"] == "removed" and e["kind"] == "images" for e in excluded)
+        )
         self.assertTrue(
             self.exists("image", eligible), "empty image scope deleted an image"
         )
@@ -382,7 +385,15 @@ class DockerE2E(unittest.TestCase):
         self.policy["image_scope"] = {"ids": [eligible, keep]}
         self.policy["protected"]["image_references"] = [alias]
         self.save()
-        self.host("apply", "--profile", "daily")
+        daily = self.host("apply", "--profile", "daily")
+        self.assertTrue(
+            any(
+                e["event"] == "decision"
+                and e.get("id") == eligible
+                and e.get("reason") == "tagged-image-profile-disabled"
+                for e in daily
+            )
+        )
         self.assertTrue(self.exists("image", reference))
         self.host("apply", "--profile", "weekly")
         self.assertFalse(self.exists("image", eligible))

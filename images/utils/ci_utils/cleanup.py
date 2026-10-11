@@ -375,6 +375,26 @@ def apply(inventory, cache, guard, now, profile, report):
                         stage == "tagged-images"
                     ):
                         continue
+                    # Exclusion is safe on the snapshot; deletion still requires
+                    # fresh references, protections, and object metadata below.
+                    if kind == "containers":
+                        choice = container_decision(initial, policy, now)
+                    elif kind == "networks":
+                        choice = network_decision(initial, policy, now)
+                    else:
+                        choice = image_decision(
+                            initial, policy, now, protected=inventory.protected_images
+                        )
+                        if choice.eligible:
+                            choice = (
+                                image_profile(
+                                    initial, policy, profile, inventory.pressure()
+                                )
+                                or choice
+                            )
+                    if not choice.eligible:
+                        report.decision(kind, initial, choice)
+                        continue
                     guard.check()
                     if kind != "containers":
                         inventory.refresh("containers")

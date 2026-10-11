@@ -28,7 +28,7 @@ DANGLING = "sha256:" + "4" * 64
 
 
 class StatefulAPI(APIFixture):
-    def __init__(self):
+    def __init__(self, objects=None):
         obj = container()
         obj["NetworkSettings"] = {"Networks": {"fixture": {"NetworkID": NID}}}
         self.objects = {
@@ -39,6 +39,8 @@ class StatefulAPI(APIFixture):
                 DANGLING: {**image(), "Id": DANGLING, "RepoTags": []},
             },
         }
+        if objects is not None:
+            self.objects = objects
         self.errors = {}
         self.before_inspect = lambda kind, identifier: None
         self.after_remove = lambda kind, identifier: None
@@ -201,6 +203,47 @@ class ApplyCLITests(unittest.TestCase):
             self.assertEqual(code, 0, stderr)
             self.assertIn(IID, api.objects["images"])
             self.assertNotIn(DANGLING, api.objects["images"])
+
+    def test_excluded_inventory_reads_scale_linearly(self):
+        containers, images = 20, 100
+        # Allow complete stage snapshots, not a container scan for every image.
+        read_limit = 6 * (containers + images + 10)
+        for profile, scope in (
+            ("daily", {"mode": "daemon-wide", "daemon_wide_approved": True}),
+            ("weekly", {"mode": "allowlist"}),
+        ):
+            objects = {"containers": {}, "networks": {}, "images": {}}
+            for index in range(containers):
+                identifier = f"{index:064x}"
+                objects["containers"][identifier] = {
+                    **container(),
+                    "Id": identifier,
+                    "Config": {"Labels": {}},
+                    "NetworkSettings": {"Networks": {}},
+                    "HostConfig": {"NetworkMode": "none"},
+                }
+            for index in range(images):
+                identifier = f"sha256:{index:064x}"
+                objects["images"][identifier] = {**image(), "Id": identifier}
+            with self.subTest(profile=profile), StatefulAPI(objects) as api:
+                inspect = api.inspect
+
+                def bounded_inspect(kind, identifier):
+                    if len(api.requests) > read_limit:
+                        return 500, {"message": "test inventory read budget exceeded"}
+                    return inspect(kind, identifier)
+
+                api.inspect = bounded_inspect
+                code, events, stderr = self.invoke(
+                    api, profile=profile, config={"image_scope": scope}
+                )
+                reads = sum(method == "GET" for method, _ in api.requests)
+                self.assertLessEqual(reads, read_limit)
+                self.assertEqual(code, 0, stderr)
+                self.assertTrue(events[-1]["completion_known"])
+                self.assertFalse(any(method == "DELETE" for method, _ in api.requests))
+                self.assertEqual(len(objects["images"]), images)
+                self.assertEqual(len(objects["containers"]), containers)
 
     def test_pressure_trigger_needs_fresh_host_evidence_and_keeps_protection(self):
         for sample, removed in [
