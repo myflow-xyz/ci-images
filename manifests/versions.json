@@ -409,6 +409,20 @@
           "github.com/moby/go-archive": "v0.3.0"
         }
       }
+    },
+    "net": {
+      "debian_packages": {
+        "lockfiles": {
+          "amd64": {
+            "lockfile": "images/net/debian-packages.amd64.lock",
+            "lockfile_sha256": "15f7cb20e3b6f99d7e904eedd0dfb031c8ff39c04d8d6fea15d65827cb5a3f4b"
+          },
+          "arm64": {
+            "lockfile": "images/net/debian-packages.arm64.lock",
+            "lockfile_sha256": "15f7cb20e3b6f99d7e904eedd0dfb031c8ff39c04d8d6fea15d65827cb5a3f4b"
+          }
+        }
+      }
     }
   }
 }
