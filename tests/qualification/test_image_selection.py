@@ -333,6 +333,58 @@ class ImageSelection(unittest.TestCase):
             self.requests, [("GET", distribution_path(REPOSITORY + ":latest", "1.54"))]
         )
 
+    def test_inherited_platform_cannot_change_the_runtime_handoff(self):
+        override = "linux/amd64"
+        result = self.invoke(INDEX, extra_env={"DOCKER_DEFAULT_PLATFORM": override})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(self.output.read_text())
+        self.assertEqual(report["platform"], "linux/arm64")
+        # Probe the real harness boundary, then stop before any fixture mutation.
+        (self.directory / "docker").write_text(
+            """#!/usr/bin/env python3
+import json, os, sys
+from pathlib import Path
+Path(os.environ['QUALIFY_DOCKER_LOG']).write_text(json.dumps({
+    'arguments': sys.argv[1:],
+    'platform': os.environ.get('DOCKER_DEFAULT_PLATFORM') or 'linux/arm64',
+}))
+sys.exit(86)
+"""
+        )
+        environment = {
+            **os.environ,
+            "PATH": str(self.directory) + os.pathsep + os.environ["PATH"],
+            "DOCKER_DEFAULT_PLATFORM": override,
+            "CI_UTILS_TEST_IMAGE": report["resolved_reference"],
+            "QUALIFY_DOCKER_LOG": str(self.log),
+        }
+        for store in ("containerd", "classic"):
+            with self.subTest(store=store):
+                environment["CI_UTILS_TEST_IMAGE_STORE"] = store
+                result = subprocess.run(
+                    [
+                        "bash",
+                        "-c",
+                        'bash "$1"; status=$?; printf "%s\\n" "$DOCKER_DEFAULT_PLATFORM"; exit "$status"',
+                        "--",
+                        str(ROOT / "tests/utils-docker.sh"),
+                    ],
+                    cwd=ROOT,
+                    env=environment,
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 86, result.stderr)
+                self.assertEqual(result.stdout.strip(), override)
+                probe = json.loads(self.log.read_text())
+                self.assertEqual(
+                    probe["arguments"][:3],
+                    ["image", "inspect", report["resolved_reference"]],
+                )
+                self.assertEqual(probe["platform"], report["platform"])
+
     def test_malformed_index_and_platform_descriptors_do_not_pull(self):
         for index in [
             None,
