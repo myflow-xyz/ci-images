@@ -18,9 +18,9 @@ fi
 
 if ! jq --exit-status --arg revision "$revision" '
 	type == "array" and
-	length == 7 and
+	length == 8 and
 	([.[].name] | sort) == [
-		"base", "go", "node", "playwright", "postgres", "utils", "vite"
+		"base", "go", "net", "node", "playwright", "postgres", "utils", "vite"
 	] and
 	([.[].git_tag] | unique | length) == 1 and
 	([

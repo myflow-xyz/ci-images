@@ -48,6 +48,12 @@ required_files=(
 	images/base/debian-packages.amd64.lock
 	images/base/debian-packages.arm64.lock
 	images/go/Dockerfile
+	images/net/Dockerfile
+	images/net/debian-packages.amd64.lock
+	images/net/debian-packages.arm64.lock
+	tests/smoke/net.sh
+	tests/smoke/net-rules.sh
+	tests/net-e2e.py
 	images/node/Dockerfile
 	images/node/markdownlint/package.json
 	images/node/markdownlint/package-lock.json
@@ -183,6 +189,7 @@ jq --exit-status '
   ([.images[].name] | sort) == ([
     "ghcr.io/myflow-xyz/ci-base",
     "ghcr.io/myflow-xyz/ci-go",
+    "ghcr.io/myflow-xyz/ci-net",
     "ghcr.io/myflow-xyz/ci-node",
     "ghcr.io/myflow-xyz/ci-playwright",
     "ghcr.io/myflow-xyz/ci-postgres",
@@ -191,6 +198,7 @@ jq --exit-status '
   ] | sort) and
   .images.base.parent == "upstream_images.debian" and
   .images.go.parent == "images.base" and
+  .images.net.parent == "images.base" and
   .images.utils.parent == "images.base" and
   (.tools.utils.buildx as $buildx |
     ($buildx.commit | test("^[0-9a-f]{40}$")) and
@@ -331,7 +339,7 @@ while IFS= read -r debian_package_lock; do
 			fail "invalid Debian package lock entry: ${package}"
 	done <"$debian_package_lock_path"
 done < <(
-	jq -r '.tools.base.debian_packages.lockfiles[].lockfile' "$manifest"
+	jq -r '.tools[].debian_packages.lockfiles[]?.lockfile' "$manifest"
 )
 
 cmp \

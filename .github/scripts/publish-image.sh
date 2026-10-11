@@ -13,7 +13,7 @@ parent_reference=$3
 go_reference=${4:-}
 
 case "$name" in
-base | go | node | playwright | postgres | vite | utils) ;;
+base | go | node | playwright | postgres | vite | utils | net) ;;
 *)
 	printf 'unsupported image: %s\n' "$name" >&2
 	exit 64
@@ -45,7 +45,7 @@ sha256_file() {
 
 expected_parent=
 case "$name" in
-go | node | utils) expected_parent=base ;;
+go | node | utils | net) expected_parent=base ;;
 vite) expected_parent=node ;;
 playwright) expected_parent=vite ;;
 esac
@@ -350,6 +350,9 @@ go)
 		"GOIMPORTS_VERSION=$(json '.tools.go.goimports.version')" \
 		--build-arg \
 		"GOVULNCHECK_VERSION=$(json '.tools.go.govulncheck.version')"
+	;;
+net)
+	publish_image --build-arg "BASE_IMAGE=${parent_reference}"
 	;;
 node)
 	publish_image \

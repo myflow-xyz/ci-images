@@ -31,6 +31,7 @@ jq --exit-status '
 	(.images | keys | sort) == [
 		"base",
 		"go",
+		"net",
 		"node",
 		"playwright",
 		"postgres",
@@ -40,6 +41,7 @@ jq --exit-status '
 	([.images[].name] | sort) == [
 		"ghcr.io/myflow-xyz/ci-base",
 		"ghcr.io/myflow-xyz/ci-go",
+		"ghcr.io/myflow-xyz/ci-net",
 		"ghcr.io/myflow-xyz/ci-node",
 		"ghcr.io/myflow-xyz/ci-playwright",
 		"ghcr.io/myflow-xyz/ci-postgres",

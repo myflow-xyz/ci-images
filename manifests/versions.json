@@ -52,6 +52,10 @@
     "utils": {
       "name": "ghcr.io/myflow-xyz/ci-utils",
       "parent": "images.base"
+    },
+    "net": {
+      "name": "ghcr.io/myflow-xyz/ci-net",
+      "parent": "images.base"
     }
   },
   "tools": {
