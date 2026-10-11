@@ -127,7 +127,7 @@ image or `wireguard` metapackage is installed.
 | `vitest` | `5.0.3` |
 | `@vitest/coverage-v8` | `5.0.3` |
 | `oxlint` | `1.87.0` |
-| `oxlint-tsgolint` | `7.0.2003` |
+| `oxlint-tsgolint` | `7.0.2004` |
 | `oxfmt` | `0.72.0` |
 
 ## `ci-playwright`

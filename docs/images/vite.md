@@ -13,7 +13,7 @@ The compatibility bundle includes:
 - Vitest 5.0.3;
 - `@vitest/coverage-v8` 5.0.3;
 - Oxlint 1.87.0;
-- `oxlint-tsgolint` 7.0.2003;
+- `oxlint-tsgolint` 7.0.2004;
 - Oxfmt 0.72.0.
 
 The bundle and its transitive dependencies are installed from a committed npm
