@@ -482,6 +482,27 @@ class DockerE2E(unittest.TestCase):
             ]
         )
 
+    def test_cache_budget_with_retained_built_image(self):
+        reference, identifier = self.build("shared-cache")
+        self.policy["protected"]["image_ids"].append(identifier)
+        self.policy["cache"] = {
+            "mode": "scheduled",
+            "max_unused_age": "1h",
+            "max_used_space": "1b",
+        }
+        self.save()
+        events = self.host("apply")
+        records = Engine(SOCKET).get("/system/df?type=build-cache")["BuildCache"]
+        shared = sum(item["Size"] for item in records if item["Shared"])
+        private = sum(item["Size"] for item in records if not item["Shared"])
+        self.assertGreaterEqual(shared, 1024 * 1024)
+        self.assertLessEqual(private, 1)
+        budget = next(e for e in events if e["event"] == "cache_budget")
+        self.assertEqual(budget["status"], "achieved")
+        self.assertTrue(budget["target_met"])
+        self.assertEqual(budget["remaining_bytes"], private)
+        self.assertTrue(self.exists("image", reference))
+
     def start_job(self, code, *args):
         return subprocess.Popen(
             self.host_args(

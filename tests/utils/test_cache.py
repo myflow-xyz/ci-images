@@ -25,6 +25,51 @@ class Events:
 
 
 class CacheTests(unittest.TestCase):
+    def test_budget_ignores_shared_bytes_before_and_after_pruning(self):
+        now = dt.datetime.now(dt.timezone.utc)
+        for needs_prune in (False, True):
+            with (
+                self.subTest(needs_prune=needs_prune),
+                CacheTools() as tools,
+                APIFixture(daemon_routes() | tools.routes()) as api,
+                patch.dict(os.environ, {"PATH": str(tools.path)}),
+            ):
+                base = {**tools.state["records"][0], "LastUsedAt": now.isoformat()}
+                shared = {**base, "ID": "shared", "Shared": True, "Size": 4096}
+                retained = {**base, "ID": "private", "Size": 512}
+                tools.state["records"] = (
+                    [shared, retained]
+                    if not needs_prune
+                    else [
+                        shared,
+                        *[
+                            {**base, "ID": f"private-{i}", "Size": 20}
+                            for i in range(101)
+                        ],
+                    ]
+                )
+                tools.state["after_budget"] = [shared, retained]
+                tools.save()
+                events = Events()
+                with BuildCache(
+                    Engine(api.endpoint),
+                    configured(cache={"max_used_space": "1kb"}),
+                    "fixture-daemon",
+                    events,
+                ) as cache:
+                    cache.preflight()
+                    cache.prune(now, lambda: None)
+                    sample = cache.observe()
+                calls = [call for call in tools.calls() if "--max-used-space" in call]
+                self.assertEqual(len(calls), int(needs_prune))
+                budget = next(e for e in events.items if e["event"] == "cache_budget")
+                self.assertEqual(budget["status"], "achieved")
+                self.assertTrue(budget["target_met"])
+                self.assertEqual(budget["remaining_bytes"], 512)
+                self.assertEqual(sample["reported_bytes"], 4608)
+                self.assertEqual(sample["shared_reported_bytes"], 4096)
+                self.assertEqual(sample["non_shared_reported_bytes"], 512)
+
     def test_unknown_post_prune_state_stops_budget_and_reports_unknown(self):
         with (
             CacheTools() as tools,

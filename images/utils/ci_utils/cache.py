@@ -213,6 +213,9 @@ class BuildCache:
             "shared_reported_bytes": sum(
                 item["bytes"] for item in records if item["Shared"]
             ),
+            "non_shared_reported_bytes": sum(
+                item["bytes"] for item in records if not item["Shared"]
+            ),
             "records": len(records),
             "reclaimable_records": sum(not item["InUse"] for item in records),
             "physical_reclaimed_bytes": None,
@@ -337,7 +340,8 @@ class BuildCache:
             if self._eligible(item) and timestamp(item.get("LastUsedAt")) is not None
         ]
         eligible = len(candidates)
-        if before["reported_bytes"] > target:
+        # BuildKit's space budget excludes records shared with retained images.
+        if before["non_shared_reported_bytes"] > target:
             for offset in range(0, len(candidates), 100):
                 guard()
                 identifiers = (
@@ -359,12 +363,12 @@ class BuildCache:
                     ),
                     mutation=True,
                 )
-                if self._apply_observation()["reported_bytes"] <= target:
+                if self._apply_observation()["non_shared_reported_bytes"] <= target:
                     break
         after = self._apply_observation()
         status = (
             "achieved"
-            if after["reported_bytes"] <= target
+            if after["non_shared_reported_bytes"] <= target
             else "target-unmet"
             if eligible
             else "no-eligible-records"
@@ -372,8 +376,8 @@ class BuildCache:
         self.report.emit(
             "cache_budget",
             status=status,
-            target_met=after["reported_bytes"] <= target,
-            remaining_bytes=after["reported_bytes"],
+            target_met=after["non_shared_reported_bytes"] <= target,
+            remaining_bytes=after["non_shared_reported_bytes"],
             target_bytes=target,
             duration_seconds=time.monotonic() - started,
             reclaimed_bytes=None,

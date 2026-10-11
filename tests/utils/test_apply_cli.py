@@ -386,6 +386,28 @@ class ApplyCLITests(unittest.TestCase):
             self.assertEqual(budget["status"], "achieved")
             self.assertFalse(any("du" in call for call in tools.calls()))
 
+    def test_shared_cache_does_not_trigger_budget_pruning(self):
+        with StatefulAPI() as api, CacheTools() as tools:
+            tools.state["records"][0].update(
+                Shared=True,
+                Size=4096,
+                LastUsedAt=dt.datetime.now(dt.timezone.utc).isoformat(),
+            )
+            tools.state["after_budget"] = tools.state["records"]
+            tools.save()
+            api.routes.update(tools.routes())
+            code, events, stderr = self.invoke(
+                api,
+                config={"cache": {"mode": "scheduled", "max_used_space": "1kb"}},
+                environ={"PATH": str(tools.path)},
+            )
+            self.assertEqual(code, 0, stderr)
+            budget = next(e for e in events if e["event"] == "cache_budget")
+            self.assertTrue(budget["target_met"])
+            self.assertEqual(budget["remaining_bytes"], 0)
+            self.assertFalse(any("--max-used-space" in call for call in tools.calls()))
+            self.assertIn(("GET", "/v1.48/system/df?type=build-cache"), api.requests)
+
     def test_missing_cache_accounting_prevents_every_resource_deletion(self):
         with StatefulAPI() as api, CacheTools() as tools:
             api.routes[("GET", "/v1.48/system/df?type=build-cache")] = (200, {})
