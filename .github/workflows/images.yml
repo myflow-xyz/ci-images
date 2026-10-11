@@ -267,8 +267,11 @@ jobs:
 
       - name: Verify utility policy and host protocol fixtures
         run: |
+          # The test controller switches UIDs and inspects peer-owned gate records.
           docker run --rm --pull=never --network=none --read-only \
             --user=0 --cap-drop=ALL --security-opt=no-new-privileges \
+            --cap-add=CHOWN --cap-add=DAC_OVERRIDE --cap-add=FSETID \
+            --cap-add=SETUID --cap-add=SETGID --cap-add=KILL \
             --env TMPDIR=/tmp \
             --tmpfs /tmp:rw,exec,nosuid,nodev,size=64m,mode=1777 \
             --volume "$GITHUB_WORKSPACE:/workspace:ro" \

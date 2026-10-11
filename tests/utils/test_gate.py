@@ -23,6 +23,82 @@ class GateTests(unittest.TestCase):
         self.gate = Gate(self.path)
         self.gate.initialize()
 
+    @unittest.skipUnless(
+        sys.platform == "linux" and os.geteuid() == 0, "requires Linux identity control"
+    )
+    def test_shared_group_admission_ignores_restrictive_umask(self):
+        pathlib.Path(self.root.name).chmod(0o755)
+        program = """
+import sys
+from ci_docker_gate import Gate, GateError
+try:
+    with Gate(sys.argv[1]).job(wait_seconds=.1) as lease:
+        print('ready', flush=True)
+        sys.stdin.readline()
+        lease.complete()
+except GateError as error:
+    print(str(error), flush=True)
+    sys.exit(error.code)
+"""
+        for mask in (0o022, 0o077):
+            with self.subTest(initial_umask=mask):
+                gate = Gate(pathlib.Path(self.root.name) / str(mask))
+                old_mask = os.umask(mask)
+                try:
+                    gate.initialize(group=2001)
+                    private = gate.directory / "caller-file"
+                    private.touch(mode=0o666)
+                    self.assertEqual(private.stat().st_mode & 0o777, 0o666 & ~mask)
+                finally:
+                    os.umask(old_mask)
+                children = []
+                try:
+                    for uid, gid in ((1001, 2001), (1002, 2001), (1003, 2002)):
+                        child = subprocess.Popen(
+                            [sys.executable, "-B", "-c", program, str(gate.directory)],
+                            env={
+                                **os.environ,
+                                "PYTHONPATH": str(
+                                    pathlib.Path(__file__).resolve().parents[2]
+                                    / "scripts"
+                                ),
+                            },
+                            user=uid,
+                            group=gid,
+                            extra_groups=[],
+                            umask=0o077,
+                            stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT,
+                            text=True,
+                        )
+                        children.append(child)
+                        if gid == 2002:
+                            child.communicate(input="\n", timeout=3)
+                            self.assertEqual(child.returncode, 4)
+                        else:
+                            ready, _, _ = select.select([child.stdout], [], [], 3)
+                            self.assertTrue(
+                                ready, "group member did not finish admission"
+                            )
+                            self.assertEqual(child.stdout.readline().strip(), "ready")
+                    self.assertEqual(len(gate.status()["jobs"]), 2)
+                    with (
+                        self.assertRaises(GateError),
+                        gate.maintenance("daemon", "policy", wait_seconds=0.02),
+                    ):
+                        self.fail("maintenance overlapped group participants")
+                    for child in children[:2]:
+                        child.communicate(input="\n", timeout=3)
+                        self.assertEqual(child.returncode, 0)
+                    with gate.maintenance("daemon", "policy") as lease:
+                        lease.complete()
+                finally:
+                    for child in children:
+                        if child.poll() is None:
+                            child.kill()
+                        child.communicate(timeout=3)
+
     def start_holder(self, kind):
         program = """
 import signal, sys

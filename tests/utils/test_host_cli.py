@@ -68,7 +68,7 @@ class HostCLITests(unittest.TestCase):
             path.write_text(json.dumps(value))
             path.chmod(0o644)
 
-    def invoke(self, *args):
+    def invoke(self, *args, **identity):
         result = subprocess.run(
             [
                 sys.executable,
@@ -82,6 +82,7 @@ class HostCLITests(unittest.TestCase):
             capture_output=True,
             timeout=25,
             check=False,
+            **identity,
         )
         return result, [json.loads(line) for line in result.stdout.splitlines()]
 
@@ -215,6 +216,36 @@ class HostCLITests(unittest.TestCase):
         self.assertEqual(Gate(self.root / "gate").status()["jobs"], [])
         self.assertTrue(events[-1]["completion_known"])
         self.assertEqual(events[-1]["job_exit_code"], 1)
+
+    def test_non_root_job_admission_with_restrictive_umask(self):
+        self.root.chmod(0o755)
+        self.api.path.parent.chmod(0o755)
+        os.chown(self.api.path, -1, 2001)
+        self.api.path.chmod(0o660)
+        self.settings["gate_directory"] = str(self.root / "group-gate")
+        self.settings["job_gid"] = 2001
+        self.policy["pressure"] = {"reserve_bytes": 1}
+        self.save()
+        result, _ = self.invoke("init", umask=0o077)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        result, events = self.invoke(
+            "job",
+            "--participant",
+            "test-runner",
+            "--",
+            sys.executable,
+            "-c",
+            self.job_program(),
+            user=1001,
+            group=2001,
+            extra_groups=[],
+            umask=0o077,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertTrue(events[-1]["completion_known"])
+        self.assertEqual(Gate(self.settings["gate_directory"]).status()["jobs"], [])
+        self.assertIn(("GET", "/v1.48/info"), self.api.requests)
+        self.assertFalse(any(method == "DELETE" for method, _ in self.api.requests))
 
     def test_job_without_completion_receipt_blocks_later_admission(self):
         self.policy["pressure"] = {"reserve_bytes": 1}

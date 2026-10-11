@@ -172,7 +172,10 @@ class Gate:
             fd = os.open(
                 self.directory / name, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o640
             )
-            os.close(fd)
+            try:
+                os.fchmod(fd, 0o640)
+            finally:
+                os.close(fd)
         self._sync_directory(self.directory)
 
     def _validate(self):
@@ -253,6 +256,7 @@ class Gate:
         fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o640)
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as output:
+                os.fchmod(output.fileno(), 0o640)
                 json.dump(
                     record, output, ensure_ascii=True, sort_keys=True, allow_nan=False
                 )

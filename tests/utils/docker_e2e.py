@@ -26,9 +26,9 @@ OWNED = "xyz.myflow.ci.ephemeral=true"
 PROTECTED = "xyz.myflow.cleanup.protect=true"
 
 
-def command(args, expected=0, timeout=60):
+def command(args, expected=0, timeout=60, **identity):
     result = subprocess.run(
-        args, capture_output=True, text=True, timeout=timeout, check=False
+        args, capture_output=True, text=True, timeout=timeout, check=False, **identity
     )
     if result.returncode != expected:
         raise AssertionError(
@@ -213,11 +213,11 @@ class DockerE2E(unittest.TestCase):
     def host_args(self, *args):
         return [*HOST, "--config", str(self.root / "host.json"), *args]
 
-    def host(self, *args, expected=0):
+    def host(self, *args, expected=0, **identity):
         return [
             json.loads(line)
             for line in command(
-                self.host_args(*args), expected=expected, timeout=90
+                self.host_args(*args), expected=expected, timeout=90, **identity
             ).splitlines()
         ]
 
@@ -650,6 +650,36 @@ os.kill(os.getppid(), signal.SIGKILL)
         self.finish(process, 4)
         self.assertFalse(marker.exists())
         self.assertEqual(list((self.root / "gate/jobs").glob("*.json")), [])
+
+    def test_non_root_group_gate_with_real_daemon(self):
+        self.settings["gate_directory"] = str(self.root / "group-gate")
+        self.save()
+        self.host("init", umask=0o077)
+        code = """
+import sys
+sys.path[:0] = ['/workspace/scripts', '/workspace/images/utils']
+from ci_docker_gate import Gate
+from ci_utils.engine import Engine
+with Gate(sys.argv[1]).job(participant='fixture', daemon_id=sys.argv[3]) as lease:
+    Engine(sys.argv[2]).preflight(sys.argv[3])
+    lease.complete()
+"""
+        command(
+            [
+                sys.executable,
+                "-B",
+                "-c",
+                code,
+                self.settings["gate_directory"],
+                SOCKET,
+                self.daemon,
+            ],
+            user=1001,
+            group=0,
+            extra_groups=[os.stat(SOCKET[len("unix://") :]).st_gid],
+            umask=0o077,
+        )
+        self.assertEqual(self.host("status")[-1]["jobs"], [])
 
     def test_interrupted_job_launch_preserves_admission(self):
         candidate = self.create("--label", OWNED)
