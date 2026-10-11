@@ -412,6 +412,30 @@ class DockerE2E(unittest.TestCase):
         self.assertTrue(self.exists("image", keep))
         self.assertTrue(self.exists("image", IMAGE))
 
+    def test_multitag_image_is_excluded_by_plan_and_apply(self):
+        reference, identifier = self.build("multiple-tags")
+        repository = reference.rsplit(":", 1)[0]
+        alias = repository + ":second"
+        docker("tag", reference, alias)
+        self.policy["image_scope"] = {"repositories": [repository]}
+        self.save()
+        time.sleep(2)
+        decisions = []
+        for operation in ("plan", "apply"):
+            events = self.host(operation, "--profile", "weekly")
+            selected = [
+                e
+                for e in events
+                if e["event"] == "decision" and e.get("id") == identifier
+            ]
+            self.assertEqual(len(selected), 1)
+            decisions.append((selected[0]["outcome"], selected[0]["reason"]))
+            for ref in (reference, alias):
+                self.assertEqual(
+                    docker("image", "inspect", ref, "--format", "{{.Id}}"), identifier
+                )
+        self.assertEqual(decisions, [("excluded", "multi-tag-image-unsupported")] * 2)
+
     def test_dangling_images_preserve_existing_container_references(self):
         if self.containerd_store:
             self.skipTest(

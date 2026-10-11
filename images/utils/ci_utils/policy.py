@@ -399,6 +399,8 @@ def image_decision(item, policy, now, referenced=(), protected=()):
             repository(ref) in repos or ref in refs for ref in aliases
         ):
             return Decision(False, "outside-image-scope")
+    if len(item["RepoTags"] or []) > 1:
+        return Decision(False, "multi-tag-image-unsupported")
     tagged = bool([ref for ref in item["RepoTags"] or [] if ref != "<none>:<none>"])
     return _age(
         item,

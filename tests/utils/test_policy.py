@@ -234,6 +234,15 @@ class NetworkTests(unittest.TestCase):
 
 
 class ImageTests(unittest.TestCase):
+    def test_multiple_in_scope_tags_are_excluded_by_shared_policy(self):
+        obj = image()
+        policy = configured(image_scope={"repositories": ["ci.example/fixture"]})
+        self.assertTrue(image_decision(obj, policy, NOW).eligible)
+        obj["RepoTags"].append("ci.example/fixture:second")
+        decision = image_decision(obj, policy, NOW)
+        self.assertFalse(decision.eligible)
+        self.assertEqual(decision.reason, "multi-tag-image-unsupported")
+
     def test_empty_allowlist_does_not_select_any_image(self):
         self.assertFalse(image_decision(image(), configured(), NOW).eligible)
 

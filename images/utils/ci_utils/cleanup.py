@@ -425,10 +425,6 @@ def apply(inventory, cache, guard, now, profile, report):
                                     choice = disabled
                                 elif is_tagged(item) != (stage == "tagged-images"):
                                     choice = Decision(False, "image-stage-changed")
-                                elif len(item.get("RepoTags") or []) > 1:
-                                    choice = Decision(
-                                        False, "multi-tag-image-unsupported"
-                                    )
                     report.decision(kind, item, choice)
                     if not choice.eligible:
                         continue

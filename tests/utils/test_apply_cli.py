@@ -204,6 +204,52 @@ class ApplyCLITests(unittest.TestCase):
             self.assertIn(IID, api.objects["images"])
             self.assertNotIn(DANGLING, api.objects["images"])
 
+    def test_multitag_plan_apply_parity_without_reference_refresh(self):
+        from test_cleanup_cli import CleanupCLITests
+
+        reference_reads = []
+        for count in (0, 25):
+            objects = {"containers": {}, "networks": {}, "images": {}}
+            for index in range(count):
+                identifier = f"sha256:{index:064x}"
+                objects["images"][identifier] = {
+                    **image(),
+                    "Id": identifier,
+                    "RepoTags": [
+                        f"ci.example/fixture:old-{index}",
+                        f"ci.example/fixture:alias-{index}",
+                    ],
+                }
+            with self.subTest(images=count), StatefulAPI(objects) as api:
+                config = {"image_scope": {"repositories": ["ci.example/fixture"]}}
+                planned, plan_events = CleanupCLITests().invoke(
+                    api, "plan", "--profile", "weekly", config=config
+                )
+                self.assertEqual(planned.returncode, 0, planned.stderr)
+                self.assertTrue(all(method == "GET" for method, _ in api.requests))
+                api.requests.clear()
+                code, apply_events, stderr = self.invoke(api, config=config)
+                self.assertEqual(code, 0, stderr)
+                reference_reads.append(
+                    api.requests.count(("GET", "/v1.48/containers/json?all=true"))
+                )
+                self.assertFalse(any(method == "DELETE" for method, _ in api.requests))
+                self.assertEqual(len(api.objects["images"]), count)
+                for events in (plan_events, apply_events):
+                    decisions = [
+                        e
+                        for e in events
+                        if e["event"] == "decision" and e["kind"] == "images"
+                    ]
+                    self.assertEqual(len(decisions), count)
+                    self.assertEqual(
+                        {(e["outcome"], e["reason"]) for e in decisions},
+                        {("excluded", "multi-tag-image-unsupported")}
+                        if count
+                        else set(),
+                    )
+        self.assertEqual(reference_reads[0], reference_reads[1])
+
     def test_excluded_inventory_reads_scale_linearly(self):
         containers, images = 20, 100
         # Allow complete stage snapshots, not a container scan for every image.
