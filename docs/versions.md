@@ -80,6 +80,20 @@ version listed above.
 | `xz-utils` | `5.8.1-1+deb13u2` |
 | `zip` | `3.0-15+deb13u1` |
 
+## `ci-net`
+
+The runtime inherits `ci-base` and adds these snapshot-pinned packages on both
+architectures. WireGuard kernel support is a Docker host prerequisite; no kernel
+image or `wireguard` metapackage is installed.
+
+| Package | Version |
+| --- | --- |
+| `iproute2` | `6.15.0-1` |
+| `iputils-ping` | `3:20240905-3` |
+| `nftables` | `1.1.3-1` |
+| `tcpdump` | `4.99.5-2` |
+| `wireguard-tools` | `1.0.20210914-3` |
+
 ## `ci-go`
 
 | Component | Version |

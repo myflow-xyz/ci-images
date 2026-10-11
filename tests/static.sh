@@ -37,6 +37,7 @@ required_files=(
 	docs/versions.md
 	docs/images/base.md
 	docs/images/go.md
+	docs/images/net.md
 	docs/images/node.md
 	docs/images/vite.md
 	docs/images/playwright.md
@@ -143,26 +144,28 @@ done < <(
   ' "$manifest"
 )
 
-debian_package_lock_amd64=$(
-	jq -r '.tools.base.debian_packages.lockfiles.amd64.lockfile' "$manifest"
-)
-debian_package_lock_arm64=$(
-	jq -r '.tools.base.debian_packages.lockfiles.arm64.lockfile' "$manifest"
-)
-while IFS='=' read -r package amd64_version arm64_version; do
-	version=$amd64_version
-	if [[ $amd64_version != "$arm64_version" ]]; then
-		version="${amd64_version} (amd64) / ${arm64_version} (arm64)"
-	fi
-	row="| \`${package}\` | \`${version}\` |"
-	grep --fixed-strings --line-regexp "$row" "$versions_doc" >/dev/null ||
-		fail "missing Debian package inventory row: ${package}"
-done < <(
-	join \
-		-t '=' \
-		"${repository_root}/${debian_package_lock_amd64}" \
-		"${repository_root}/${debian_package_lock_arm64}"
-)
+for image in base net; do
+	debian_package_lock_amd64=$(
+		jq -r --arg image "$image" '.tools[$image].debian_packages.lockfiles.amd64.lockfile' "$manifest"
+	)
+	debian_package_lock_arm64=$(
+		jq -r --arg image "$image" '.tools[$image].debian_packages.lockfiles.arm64.lockfile' "$manifest"
+	)
+	while IFS='=' read -r package amd64_version arm64_version; do
+		version=$amd64_version
+		if [[ $amd64_version != "$arm64_version" ]]; then
+			version="${amd64_version} (amd64) / ${arm64_version} (arm64)"
+		fi
+		row="| \`${package}\` | \`${version}\` |"
+		grep --fixed-strings --line-regexp "$row" "$versions_doc" >/dev/null ||
+			fail "missing Debian package inventory row: ${package}"
+	done < <(
+		join \
+			-t '=' \
+			"${repository_root}/${debian_package_lock_amd64}" \
+			"${repository_root}/${debian_package_lock_arm64}"
+	)
+done
 
 jq --exit-status '
   .schema_version == 1 and

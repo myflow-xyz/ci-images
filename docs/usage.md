@@ -8,6 +8,10 @@ security surface, and accidental tool coupling.
 - Use `ci-base` for repository policy, shell, Python standard-library
   automation, and documentation checks.
 - Use `ci-go` for Go build, generation, lint, test, and release jobs.
+- Use [`ci-net`](images/net.md) for network diagnostics and isolated network
+  tests. Keep `NET_ADMIN` scoped to disposable test containers in independent
+  network namespaces; avoid host networking, privileged mode, and global
+  nftables ruleset flushes.
 - Use `ci-node` for generic Node tasks such as Redocly OpenAPI linting.
 - Use `ci-vite` for TypeScript and Vite quality, test, and build jobs.
 - Use `ci-playwright` only when a job launches Chromium.
