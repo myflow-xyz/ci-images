@@ -8,15 +8,6 @@ on:
     branches:
       - main
   workflow_dispatch:
-    inputs:
-      utils_runner:
-        description: Optional self-hosted runner label for isolated utility tests
-        type: string
-        default: ""
-      utils_image:
-        description: Published ghcr.io/myflow-xyz/ci-utils@sha256 digest for those tests
-        type: string
-        default: ""
 
 permissions:
   contents: read
@@ -31,7 +22,6 @@ env:
 jobs:
   contract:
     name: Repository contract
-    if: github.event_name != 'workflow_dispatch' || inputs.utils_runner == ''
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -83,6 +73,11 @@ jobs:
           images/node/markdownlint/node_modules/.bin/markdownlint-cli2 \
             README.md \
             "docs/**/*.md"
+
+      - name: Verify manual utility workflow boundaries and image resolution
+        run: |
+          node --test tests/utils-workflow.mjs
+          python3 -B -m unittest discover -s tests/qualification -p 'test_*.py'
 
       - name: Verify workflows
         env:
@@ -169,64 +164,6 @@ jobs:
 
           printf 'publish_changed=%s\n' "$publish_changed" >>"$GITHUB_OUTPUT"
           printf 'smoke_changed=%s\n' "$smoke_changed" >>"$GITHUB_OUTPUT"
-
-  utils-runner:
-    name: Utility qualification (${{ inputs.utils_runner }})
-    if: github.event_name == 'workflow_dispatch' && inputs.utils_runner != ''
-    runs-on: [self-hosted, "${{ inputs.utils_runner }}"]
-    timeout-minutes: 30
-    permissions:
-      contents: read
-      packages: read
-    defaults:
-      run:
-        shell: bash
-    env:
-      CI_UTILS_TEST_IMAGE: ${{ inputs.utils_image }}
-    steps:
-      - name: Check out source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Inspect runner and selected Docker daemon
-        run: |
-          if [[ ! $CI_UTILS_TEST_IMAGE =~ ^ghcr\.io/myflow-xyz/ci-utils@sha256:[0-9a-f]{64}$ ]]; then
-            printf 'utils_image must identify a published ci-utils digest\n' >&2
-            exit 2
-          fi
-          uname -sm
-          python3 --version
-          endpoint=${DOCKER_HOST:-}
-          if [[ -n ${DOCKER_CONTEXT:-} || -z $endpoint ]]; then
-            endpoint=$(docker context inspect --format '{{.Endpoints.docker.Host}}' "$(docker context show)")
-          fi
-          if [[ $endpoint != unix:///* || $endpoint == *$'\n'* || $endpoint == *$'\r'* ]]; then
-            printf 'isolated runner tests require a local Unix Docker endpoint\n' >&2
-            exit 2
-          fi
-          unset DOCKER_CONTEXT
-          docker --host "$endpoint" version --format '{{json .}}'
-          docker --host "$endpoint" info --format \
-            '{"id":{{json .ID}},"os":{{json .OSType}},"arch":{{json .Architecture}},"storage":{{json .Driver}},"root":{{json .DockerRootDir}},"cpu":{{.NCPU}},"memory":{{.MemTotal}}}'
-          test "$(docker --host "$endpoint" info --format '{{.OSType}}')" = linux
-          printf '%s\n' "DOCKER_HOST=$endpoint" 'DOCKER_CONTEXT=' >>"$GITHUB_ENV"
-
-      - name: Pull published utility image
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_ACTOR: ${{ github.actor }}
-        run: |
-          auth_directory=$(mktemp -d "$RUNNER_TEMP/ci-utils-auth.XXXXXX")
-          trap 'rm -rf "$auth_directory"' EXIT
-          printf '%s' "$GH_TOKEN" |
-            docker --config "$auth_directory" login ghcr.io --username "$GH_ACTOR" --password-stdin
-          docker --config "$auth_directory" --host "$DOCKER_HOST" pull "$CI_UTILS_TEST_IMAGE"
-
-      - name: Verify guarded cleanup on a disposable daemon
-        run: |
-          tests/utils-docker.sh
-          CI_UTILS_TEST_IMAGE_STORE=classic tests/utils-docker.sh
 
   smoke:
     name: Smoke (${{ matrix.platform }})

@@ -18,6 +18,7 @@ class APIFixture:
     def __init__(self, routes):
         self.routes = routes
         self.requests = []
+        self.headers = []
         self.posts = []
         self.root = tempfile.TemporaryDirectory(prefix="ci-utils-api-", dir="/tmp")
         self.path = pathlib.Path(self.root.name) / "docker.sock"
@@ -43,6 +44,7 @@ class APIFixture:
 
             def respond(self, method, form=None):
                 fixture.requests.append((method, self.path))
+                fixture.headers.append(dict(self.headers))
                 response = fixture.routes.get((method, self.path), (404, {}))
                 if callable(response):
                     response = response(form) if method == "POST" else response()

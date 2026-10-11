@@ -22,12 +22,14 @@ command -v jq >/dev/null 2>&1 || fail 'jq is required'
 
 required_files=(
 	.github/scripts/collect-published-images.sh
+	.github/scripts/resolve-utils-image.py
 	.github/scripts/merge-image.sh
 	.github/scripts/next-version.sh
 	.github/scripts/promote-latest.sh
 	.github/scripts/publish-image.sh
 	.github/scripts/release-images.sh
 	.github/workflows/images.yml
+	.github/workflows/utils-test.yml
 	.github/workflows/publish-image.yml
 	.github/workflows/release.yml
 	README.md
@@ -78,6 +80,7 @@ required_files=(
 	tests/scan-local-image.sh
 	tests/scan-local-image_spec.sh
 	tests/net-helpers_spec.sh
+	tests/utils-workflow.mjs
 )
 
 for relative_path in "${required_files[@]}"; do

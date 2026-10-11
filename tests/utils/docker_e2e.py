@@ -237,6 +237,14 @@ class DockerE2E(unittest.TestCase):
         )
         return result.returncode == 0
 
+    def test_image_and_daemon_platform_agree(self):
+        engine = Engine(SOCKET)
+        daemon = engine.get("/version")
+        image = engine.inspect("images", IMAGE)
+        self.assertEqual(
+            (image["Os"], image["Architecture"]), (daemon["Os"], daemon["Arch"])
+        )
+
     def test_hardened_check_and_denied_socket(self):
         events = self.host("check")
         self.assertTrue(events[-1]["completion_known"])

@@ -1,0 +1,78 @@
+name: Isolated utility tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      utils_runner:
+        description: Additional self-hosted runner label unique to the target host
+        type: string
+        required: true
+      utils_image:
+        description: "Image: blank/latest, version 0.0.17, sha256:<64 hex> or bare 64-character index digest"
+        type: string
+        required: false
+        default: latest
+
+permissions:
+  contents: read
+
+concurrency:
+  group: utils-test-${{ inputs.utils_runner }}
+  cancel-in-progress: false
+
+jobs:
+  utils-runner:
+    name: Utility qualification (${{ inputs.utils_runner }})
+    runs-on: [self-hosted, "${{ inputs.utils_runner }}"]
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    defaults:
+      run:
+        shell: bash
+    env:
+      CI_UTILS_IMAGE_SELECTOR: ${{ inputs.utils_image }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Inspect runner and selected Docker daemon
+        run: |
+          uname -sm
+          python3 --version
+          endpoint=${DOCKER_HOST:-}
+          if [[ -n ${DOCKER_CONTEXT:-} || -z $endpoint ]]; then
+            endpoint=$(docker context inspect --format '{{.Endpoints.docker.Host}}' "$(docker context show)")
+          fi
+          if [[ $endpoint != unix:///* || $endpoint == *$'\n'* || $endpoint == *$'\r'* ]]; then
+            printf 'isolated runner tests require a local Unix Docker endpoint\n' >&2
+            exit 2
+          fi
+          unset DOCKER_CONTEXT
+          docker --host "$endpoint" version --format '{{json .}}'
+          docker --host "$endpoint" info --format \
+            '{"id":{{json .ID}},"os":{{json .OSType}},"arch":{{json .Architecture}},"storage":{{json .Driver}},"root":{{json .DockerRootDir}},"cpu":{{.NCPU}},"memory":{{.MemTotal}}}'
+          test "$(docker --host "$endpoint" info --format '{{.OSType}}')" = linux
+          printf '%s\n' "DOCKER_HOST=$endpoint" 'DOCKER_CONTEXT=' >>"$GITHUB_ENV"
+
+      - name: Resolve and pull the published utility index
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_ACTOR: ${{ github.actor }}
+        run: |
+          auth_directory=$(mktemp -d "$RUNNER_TEMP/ci-utils-auth.XXXXXX")
+          trap 'rm -rf "$auth_directory"' EXIT
+          printf '%s' "$GH_TOKEN" |
+            docker --config "$auth_directory" login ghcr.io --username "$GH_ACTOR" --password-stdin
+          export DOCKER_CONFIG="$auth_directory"
+          python3 -B .github/scripts/resolve-utils-image.py \
+            --image="$CI_UTILS_IMAGE_SELECTOR" \
+            --output "$RUNNER_TEMP/ci-utils-image.json"
+
+      - name: Verify guarded cleanup on a disposable daemon
+        run: |
+          tests/utils-docker.sh
+          CI_UTILS_TEST_IMAGE_STORE=classic tests/utils-docker.sh
