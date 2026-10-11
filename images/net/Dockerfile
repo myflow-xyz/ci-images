@@ -21,7 +21,8 @@ RUN set -eu; \
     apt-get update; \
     xargs -r apt-get install --yes --no-install-recommends \
       < /usr/local/share/ci/net-debian-packages.lock; \
-    if [ -n "$(getcap /usr/bin/ping)" ]; then setcap -r /usr/bin/ping; fi; \
+    ping_capabilities=$(getcap /usr/bin/ping); \
+    if [ -n "${ping_capabilities}" ]; then setcap -r /usr/bin/ping; fi; \
     chmod u-s,g-s /usr/bin/ping; \
     rm -rf /var/tmp/ci-net /var/lib/apt/lists/*
 

@@ -37,7 +37,8 @@ if dpkg-query -W -f='${binary:Package} ${db:Status-Status}\n' |
 fi
 
 # Installing ping must not bypass the runtime capability boundary.
-[[ -z $(getcap /usr/bin/ping) ]]
+ping_capabilities=$(getcap /usr/bin/ping)
+[[ -z $ping_capabilities ]]
 [[ ! -u /usr/bin/ping && ! -g /usr/bin/ping ]]
 python3 - <<'PY'
 from pathlib import Path
