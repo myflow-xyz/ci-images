@@ -103,8 +103,8 @@ image or `wireguard` metapackage is installed.
 | `sqlc` | `1.31.1` |
 | `goose` | `3.28.0` |
 | `golangci-lint` | `2.14.0` |
-| `goimports` | `0.51.0` |
-| `govulncheck` | `1.8.0` |
+| `goimports` | `0.52.0` |
+| `govulncheck` | `1.9.0` |
 
 ## `ci-node`
 

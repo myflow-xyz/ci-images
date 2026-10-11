@@ -208,7 +208,7 @@ jq --exit-status '
   (.tools.utils.buildx as $buildx |
     ($buildx.commit | test("^[0-9a-f]{40}$")) and
     ($buildx.module_sum | test("^h1:[A-Za-z0-9+/]{43}=$")) and
-    $buildx.dependency_overrides["github.com/moby/go-archive"] == "v0.3.0") and
+    $buildx.dependency_overrides["github.com/moby/go-archive"] == "v0.3.3") and
   .images.node.parent == "images.base" and
   .images.vite.parent == "images.node" and
   .images.playwright.parent == "images.vite" and
