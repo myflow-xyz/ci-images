@@ -418,7 +418,8 @@
         "commit": "0dbe87f36ed472fe36b6796c3f70b4210a731fc5",
         "module_sum": "h1:LKfznm3wgm0hYaQDkiuoK9hyDS1GU/GChnXYsBr3A00=",
         "dependency_overrides": {
-          "github.com/moby/go-archive": "v0.3.3"
+          "github.com/moby/go-archive": "v0.3.3",
+          "golang.org/x/net": "v0.61.0"
         }
       }
     },

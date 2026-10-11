@@ -189,6 +189,7 @@ build_utils() {
 		--build-arg "BUILDX_MODULE_SUM=$(json '.tools.utils.buildx.module_sum')" \
 		--build-arg "BUILDX_COMMIT=$(json '.tools.utils.buildx.commit')" \
 		--build-arg "BUILDX_GO_ARCHIVE_VERSION=$(json '.tools.utils.buildx.dependency_overrides["github.com/moby/go-archive"]')" \
+		--build-arg "BUILDX_X_NET_VERSION=$(json '.tools.utils.buildx.dependency_overrides["golang.org/x/net"]')" \
 		"$repository_root"
 }
 

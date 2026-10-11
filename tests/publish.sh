@@ -302,7 +302,8 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 		for build_arg in \
 			"BUILDX_MODULE_SUM=$(jq -r '.tools.utils.buildx.module_sum' "$manifest")" \
 			"BUILDX_COMMIT=$(jq -r '.tools.utils.buildx.commit' "$manifest")" \
-			"BUILDX_GO_ARCHIVE_VERSION=$(jq -r '.tools.utils.buildx.dependency_overrides["github.com/moby/go-archive"]' "$manifest")"; do
+			"BUILDX_GO_ARCHIVE_VERSION=$(jq -r '.tools.utils.buildx.dependency_overrides["github.com/moby/go-archive"]' "$manifest")" \
+			"BUILDX_X_NET_VERSION=$(jq -r '.tools.utils.buildx.dependency_overrides["golang.org/x/net"]' "$manifest")"; do
 			grep -Fq -- "$build_arg" "$fake_log" || fail 'missing pinned Buildx source or dependency'
 		done
 	fi

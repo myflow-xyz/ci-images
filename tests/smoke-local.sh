@@ -113,7 +113,8 @@ if [[ $target == all || $target == utils ]]; then
 		--tmpfs /var/tmp:rw,noexec,nosuid,nodev,size=32m,mode=1777 \
 		--env "EXPECTED_CI_UID=$(json '.ci_user.uid')" \
 		--env "EXPECTED_CI_GID=$(json '.ci_user.gid')" \
-		--env "EXPECTED_BUILDX_VERSION=$(json '.tools.utils.buildx.version')"
+		--env "EXPECTED_BUILDX_VERSION=$(json '.tools.utils.buildx.version')" \
+		--env "EXPECTED_BUILDX_X_NET_VERSION=$(json '.tools.utils.buildx.dependency_overrides["golang.org/x/net"]')"
 fi
 
 if [[ $target == all || $target == go ]]; then

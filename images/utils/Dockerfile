@@ -12,6 +12,7 @@ ARG BUILDX_VERSION
 ARG BUILDX_MODULE_SUM
 ARG BUILDX_COMMIT
 ARG BUILDX_GO_ARCHIVE_VERSION
+ARG BUILDX_X_NET_VERSION
 ARG GO_VERSION
 
 ENV GOCACHE=/var/cache/go/build \
@@ -30,7 +31,9 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
     cp -R "/var/cache/go/mod/github.com/docker/buildx@v${BUILDX_VERSION}" /var/tmp/buildx; \
     chmod -R u+w /var/tmp/buildx; \
     cd /var/tmp/buildx; \
-    /usr/local/go/bin/go get "github.com/moby/go-archive@${BUILDX_GO_ARCHIVE_VERSION}"; \
+    /usr/local/go/bin/go get \
+      "github.com/moby/go-archive@${BUILDX_GO_ARCHIVE_VERSION}" \
+      "golang.org/x/net@${BUILDX_X_NET_VERSION}"; \
     CGO_ENABLED=0 GOOS=linux GOARCH="${TARGETARCH}" \
       /usr/local/go/bin/go build -buildvcs=false -trimpath -mod=mod \
       -ldflags "-s -w -X github.com/docker/buildx/version.Version=v${BUILDX_VERSION} -X github.com/docker/buildx/version.Revision=${BUILDX_COMMIT}" \
