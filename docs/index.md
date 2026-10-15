@@ -8,11 +8,13 @@ overview.
 ## Operator guides
 
 - [Version inventory by image](versions.md)
-- [Suite 0.0.16 security qualification](security/0.0.16.md)
+- [Stable toolchain maintenance and security qualification][security]
 - [Using the CI images](usage.md), including
   [self-hosted bind-mount permissions](usage.md#self-hosted-bind-mount-permissions)
 - [Releasing the CI images](release.md)
 - [Guarded Docker maintenance and recovery](maintenance.md)
+
+[security]: security/stable-toolchain-qualification.md
 
 ## Image contracts
 

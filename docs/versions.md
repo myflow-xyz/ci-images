@@ -29,17 +29,17 @@ to the suite source revision, with no independent release stream.
 | `Git LFS` | `3.8.0` |
 | `GitHub CLI` | `2.102.0` |
 | `CPython` | `3.14.8` |
-| `Docker CLI` | `29.9.0` |
+| `Docker CLI` | `29.9.1` |
 | `Docker Compose` | `5.6.0` |
 | `actionlint` | `1.7.12` |
 | `gitleaks` | `8.30.1` |
 | `jq` | `1.8.2` |
-| `osv-scanner` | `2.6.0` |
+| `osv-scanner` | `2.7.0` |
 | `ripgrep` | `15.2.0` |
 | `ShellCheck` | `0.11.0` |
 | `shellspec` | `0.28.1` |
 | `shfmt` | `3.14.1` |
-| `Trivy` | `0.75.0` |
+| `Trivy` | `0.76.0` |
 | `yq` | `4.54.1` |
 
 ### Direct Debian packages
@@ -57,7 +57,7 @@ version listed above.
 | `bash` | `5.2.37-2+b10` |
 | `ca-certificates` | `20250419` |
 | `coreutils` | `9.7-3` |
-| `curl` | `8.14.1-2+deb13u5` |
+| `curl` | `8.14.1-2+deb13u7` |
 | `dash` | `0.5.12-12` |
 | `diffutils` | `1:3.10-4` |
 | `findutils` | `4.10.0-3` |
@@ -101,7 +101,7 @@ image or `wireguard` metapackage is installed.
 | `Go` | `1.27.2` |
 | `Hurl` | `8.0.1` |
 | `sqlc` | `1.31.1` |
-| `goose` | `3.28.0` |
+| `goose` | `3.29.0` |
 | `golangci-lint` | `2.14.0` |
 | `goimports` | `0.52.0` |
 | `govulncheck` | `1.9.0` |
@@ -110,11 +110,11 @@ image or `wireguard` metapackage is installed.
 
 | Component | Version |
 | --- | --- |
-| `Node.js` | `26.11.1` |
+| `Node.js` | `26.12.0` |
 | `npm` | `12.2.0` |
 | `pnpm` | `12.11.2` |
 | `markdownlint-cli2` | `0.23.3` |
-| `@redocly/cli` | `2.62.1` |
+| `@redocly/cli` | `2.63.0` |
 
 ## `ci-vite`
 
@@ -124,9 +124,9 @@ image or `wireguard` metapackage is installed.
 | `TypeScript compatibility package` | `6.0.2` |
 | `TypeScript legacy compiler` | `6.0.3` |
 | `vite` | `8.3.4` |
-| `vitest` | `5.0.3` |
-| `@vitest/coverage-v8` | `5.0.3` |
-| `oxlint` | `1.87.0` |
+| `vitest` | `5.0.4` |
+| `@vitest/coverage-v8` | `5.0.4` |
+| `oxlint` | `1.88.0` |
 | `oxlint-tsgolint` | `7.0.2004` |
 | `oxfmt` | `0.72.0` |
 
@@ -134,7 +134,7 @@ image or `wireguard` metapackage is installed.
 
 | Component | Version |
 | --- | --- |
-| `@playwright/test` | `1.64.0` |
+| `@playwright/test` | `1.64.1` |
 
 ## `ci-postgres`
 

@@ -7,11 +7,11 @@ CI tasks that do not require the Vite frontend toolchain.
 
 The initial image contract includes:
 
-- Node.js 26.11.1 imported from checksum-pinned official Linux archives;
+- Node.js 26.12.0 imported from checksum-pinned official Linux archives;
 - npm and npx 12.2.0 from a hash-verified release artifact;
 - pnpm 12.11.2 from hash-verified native Linux release artifacts;
 - `markdownlint-cli2` 0.23.3;
-- Redocly CLI 2.62.1 for OpenAPI validation;
+- Redocly CLI 2.63.0 for OpenAPI validation;
 - explicit npm and pnpm cache paths.
 
 The npm release artifact is hash-verified, and its reviewed bundled dependency
@@ -19,7 +19,7 @@ replacements are installed from a committed lockfile. They include the current
 compatible `undici` 6.x release and the fixed `postcss-selector-parser` release.
 The `http-cache-semantics` replacement uses the current compatible 4.3.0
 release. Its remaining advisory scenario is recorded in the
-[suite security qualification](../security/0.0.16.md#remaining-library-findings).
+[stable toolchain qualification][security].
 The Markdown tool lockfile overrides `smol-toml` and KaTeX with their reviewed
 fixed releases. The architecture-matched
 pnpm archive is installed independently of npm and includes its native
@@ -43,7 +43,7 @@ This image adds these variables to the
 [`ci-base` environment](base.md#runtime-environment):
 
 ```text
-NODE_VERSION=26.11.1
+NODE_VERSION=26.12.0
 NPM_CONFIG_CACHE=/var/cache/npm
 PNPM_CONFIG_STORE_DIR=/var/cache/pnpm/store
 ```
@@ -78,3 +78,5 @@ Use `ci-node` for generic Node maintenance, Markdown policy, and OpenAPI jobs.
 
 Frontend projects use [`ci-vite`](vite.md). Browser jobs use
 [`ci-playwright`](playwright.md).
+
+[security]: ../security/stable-toolchain-qualification.md#cache-library-observation

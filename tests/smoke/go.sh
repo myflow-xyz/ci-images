@@ -133,6 +133,32 @@ assert_dependency_version \
 	"$EXPECTED_GOLANGCI_LINT_X_TEXT_VERSION"
 
 (
+	goose_smoke_directory=$(mktemp -d /var/tmp/goose-sqlite-smoke.XXXXXX)
+	trap 'rm -rf "$goose_smoke_directory"' EXIT
+	cd "$goose_smoke_directory"
+	cat >00001_fixture.sql <<'SQL'
+-- +goose Up
+CREATE TABLE fixture (id INTEGER PRIMARY KEY, value TEXT NOT NULL);
+INSERT INTO fixture (id, value) VALUES (1, 'migration verified');
+
+-- +goose Down
+DROP TABLE fixture;
+SQL
+	goose -dir . sqlite3 fixture.db up
+	python3 - <<'PY'
+import sqlite3
+with sqlite3.connect("fixture.db") as db:
+    assert db.execute("SELECT id, value FROM fixture").fetchall() == [(1, "migration verified")]
+PY
+	goose -dir . sqlite3 fixture.db down
+	python3 - <<'PY'
+import sqlite3
+with sqlite3.connect("fixture.db") as db:
+    assert db.execute("SELECT name FROM sqlite_master WHERE name = 'fixture'").fetchall() == []
+PY
+)
+
+(
 	sqlc_smoke_directory=$(mktemp -d /var/tmp/sqlc-cel-smoke.XXXXXX)
 	trap 'rm -rf "$sqlc_smoke_directory"' EXIT
 	cd "$sqlc_smoke_directory"
