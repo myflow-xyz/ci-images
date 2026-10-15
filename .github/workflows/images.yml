@@ -70,6 +70,10 @@ jobs:
             --ignore-scripts \
             --no-audit \
             --prefix images/node/markdownlint
+          node images/node/markdownlint/patch-braces.cjs \
+            images/node/markdownlint/node_modules/braces
+          node tests/smoke/braces-security.cjs \
+            "$GITHUB_WORKSPACE/images/node/markdownlint"
           images/node/markdownlint/node_modules/.bin/markdownlint-cli2 \
             README.md \
             "docs/**/*.md"
@@ -491,7 +495,7 @@ jobs:
           TRIVY_USERNAME: ${{ github.actor }}
         with:
           image-ref: ${{ matrix.image.ref }}
-          version: v0.75.0
+          version: v0.76.0
           scanners: vuln
           vuln-type: os,library
           severity: HIGH,CRITICAL

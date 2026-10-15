@@ -42,9 +42,9 @@ The base image includes:
   OpenSSL, tar, gzip, xz, zip, and unzip;
 - CPython 3.14.8 and its standard-library modules for repository-owned CI
   automation;
-- Docker CLI 29.9.0 and the Compose 5.6.0 CLI plugin;
+- Docker CLI 29.9.1 and the Compose 5.6.0 CLI plugin;
 - structured-data and diagnosis tools: `jq`, `yq`, ripgrep, and GitHub CLI;
-- shared policy tools: OSV-Scanner 2.6.0, Trivy 0.75.0, gitleaks, actionlint,
+- shared policy tools: OSV-Scanner 2.7.0, Trivy 0.76.0, gitleaks, actionlint,
   shfmt, ShellCheck, and ShellSpec;
 - `tini` for descendants that require subprocess reaping.
 
@@ -60,7 +60,7 @@ Git is built from a checksum-pinned upstream source release so the protected
 system configuration can scope trust to GitHub's workspace tree. jq, ripgrep,
 and ShellCheck use checksum-pinned upstream release artifacts for each supported
 architecture. GitHub CLI, Git LFS, actionlint, gitleaks, OSV-Scanner, shfmt,
-and yq are built from exact module releases with Go 1.27.2. Trivy 0.75.0 uses
+and yq are built from exact module releases with Go 1.27.2. Trivy 0.76.0 uses
 the same toolchain with the `jsonv2` build mode required by that release.
 Narrow dependency overrides used to remove known vulnerabilities from released
 tools are recorded in the version manifest and verified by image smoke tests.
@@ -103,7 +103,7 @@ never grants daemon access or changes host/socket permissions. Registry
 credentials remain job-scoped, preferably in a private client configuration.
 
 The supported target range is Linux Docker Engine 28.x and 29.x,
-using normal API negotiation and the API overlap with Docker CLI 29.9.0 and
+using normal API negotiation and the API overlap with Docker CLI 29.9.1 and
 Compose 5.6.0. [Docker documents negotiation as best effort][docker-api];
 feature-specific consumer qualification is still required. This includes the
 28.0.4 daemon listed in the [GitHub Ubuntu 24.04 runner inventory][runner-tools];

@@ -10,9 +10,9 @@ The compatibility bundle includes:
 - TypeScript 7.0.2 (`tsc`), with TypeScript 6.0.3 available as `tsc6` for
   tools that still require its API;
 - Vite 8.3.4;
-- Vitest 5.0.3;
-- `@vitest/coverage-v8` 5.0.3;
-- Oxlint 1.87.0;
+- Vitest 5.0.4;
+- `@vitest/coverage-v8` 5.0.4;
+- Oxlint 1.88.0;
 - `oxlint-tsgolint` 7.0.2004;
 - Oxfmt 0.72.0.
 

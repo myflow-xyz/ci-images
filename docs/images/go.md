@@ -16,7 +16,7 @@ The initial image contract includes:
 - HTTP/API end-to-end testing with Hurl 8.0.1 and request formatting with
   `hurlfmt`;
 - sqlc 1.31.1;
-- Goose 3.28.0;
+- Goose 3.29.0;
 - golangci-lint 2.14.0;
 - `goimports` 0.52.0 and `govulncheck` 1.9.0.
 
