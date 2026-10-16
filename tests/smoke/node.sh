@@ -92,6 +92,9 @@ server.listen(0, '127.0.0.1', async () => {
 });
 JS
 
+node "$(dirname "${BASH_SOURCE[0]}")/undici-security.cjs" \
+	"${npm_root}/undici"
+
 [[ $(pnpm --version) == "$expected_pnpm" ]]
 pnpm_executable=$(readlink -f "$(command -v pnpm)")
 [[ $pnpm_executable == "/opt/ci-tools/pnpm/${expected_pnpm}/pnpm" ]]

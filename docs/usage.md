@@ -1,23 +1,17 @@
 # Using the CI images
 
-Select the narrowest image that satisfies a job. This reduces download size,
-security surface, and accidental tool coupling.
+Select the narrowest image that satisfies a job. This reduces download size, security surface, and accidental tool coupling.
 
 ## Image selection
 
-- Use `ci-base` for repository policy, shell, Python standard-library
-  automation, and documentation checks.
+- Use `ci-base` for repository policy, shell, Python standard-library automation, and documentation checks.
 - Use `ci-go` for Go build, generation, lint, test, and release jobs.
-- Use [`ci-net`](images/net.md) for network diagnostics and isolated network
-  tests. Keep `NET_ADMIN` scoped to disposable test containers in independent
-  network namespaces; avoid host networking, privileged mode, and global
-  nftables ruleset flushes.
+- Use [`ci-net`](images/net.md) for network diagnostics and isolated network tests. Keep `NET_ADMIN` scoped to disposable test containers in independent network namespaces; avoid host networking, privileged mode, and global nftables ruleset flushes.
 - Use `ci-node` for generic Node tasks such as Redocly OpenAPI linting.
 - Use `ci-vite` for TypeScript and Vite quality, test, and build jobs.
 - Use `ci-playwright` only when a job launches Chromium.
 - Use `ci-postgres` as a service beside a job image, never as the job image.
-- Use `ci-utils` for shared maintenance tools. Docker cleanup requires the
-  [trusted host adapter](maintenance.md) and complete daemon-user coordination.
+- Use `ci-utils` for shared maintenance tools. Docker cleanup requires the [trusted host adapter](maintenance.md) and complete daemon-user coordination.
 
 ## Workload patterns
 
@@ -26,19 +20,13 @@ security surface, and accidental tool coupling.
 - Generic Node and OpenAPI jobs use `ci-node`.
 - TypeScript and Vite quality, test, coverage, and build jobs use `ci-vite`.
 - Browser smoke and E2E jobs use `ci-playwright`.
-- Docker CLI and Compose are inherited by all base-derived job images.
-  Offline use needs no socket; trusted workflows explicitly supply daemon
-  access for builds and fixtures. The [base contract](images/base.md#docker-client-contract)
-  defines plugin discovery and compatibility limits.
+- Docker CLI and Compose are inherited by all base-derived job images. Offline use needs no socket; trusted workflows explicitly supply daemon access for builds and fixtures. The [base contract](images/base.md#docker-client-contract) defines plugin discovery and compatibility limits.
 
-Repository-specific dependencies, configuration, and migrations remain in the
-consumer repository rather than the shared images.
+Repository-specific dependencies, configuration, and migrations remain in the consumer repository rather than the shared images.
 
 ## Pulling and pinning
 
-The current GHCR packages are private. For local access, authenticate with a
-personal access token (classic) that has `read:packages` and an account that can
-read the packages:
+The current GHCR packages are private. For local access, authenticate with a personal access token (classic) that has `read:packages` and an account that can read the packages:
 
 ```bash
 printf '%s\n' "$GHCR_TOKEN" |
@@ -51,10 +39,7 @@ To follow the most recent stable release automatically, pull `:latest`:
 docker pull ghcr.io/myflow-xyz/ci-go:latest
 ```
 
-The same tag is available on `ci-base`, `ci-node`, `ci-vite`, `ci-playwright`,
-and `ci-postgres`. It advances after each published stable suite release;
-ordinary `main` builds do not change it. Tags use `:latest`; `@` introduces a
-digest. A later pull can select a newer release.
+The same tag is available on `ci-base`, `ci-node`, `ci-vite`, `ci-playwright`, and `ci-postgres`. It advances after each published stable suite release; ordinary `main` builds do not change it. Tags use `:latest`; `@` introduces a digest. A later pull can select a newer release.
 
 For a reproducible build, use a stable version to discover the release digest:
 
@@ -62,32 +47,19 @@ For a reproducible build, use a stable version to discover the release digest:
 docker buildx imagetools inspect ghcr.io/myflow-xyz/ci-go:0.1.0
 ```
 
-Compare the reported OCI index digest with the digest table in the matching
-`v0.1.0` GitHub Release. Then pull or configure the shared release tag pinned
-to that index digest:
+Compare the reported OCI index digest with the digest table in the matching `v0.1.0` GitHub Release. Then pull or configure the shared release tag pinned to that index digest:
 
 ```bash
 docker pull ghcr.io/myflow-xyz/ci-go:0.1.0@sha256:<digest>
 ```
 
-The container runtime selects AMD64 or ARM64 from the index automatically.
-Architecture-specific suffix tags are not required. Use `X.Y.Z` for stable
-image discovery; the corresponding Git tag and GitHub Release use `vX.Y.Z`.
-Use `edge` only when optional `develop` publication is enabled for integration
-testing. The default workflow does not update `edge`. Do not consume candidate
-or run-specific tags.
+The container runtime selects AMD64 or ARM64 from the index automatically. Architecture-specific suffix tags are not required. Use `X.Y.Z` for stable image discovery; the corresponding Git tag and GitHub Release use `vX.Y.Z`. Use `edge` only when optional `develop` publication is enabled for integration testing. The default workflow does not update `edge`. Do not consume candidate or run-specific tags.
 
-For a private package in GitHub Actions, grant the consumer repository read
-access to each package, set `packages: read`, and authenticate with its
-`GITHUB_TOKEN`. Public packages can be pulled anonymously.
+For a private package in GitHub Actions, grant the consumer repository read access to each package, set `packages: read`, and authenticate with its `GITHUB_TOKEN`. Public packages can be pulled anonymously.
 
 ## Job-container example
 
-Always replace the digest placeholders with promoted OCI index digests.
-Container `run` steps default to `sh`, so jobs that require Bash select it
-explicitly. Job images use UID `1001` so the non-root process can write the
-workspace and file-command mounts created by standard Linux GitHub-hosted
-runners.
+Always replace the digest placeholders with promoted OCI index digests. Container `run` steps default to `sh`, so jobs that require Bash select it explicitly. Job images use UID `1001` so the non-root process can write the workspace and file-command mounts created by standard Linux GitHub-hosted runners.
 
 ```yaml
 jobs:
@@ -113,8 +85,7 @@ Pin actions by full commit SHA as well as pinning the container by digest.
 
 ## PostgreSQL service example
 
-A containerized job reaches a service by its service label and container port;
-it does not use `localhost` or publish a host port.
+A containerized job reaches a service by its service label and container port; it does not use `localhost` or publish a host port.
 
 ```yaml
 jobs:
@@ -148,9 +119,7 @@ jobs:
         postgres://app:test-only-password@postgres:5432/app_test?sslmode=disable
 ```
 
-The service image exposes `vector` and PostgreSQL contrib support, but does not
-create extensions. Repository migrations remain responsible for statements
-such as:
+The service image exposes `vector` and PostgreSQL contrib support, but does not create extensions. Repository migrations remain responsible for statements such as:
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS vector;
@@ -168,11 +137,7 @@ The images define these writable container paths:
 /var/cache/pnpm/store
 ```
 
-On GitHub-hosted runners, save and restore these paths with the repository's
-cache action. On trusted self-hosted runners, they may instead be bind-mounted
-from matching tool directories below `/opt/actions-runner/shared/cache`, such
-as `go` mounted at `/var/cache/go` and `pnpm` mounted at
-`/var/cache/pnpm`.
+On GitHub-hosted runners, save and restore these paths with the repository's cache action. On trusted self-hosted runners, they may instead be bind-mounted from matching tool directories below `/opt/actions-runner/shared/cache`, such as `go` mounted at `/var/cache/go` and `pnpm` mounted at `/var/cache/pnpm`.
 
 A cache-action key includes:
 
@@ -182,72 +147,38 @@ A cache-action key includes:
 - `go.sum` or package-manager lockfile hash;
 - relevant compiler or tool configuration.
 
-Never cache a repository workspace, `node_modules`, credentials, release
-artifacts, or PostgreSQL data. Every workflow must support an uncached rebuild.
-Temporary build artifacts belong below `/var/tmp` and are never restored as
-caches.
+Never cache a repository workspace, `node_modules`, credentials, release artifacts, or PostgreSQL data. Every workflow must support an uncached rebuild. Temporary build artifacts belong below `/var/tmp` and are never restored as caches.
 
 ## Version compatibility
 
-Jobs verify their declared runtime and critical tool versions before relying on
-the image:
+Jobs verify their declared runtime and critical tool versions before relying on the image:
 
 - Go jobs compare `go version` with `go.mod` and any `toolchain` directive.
-- Node jobs compare `node --version` and `pnpm --version` with repository
-  declarations.
-- Vite jobs use repository-local tools and treat the bundled tool versions as a
-  compatibility and smoke-test baseline.
-- Playwright jobs compare their lockfile-managed Playwright version with
-  `PLAYWRIGHT_VERSION` before launching the bundled browser.
+- Node jobs compare `node --version` and `pnpm --version` with repository declarations.
+- Vite jobs use repository-local tools and treat the bundled tool versions as a compatibility and smoke-test baseline.
+- Playwright jobs compare their lockfile-managed Playwright version with `PLAYWRIGHT_VERSION` before launching the bundled browser.
 
-Do not fall back to downloading a different runtime or browser during a job.
-Update and republish the shared image, or select an older compatible digest.
+Do not fall back to downloading a different runtime or browser during a job. Update and republish the shared image, or select an older compatible digest.
 
 ## Self-hosted bind-mount permissions
 
-This setup is needed only when a job intentionally bind-mounts host workspaces
-or caches. Jobs without those mounts do not need the host group or permission
-helper.
+This setup is needed only when a job intentionally bind-mounts host workspaces or caches. Jobs without those mounts do not need the host group or permission helper.
 
-A bind mount retains its host ownership, modes, ACLs, and mount flags; the image
-does not grant automatic access. The image defines its runtime identity and
-container-side tool configuration. The runner operator enrolls only selected
-bind sources in the shared-group contract, while workflows and host policy
-remain responsible for every other mount.
+A bind mount retains its host ownership, modes, ACLs, and mount flags; the image does not grant automatic access. The image defines its runtime identity and container-side tool configuration. The runner operator enrolls only selected bind sources in the shared-group contract, while workflows and host policy remain responsible for every other mount.
 
-Job images retain the fixed unprivileged `ci` identity with UID `1001` and
-primary GID `2001`. A self-hosted runner grants access to bind-mounted
-workspaces and caches through the dedicated host group `mfci` with GID `2001`.
-The runner user's UID does not need to match the container UID.
+Job images retain the fixed unprivileged `ci` identity with UID `1001` and primary GID `2001`. A self-hosted runner grants access to bind-mounted workspaces and caches through the dedicated host group `mfci` with GID `2001`. The runner user's UID does not need to match the container UID.
 
-Linux evaluates the numeric GID rather than the group name. The container group
-is named `ci`, while the host group is named `mfci`; both use GID `2001`. The
-runner account may require the host's `docker` group to launch job containers.
-That group governs Docker daemon access, is effectively root-equivalent on a
-typical rootful Docker host, and remains outside the filesystem-sharing
-boundary. Never use it as the bind-mount permission group.
+Linux evaluates the numeric GID rather than the group name. The container group is named `ci`, while the host group is named `mfci`; both use GID `2001`. The runner account may require the host's `docker` group to launch job containers. That group governs Docker daemon access, is effectively root-equivalent on a typical rootful Docker host, and remains outside the filesystem-sharing boundary. Never use it as the bind-mount permission group.
 
 ### Host setup
 
-Reserve GID `2001` across the controlled runner fleet. This value is a MyFlow
-convention, not a globally reserved Linux group. The identity helper creates
-`mfci:2001` only when the GID is unused and accepts an existing assignment only
-when it is already canonical. Do not repurpose another group. Install the
-host's `acl` package and drain every affected runner before changing an
-existing work tree.
+Reserve GID `2001` across the controlled runner fleet. This value is a MyFlow convention, not a globally reserved Linux group. The identity helper creates `mfci:2001` only when the GID is unused and accepts an existing assignment only when it is already canonical. Do not repurpose another group. Install the host's `acl` package and drain every affected runner before changing an existing work tree.
 
 Host provisioning is split into three independently verifiable stages:
 
-1. The [runner identity helper](../scripts/docs/setup-runner-user.md) creates or
-   verifies `ci-runner`, its `/opt/actions-runner` home metadata, the canonical
-   `mfci:2001` group, and `docker`/`mfci` supplementary memberships. It does not
-   create the home directory.
-2. The [runner directory helper](../scripts/docs/setup-runner-from-scratch.md)
-   creates only the explicit runner skeleton and verifies its ownership and
-   modes. It does not recurse through existing contents or apply ACLs.
-3. The [runner permission helper](../scripts/docs/setup-runner-permissions.md)
-   normalizes `workspace/<repository>/_work` trees and the complete `shared`
-   tree, then verifies their recursive group and ACL contract.
+1. The [runner identity helper](../scripts/docs/setup-runner-user.md) creates or verifies `ci-runner`, its `/opt/actions-runner` home metadata, the canonical `mfci:2001` group, and `docker`/`mfci` supplementary memberships. It does not create the home directory.
+2. The [runner directory helper](../scripts/docs/setup-runner-from-scratch.md) creates only the explicit runner skeleton and verifies its ownership and modes. It does not recurse through existing contents or apply ACLs.
+3. The [runner permission helper](../scripts/docs/setup-runner-permissions.md) normalizes `workspace/<repository>/_work` trees and the complete `shared` tree, then verifies their recursive group and ACL contract.
 
 For the standard identity and one repository runner:
 
@@ -259,44 +190,21 @@ sudo scripts/setup-runner-from-scratch.sh \
 sudo scripts/setup-runner-permissions.sh
 ```
 
-None of these helpers downloads, registers, or manages the GitHub Actions
-runner service. The permission helper repairs the `workspace` and runner
-installation control-directory contract. Unsafe write access on the runner
-root is rejected for the runner operator to fix.
+None of these helpers downloads, registers, or manages the GitHub Actions runner service. The permission helper repairs the `workspace` and runner installation control-directory contract. Unsafe write access on the runner root is rejected for the runner operator to fix.
 
-An opt-in host preflight may run the helper with `--check` directly from a
-host-side step inherited from the runner service. It verifies the invoking
-runner process's effective shared-group membership in addition to the host
-filesystem state. It must fail the job rather than repair a runner. The runner
-operator applies changes and restarts the service separately before the
-workflow is rerun.
+An opt-in host preflight may run the helper with `--check` directly from a host-side step inherited from the runner service. It verifies the invoking runner process's effective shared-group membership in addition to the host filesystem state. It must fail the job rather than repair a runner. The runner operator applies changes and restarts the service separately before the workflow is rerun.
 
-The runner account owns each managed `_work` or `shared` root. Files and
-directories created below those roots may retain the container UID; the shared
-GID and inherited permissions provide cross-UID access.
+The runner account owns each managed `_work` or `shared` root. Files and directories created below those roots may retain the container UID; the shared GID and inherited permissions provide cross-UID access.
 
-Managed directories use setgid mode `2775`. Group permissions on regular files
-mirror owner permissions, while other permissions mirror owner read and execute
-access without write; a normal writable file therefore uses mode `0664`.
-Default ACLs preserve this behavior for runner-created `_temp` file-command
-channels and container-created descendants even when their UIDs differ. This
-policy intentionally lets unrelated future host accounts read source, caches,
-artifacts, and temporary file-command content, so use it only on hosts where
-that read boundary is acceptable.
+Managed directories use setgid mode `2775`. Group permissions on regular files mirror owner permissions, while other permissions mirror owner read and execute access without write; a normal writable file therefore uses mode `0664`. Default ACLs preserve this behavior for runner-created `_temp` file-command channels and container-created descendants even when their UIDs differ. This policy intentionally lets unrelated future host accounts read source, caches, artifacts, and temporary file-command content, so use it only on hosts where that read boundary is acceptable.
 
-Pre-create every exact cache bind source before Docker starts a job. Docker may
-otherwise create a missing source with unsuitable ownership.
+Pre-create every exact cache bind source before Docker starts a job. Docker may otherwise create a missing source with unsuitable ownership.
 
-Share a tool cache only among repositories in the same trust domain. For
-mutually untrusted workloads, add a repository or trust-domain partition below
-the tool directory and mount that partition instead.
+Share a tool cache only among repositories in the same trust domain. For mutually untrusted workloads, add a repository or trust-domain partition below the tool directory and mount that partition instead.
 
 ### Job-container setup
 
-The container's primary GID already matches `mfci`, so the recommended
-configuration does not require `--group-add`. Mount only the directories the
-job requires. The host setup must have created and normalized every bind source
-before the job starts.
+The container's primary GID already matches `mfci`, so the recommended configuration does not require `--group-add`. Mount only the directories the job requires. The host setup must have created and normalized every bind source before the job starts.
 
 ```yaml
 jobs:
@@ -325,23 +233,16 @@ docker run --rm \
 
 ### Existing host group
 
-Docker can add any existing host GID to the image process as a supplementary
-group. For example, if the runner account is `ci-user` and the writable mount
-group is `ci-group`:
+Docker can add any existing host GID to the image process as a supplementary group. For example, if the runner account is `ci-user` and the writable mount group is `ci-group`:
 
 ```bash
 getent group ci-group
 groups ci-user
 ```
 
-Provision the runner account and writable trees with the independent
-[runner permission helper](../scripts/docs/setup-runner-permissions.md), using
-`ci-user` as its owner and `ci-group` as its group.
+Provision the runner account and writable trees with the independent [runner permission helper](../scripts/docs/setup-runner-permissions.md), using `ci-user` as its owner and `ci-group` as its group.
 
-Use the numeric GID reported in the third field of `getent` output. Store that
-value as the repository or organization variable `CI_GROUP_GID`, then pass it
-when GitHub Actions creates the job container. Every runner selected by the job
-must use the same GID for `ci-group`.
+Use the numeric GID reported in the third field of `getent` output. Store that value as the repository or organization variable `CI_GROUP_GID`, then pass it when GitHub Actions creates the job container. Every runner selected by the job must use the same GID for `ci-group`.
 
 ```yaml
 jobs:
@@ -366,16 +267,9 @@ docker run --rm \
   ghcr.io/myflow-xyz/ci-base:0.1.0@sha256:<digest>
 ```
 
-The mounted directory must use `ci-group` group ownership and group-write,
-setgid, and default-ACL permissions equivalent to the recommended `mfci`
-setup. Restart the runner service after changing `ci-user` group membership.
-The image's primary `ci` GID remains `2001`; the host group name does not need
-to exist in the container.
+The mounted directory must use `ci-group` group ownership and group-write, setgid, and default-ACL permissions equivalent to the recommended `mfci` setup. Restart the runner service after changing `ci-user` group membership. The image's primary `ci` GID remains `2001`; the host group name does not need to exist in the container.
 
-This contract covers rootful Linux Docker without user-namespace remapping.
-Rootless Docker and `userns-remap` require mapping-aware host provisioning and
-are outside the image contract. Do not replace the group contract with root,
-world-writable directories, or a mounted Docker socket.
+This contract covers rootful Linux Docker without user-namespace remapping. Rootless Docker and `userns-remap` require mapping-aware host provisioning and are outside the image contract. Do not replace the group contract with root, world-writable directories, or a mounted Docker socket.
 
 ## References
 

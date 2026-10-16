@@ -1,16 +1,12 @@
 # Documentation
 
-The [repository README](../README.md) owns the project overview, image
-hierarchy, repository structure, and high-level design boundaries. This page
-routes to the detailed operational and image contracts without repeating that
-overview.
+The [repository README](../README.md) owns the project overview, image hierarchy, repository structure, and high-level design boundaries. This page routes to the detailed operational and image contracts without repeating that overview.
 
 ## Operator guides
 
 - [Version inventory by image](versions.md)
 - [Stable toolchain maintenance and security qualification][security]
-- [Using the CI images](usage.md), including
-  [self-hosted bind-mount permissions](usage.md#self-hosted-bind-mount-permissions)
+- [Using the CI images](usage.md), including [self-hosted bind-mount permissions](usage.md#self-hosted-bind-mount-permissions)
 - [Releasing the CI images](release.md)
 - [Guarded Docker maintenance and recovery](maintenance.md)
 
@@ -29,19 +25,11 @@ overview.
 
 ## Source authorities
 
-- [`manifests/versions.json`](../manifests/versions.json) records reviewed
-  versions, digests, source revisions, dependency overrides, and checksums.
-- [`images/`](../images) contains the immutable image build definitions and
-  installation inputs.
-- [Image verification and publication](../.github/workflows/images.yml) defines
-  the build, smoke-test, scan, and promotion policy.
-- [Release promotion](../.github/workflows/release.yml) defines stable suite
-  releases.
-- [Runner identity setup](../scripts/docs/setup-runner-user.md) documents the
-  independent `ci-runner`, `mfci`, and supplementary-group helper.
-- [Runner directory bootstrap](../scripts/docs/setup-runner-from-scratch.md)
-  documents creation of the independent self-hosted runner skeleton.
-- [Runner permission setup](../scripts/docs/setup-runner-permissions.md)
-  documents the independent self-hosted helper.
-- [`scripts/tests/`](../scripts/tests) verifies the runner helpers independently
-  from the image contracts in [`tests/`](../tests).
+- [`manifests/versions.json`](../manifests/versions.json) records reviewed versions, digests, source revisions, dependency overrides, and checksums.
+- [`images/`](../images) contains the immutable image build definitions and installation inputs.
+- [Image verification and publication](../.github/workflows/images.yml) defines the build, smoke-test, scan, and promotion policy.
+- [Release promotion](../.github/workflows/release.yml) defines stable suite releases.
+- [Runner identity setup](../scripts/docs/setup-runner-user.md) documents the independent `ci-runner`, `mfci`, and supplementary-group helper.
+- [Runner directory bootstrap](../scripts/docs/setup-runner-from-scratch.md) documents creation of the independent self-hosted runner skeleton.
+- [Runner permission setup](../scripts/docs/setup-runner-permissions.md) documents the independent self-hosted helper.
+- [`scripts/tests/`](../scripts/tests) verifies the runner helpers independently from the image contracts in [`tests/`](../tests).
