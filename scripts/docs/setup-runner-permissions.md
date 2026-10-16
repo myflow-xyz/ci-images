@@ -1,7 +1,6 @@
 # Runner permission setup
 
-`setup-runner-permissions.sh` prepares host directories shared by self-hosted
-GitHub Actions runners and MyFlow job containers.
+`setup-runner-permissions.sh` prepares host directories shared by self-hosted GitHub Actions runners and MyFlow job containers.
 
 ## Managed boundary
 
@@ -12,40 +11,15 @@ The helper manages only these paths below the selected runner root:
 <runner-root>/shared
 ```
 
-The `workspace` directory must already exist as a real directory. The helper
-does not create or move runner installations. It normalizes `workspace` and
-each runner installation directory containing `_work` as control directories
-owned by the resolved runner owner and shared group, with setgid mode `2755`
-and no extended or default ACL entries. These control directories remain
-readable and traversable, but only the runner owner can change their immediate
-directory entries. Dry-run reports required corrections, apply mode repairs
-them, and check mode rejects mismatches.
+The `workspace` directory must already exist as a real directory. The helper does not create or move runner installations. It normalizes `workspace` and each runner installation directory containing `_work` as control directories owned by the resolved runner owner and shared group, with setgid mode `2755` and no extended or default ACL entries. These control directories remain readable and traversable, but only the runner owner can change their immediate directory entries. Dry-run reports required corrections, apply mode repairs them, and check mode rejects mismatches.
 
-The runner root remains outside the helper-managed boundary. Before reporting
-success or changing a managed path, the helper rejects effective group, other,
-or named-ACL write access on that unmanaged parent. Symbolic links are not
-followed. Existing named ACL entries below managed paths are removed so only
-each entry's owner, the shared group, and read or traversal access for other
-users remain. Other users never receive write access. FIFOs, sockets, and
-device nodes are rejected before any permission changes.
+The runner root remains outside the helper-managed boundary. Before reporting success or changing a managed path, the helper rejects effective group, other, or named-ACL write access on that unmanaged parent. Symbolic links are not followed. Existing named ACL entries below managed paths are removed so only each entry's owner, the shared group, and read or traversal access for other users remain. Other users never receive write access. FIFOs, sockets, and device nodes are rejected before any permission changes.
 
-When `shared` is absent, the helper creates it as a group-owned mode `2775`
-managed root. The same recursive policy covers `shared` itself and every tool,
-cache, download, or future shared-data directory below it.
+When `shared` is absent, the helper creates it as a group-owned mode `2775` managed root. The same recursive policy covers `shared` itself and every tool, cache, download, or future shared-data directory below it.
 
-Each managed `_work` or `shared` root remains owned by the resolved runner
-owner. Descendants created later by a job container may retain the container
-UID. Directories remain `2775`; each regular file's group permissions mirror
-its owner permissions, while other permissions mirror owner read and execute
-access without write. A normally writable file therefore uses mode `0664`, and
-an executable normally uses `0775`. This preserves intentional read-only files
-such as Git objects while the shared GID and inherited ACLs provide equivalent
-write access to both managed identities.
+Each managed `_work` or `shared` root remains owned by the resolved runner owner. Descendants created later by a job container may retain the container UID. Directories remain `2775`; each regular file's group permissions mirror its owner permissions, while other permissions mirror owner read and execute access without write. A normally writable file therefore uses mode `0664`, and an executable normally uses `0775`. This preserves intentional read-only files such as Git objects while the shared GID and inherited ACLs provide equivalent write access to both managed identities.
 
-The other-readable policy intentionally permits unrelated future host accounts
-to inspect checked-out source, caches, artifacts, and temporary GitHub Actions
-file-command channels. Use this policy only when that host-level read boundary
-is acceptable; root access is unaffected by these modes.
+The other-readable policy intentionally permits unrelated future host accounts to inspect checked-out source, caches, artifacts, and temporary GitHub Actions file-command channels. Use this policy only when that host-level read boundary is acceptable; root access is unaffected by these modes.
 
 ## Requirements
 
@@ -53,14 +27,10 @@ is acceptable; root access is unaffected by these modes.
 - the distribution's `acl` package, which provides `getfacl` and `setfacl`;
 - execution through `sudo` for planning or applying changes;
 - an existing non-root runner owner and shared group;
-- an existing `<runner-root>/workspace` directory containing runner
-  installations;
+- an existing `<runner-root>/workspace` directory containing runner installations;
 - drained runners while existing trees are normalized.
 
-The defaults are runner root `/opt/actions-runner`, owner `ci-runner`, and
-group `mfci`. `--runner-root`, `--owner`, and `--group` override them. Owner and
-group values may be names or numeric IDs, but must resolve through the host
-account database.
+The defaults are runner root `/opt/actions-runner`, owner `ci-runner`, and group `mfci`. `--runner-root`, `--owner`, and `--group` override them. Owner and group values may be names or numeric IDs, but must resolve through the host account database.
 
 Install the ACL tools before invoking the helper:
 
@@ -73,29 +43,22 @@ sudo apt-get install --yes acl
 sudo dnf install --assumeyes acl
 ```
 
-The helper reports the missing package when either ACL command is unavailable;
-it does not invoke a package manager itself.
+The helper reports the missing package when either ACL command is unavailable; it does not invoke a package manager itself.
 
 ## Default host identity
 
-Provision the standard `ci-runner` account, its `/opt/actions-runner` home
-metadata, the canonical `mfci:2001` group, and `docker`/`mfci` supplementary
-memberships with the independent identity helper:
+Provision the standard `ci-runner` account, its `/opt/actions-runner` home metadata, the canonical `mfci:2001` group, and `docker`/`mfci` supplementary memberships with the independent identity helper:
 
 ```bash
 sudo scripts/setup-runner-user.sh --dry-run
 sudo scripts/setup-runner-user.sh
 ```
 
-GID `2001` is a MyFlow convention rather than a globally reserved value. The
-identity helper refuses to repurpose an existing assignment. Restart an
-already-running runner service after changing its supplementary groups.
+GID `2001` is a MyFlow convention rather than a globally reserved value. The identity helper refuses to repurpose an existing assignment. Restart an already-running runner service after changing its supplementary groups.
 
 ## Usage
 
-For a new runner directory skeleton, use the
-[runner directory helper](setup-runner-from-scratch.md), then invoke this helper
-as the separate recursive-permission stage.
+For a new runner directory skeleton, use the [runner directory helper](setup-runner-from-scratch.md), then invoke this helper as the separate recursive-permission stage.
 
 Preview the resolved identities and targets without changing the host:
 
@@ -103,20 +66,13 @@ Preview the resolved identities and targets without changing the host:
 sudo scripts/setup-runner-permissions.sh --dry-run
 ```
 
-For a workflow that intentionally depends on these bind mounts, verify the
-existing host state without root access or mutations. Run this directly from a
-host-side step inherited from the runner service:
+For a workflow that intentionally depends on these bind mounts, verify the existing host state without root access or mutations. Run this directly from a host-side step inherited from the runner service:
 
 ```bash
 scripts/setup-runner-permissions.sh --check
 ```
 
-`--check` requires the invoking UID to match the resolved runner owner. It
-verifies both the account database and the current process's effective groups;
-do not invoke it through `sudo`, `su`, or another fresh login that would receive
-a new group list. On failure, stop the workflow. A runner operator must drain
-the runner, apply the required host changes with `sudo`, restart the runner
-service when reported, and then rerun the workflow.
+`--check` requires the invoking UID to match the resolved runner owner. It verifies both the account database and the current process's effective groups; do not invoke it through `sudo`, `su`, or another fresh login that would receive a new group list. On failure, stop the workflow. A runner operator must drain the runner, apply the required host changes with `sudo`, restart the runner service when reported, and then rerun the workflow.
 
 Apply and verify the permission contract:
 
@@ -135,44 +91,28 @@ sudo scripts/setup-runner-permissions.sh \
 
 The apply run:
 
-- requires the owner to already belong to the shared group and never changes
-  account membership;
-- normalizes `workspace` and runner installation control directories to the
-  resolved owner and group, exact mode `2755`, and a minimal access ACL;
+- requires the owner to already belong to the shared group and never changes account membership;
+- normalizes `workspace` and runner installation control directories to the resolved owner and group, exact mode `2755`, and a minimal access ACL;
 - creates the group-writable `shared` managed root when absent;
 - initially assigns the resolved owner and group recursively;
-- enforces exact directory access and mirrors each file's owner permissions to
-  the shared group, mirrors owner read and execute access to other users, and
-  removes other write and unexpected special-mode bits;
+- enforces exact directory access and mirrors each file's owner permissions to the shared group, mirrors owner read and execute access to other users, and removes other write and unexpected special-mode bits;
 - replaces existing ACLs and configures setgid inheritance on directories;
 - preserves creator-requested read-only, writable, and executable file modes;
-- verifies managed-root ownership, descendant group ownership, modes, ACLs, and
-  group membership;
+- verifies managed-root ownership, descendant group ownership, modes, ACLs, and group membership;
 - rejects unsafe write access on the unmanaged runner root without changing it.
 
-If membership is missing, the helper stops before changing filesystem state.
-The runner operator must enroll the owner, restart its runner service, and
-rerun the helper.
+If membership is missing, the helper stops before changing filesystem state. The runner operator must enroll the owner, restart its runner service, and rerun the helper.
 
-Pre-create every exact cache bind source before Docker starts a job, then run
-the helper so the new leaves are normalized. Docker may otherwise create a
-missing source with unsuitable ownership.
+Pre-create every exact cache bind source before Docker starts a job, then run the helper so the new leaves are normalized. Docker may otherwise create a missing source with unsuitable ownership.
 
-See the
-[image usage guide](../../docs/usage.md#self-hosted-bind-mount-permissions) for
-the container-side GID contract and volume examples.
+See the [image usage guide](../../docs/usage.md#self-hosted-bind-mount-permissions) for the container-side GID contract and volume examples.
 
 ## Tests
 
-The independent test project is rooted at `scripts/.shellspec`. It loads
-`tests/spec_helper.sh`, whose precheck hook runs Bash syntax validation,
-ShellCheck, and shfmt before the ShellSpec examples.
+The independent test project is rooted at `scripts/.shellspec`. It loads `tests/spec_helper.sh`, whose precheck hook runs Bash syntax validation, ShellCheck, and shfmt before the ShellSpec examples.
 
-- `tests/setup-runner-permissions_spec.sh` checks the CLI contract through
-  ShellSpec.
-- `tests/setup-runner-permissions_integration.sh` checks recursive ownership,
-  modes, ACL inheritance, group writes, host-readable files, Git read-only
-  objects, dry-run behavior, and safety boundaries in disposable directories.
+- `tests/setup-runner-permissions_spec.sh` checks the CLI contract through ShellSpec.
+- `tests/setup-runner-permissions_integration.sh` checks recursive ownership, modes, ACL inheritance, group writes, host-readable files, Git read-only objects, dry-run behavior, and safety boundaries in disposable directories.
 
 Run ShellSpec from the script project directory:
 
@@ -187,8 +127,6 @@ The integration test requires root and the same Linux ACL tools as the helper:
 sudo scripts/tests/setup-runner-permissions_integration.sh
 ```
 
-The independent `Runner helper / Contract` workflow runs both suites against
-disposable test directories. It does not inspect or change runner host paths.
+The independent `Runner helper / Contract` workflow runs both suites against disposable test directories. It does not inspect or change runner host paths.
 
-ShellSpec DSL indentation is retained in the specification file because shfmt
-does not model ShellSpec's block syntax.
+ShellSpec DSL indentation is retained in the specification file because shfmt does not model ShellSpec's block syntax.
