@@ -111,10 +111,10 @@ image or `wireguard` metapackage is installed.
 | Component | Version |
 | --- | --- |
 | `Node.js` | `26.12.0` |
-| `npm` | `12.2.0` |
+| `npm` | `12.2.1` |
 | `pnpm` | `12.11.2` |
 | `markdownlint-cli2` | `0.23.3` |
-| `@redocly/cli` | `2.63.0` |
+| `@redocly/cli` | `2.64.0` |
 
 ## `ci-vite`
 
@@ -124,8 +124,8 @@ image or `wireguard` metapackage is installed.
 | `TypeScript compatibility package` | `6.0.2` |
 | `TypeScript legacy compiler` | `6.0.3` |
 | `vite` | `8.3.4` |
-| `vitest` | `5.0.4` |
-| `@vitest/coverage-v8` | `5.0.4` |
+| `vitest` | `5.0.5` |
+| `@vitest/coverage-v8` | `5.0.5` |
 | `oxlint` | `1.88.0` |
 | `oxlint-tsgolint` | `7.0.2004` |
 | `oxfmt` | `0.72.0` |

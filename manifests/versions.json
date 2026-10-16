@@ -299,26 +299,26 @@
     "node": {
       "runtime": "26.12.0",
       "npm": {
-        "version": "12.2.0",
+        "version": "12.2.1",
         "asset": {
-          "url": "https://registry.npmjs.org/npm/-/npm-12.2.0.tgz",
-          "sha256": "6666b48816b39b86c3febac7b51a4ee4de6c5ca589c382ad8004b6b113f86677"
+          "url": "https://registry.npmjs.org/npm/-/npm-12.2.1.tgz",
+          "sha256": "228bd64aaef23270dbdbd2cf3d5ef5c467602ef38c4066246cef1984adab9a67"
         },
         "lockfile": "images/node/npm-runtime/package-lock.json",
-        "lockfile_sha256": "8a264a7e78a9f41907121225e1a47da2f460a2f5d695eab93e9118598ef19c85",
+        "lockfile_sha256": "2ab152f59a2269ea137c40335bb007d33030e3f975f1d5abfe43f3b937f01aae",
         "dependency_replacements": {
           "brace-expansion": "5.0.12",
           "http-cache-semantics": "4.3.0",
           "ip-address": "10.7.4",
           "postcss-selector-parser": "7.1.6",
           "tar": "7.5.22",
-          "undici": "6.29.0"
+          "undici": "6.29.1"
         }
       },
       "markdownlint_cli2": {
         "version": "0.23.3",
         "lockfile": "images/node/markdownlint/package-lock.json",
-        "lockfile_sha256": "ca16c5c5b8bf382e1d83d612b4c3d90a48eebd30cbe5204715bed4a68f5763d5",
+        "lockfile_sha256": "17890650d4f3efb0a427a3294d3ed2cfefeb3012129f31d03aedb7b31133b7bf",
         "dependency_overrides": {
           "smol-toml": "1.9.1",
           "katex": "0.19.0"
@@ -332,9 +332,9 @@
           }
         }
       },
-      "bundle_version": "13",
+      "bundle_version": "14",
       "lockfile": "images/node/npm/package-lock.json",
-      "lockfile_sha256": "9be28c7870b6239969a75acb13fcbd20c1c5a570a25c3abbea79270f371e145e",
+      "lockfile_sha256": "46215dc16440942efcedeb53e2bf87e3f58cc0cddecaa47fdd41f7623d95be05",
       "pnpm": {
         "version": "12.11.2",
         "store_version": "11",
@@ -350,7 +350,7 @@
           }
         }
       },
-      "redocly": "2.63.0",
+      "redocly": "2.64.0",
       "source": "https://nodejs.org/dist/",
       "assets": {
         "amd64": {
@@ -364,9 +364,9 @@
       }
     },
     "vite": {
-      "bundle_version": "15",
+      "bundle_version": "16",
       "lockfile": "images/vite/npm/package-lock.json",
-      "lockfile_sha256": "961991ffefa9823f4b02bf4f0bac224933b1447c6dc085eeb70414ccee3649f0",
+      "lockfile_sha256": "b9abc1f05a5b7b81eae86c13f158d83e83024f9475f9b479e3eeaf064370a307",
       "typescript": "7.0.2",
       "typescript_source": {
         "repository": "https://github.com/microsoft/typescript-go",
@@ -380,8 +380,8 @@
         "compiler": "6.0.3"
       },
       "vite": "8.3.4",
-      "vitest": "5.0.4",
-      "coverage_v8": "5.0.4",
+      "vitest": "5.0.5",
+      "coverage_v8": "5.0.5",
       "oxlint": "1.88.0",
       "oxlint_tsgolint": "7.0.2004",
       "oxlint_tsgolint_source": {

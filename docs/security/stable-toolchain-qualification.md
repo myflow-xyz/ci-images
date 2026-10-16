@@ -6,57 +6,55 @@ Generate current findings with the scanners; do not commit generated scan
 inventories. Record the review date, source revision, and manifest hash with
 each assessment. Previous assessments remain in Git history.
 
-PMem `task_000524` refreshes the eight-image suite from `main` commit
-`c9250a386f1d8ed183c25311a39e307949270624`. The review uses upstream metadata
-and vulnerability feeds retrieved on 2026-10-15 UTC. It preserves the existing
-runtime release lines, image names, user/cache contracts, and release policy.
-This record qualifies the local implementation; it does not confirm publication.
+PMem `task_000533` requalifies the accepted maintenance from `task_000524`
+at `develop` commit `d780a25e0c26b8ebaf6ab3b94af384468b60f44f`.
+Stable `main` remains at `c9250a386f1d8ed183c25311a39e307949270624`;
+PR 41's compatible updates are already merged into `develop`.
+This assessment uses upstream metadata and vulnerability feeds retrieved on
+2026-10-15 America/Los_Angeles (2026-10-16 UTC). It preserves runtime release
+lines, image names, user/cache contracts, and release policy. Local qualification
+does not confirm stable promotion or publication.
 
 ## Dependency selection
 
-The audit covered manifest tools and overrides, all five npm locks, the Go
-capability-helper module, both architectures' Debian package candidates, OCI
-parents, build infrastructure, six pinned actions, and the test-daemon image.
-The [manifest](../../manifests/versions.json) and locks contain exact pins.
+The audit covers all eight images, manifest tools and overrides, all five npm
+locks, the Go capability-helper module, both architectures' direct Debian package
+candidates, installed OS package upgrade plans, OCI parents, build infrastructure,
+six pinned actions, and the test-daemon image. The
+[manifest](../../manifests/versions.json) and locks contain exact pins.
+
+These updates are additional to the accepted PR 41 maintenance:
 
 | Component | Previous | Selected |
 | --- | --- | --- |
-| Debian snapshot | `20261011T082723Z` | `20261015T030350Z` |
-| curl and libcurl | `8.14.1-2+deb13u5` | `8.14.1-2+deb13u7` |
-| Node.js | `26.11.1` | `26.12.0` |
-| Docker CLI | `29.9.0` | `29.9.1` |
-| OSV-Scanner | `2.6.0` | `2.7.0` |
-| Trivy, including the Actions scanner | `0.75.0` | `0.76.0` |
-| Goose | `3.28.0` | `3.29.0` |
-| Redocly CLI | `2.62.1` | `2.63.0` |
-| Vitest and V8 coverage | `5.0.3` | `5.0.4` |
-| Oxlint | `1.87.0` | `1.88.0` |
-| Playwright and matching Chromium installer | `1.64.0` | `1.64.1` |
-| npm's `ip-address` replacement | `10.7.3` | `10.7.4` |
-| gitleaks compression override | `1.20.1` | `1.20.3` |
-| gitleaks RAR decoder override | `2.4.3` | `2.4.5` |
-| Goose libc override | `1.77.1` | `1.78.0` |
+| npm and npx | `12.2.0` | `12.2.1` |
+| npm's Undici replacement | `6.29.0` | `6.29.1` |
+| Redocly CLI | `2.63.0` | `2.64.0` |
+| Vitest and V8 coverage | `5.0.4` | `5.0.5` |
+| Markdown's transitive argparse | `3.0.2` | `3.0.3` |
 
-The Vite lock also advances Rolldown to `1.2.14`, PostCSS to `8.5.30`, and
-upstream-selected Vitest/Oxlint dependencies. The capability helper advances
-`go-winio`, containerd, gRPC Gateway, compression, and Google API/RPC modules.
-Upstream Go tool graphs otherwise follow their selected releases and reviewed
-overrides; this change does not force arbitrary transitive major upgrades.
+All five npm graphs were resolved with the selected npm release. The Vite lock
+also advances the paired Vitest mocker and spy packages to `5.0.5`. The
+Playwright lock is unchanged. Go modules and reviewed overrides remain current;
+this assessment does not force transitive major upgrades or downgrade the
+capability helper's upstream-selected prerelease module.
 
-The official [Node release](https://nodejs.org/en/blog/release/v26.12.0),
-[Docker release notes](https://docs.docker.com/engine/release-notes/29/),
-[OSV-Scanner release](https://github.com/google/osv-scanner/releases/tag/v2.7.0),
-[Goose release](https://github.com/pressly/goose/releases/tag/v3.29.0), and
-[Trivy changelog](https://github.com/aquasecurity/trivy/blob/v0.76.0/CHANGELOG.md)
-support the release selection. Node archives use official SHA-256 values for
-AMD64 and ARM64. Debian candidates were resolved through signed snapshot
-indexes for both architectures; only curl changed in the direct package locks.
+The official [npm release][npm-release], [Undici release][undici-release],
+[Redocly changelog][redocly-release], and [Vitest release][vitest-release]
+support selection. npm's GitHub latest release is a non-prerelease `12.2.1`,
+although the registry's `latest` tag still names `12.2.0`. Its published archive
+was checked against registry SHA-512 integrity before recording its SHA-256 pin.
+
+[npm-release]: https://github.com/npm/cli/releases/tag/v12.2.1
+[undici-release]: https://github.com/nodejs/undici/releases/tag/v6.29.1
+[redocly-release]: https://redocly.com/docs/cli/changelog
+[vitest-release]: https://github.com/vitest-dev/vitest/releases/tag/v5.0.5
 
 ### Retained versions and compatibility limits
 
-- [Go `1.27.2`](https://go.dev/dl/?mode=json), Vite `8.3.4`, TypeScript `7.0.2`,
-  the paired tsgolint source, npm `12.2.0`, and the remaining manifest tools
-  were already current on their selected compatible release lines.
+- [Go `1.27.2`](https://go.dev/dl/?mode=json), Node `26.12.0`, Vite `8.3.4`,
+  TypeScript `7.0.2`, the paired tsgolint source, and the remaining manifest
+  tools are current on their selected compatible release lines.
 - CPython remains on `3.14.8`; adopting the new `3.15` feature line requires
   separate compatibility qualification.
 - Oxfmt remains on `0.72.0`: [the `0.73.0` release][oxfmt-release] explicitly
@@ -65,8 +63,12 @@ indexes for both architectures; only curl changed in the direct package locks.
   remains on its existing major line and passes its image smoke contract.
 - pnpm remains on the official native release `12.11.2`. The npm registry
   contains newer version records, but both its `latest` tag and the GitHub
-  latest release still select `12.11.2`. Undici remains on the compatible
-  `6.29.0` line used by npm's reviewed replacement.
+  latest release still select `12.11.2`. Undici retains npm's compatible
+  `6.x` release line.
+- The existing Debian snapshot `20261015T030350Z` is retained. Signed indexes
+  at `20261016T023245Z` offer no newer direct base/network packages on AMD64
+  or ARM64. Native base, Go, Playwright, and PostgreSQL upgrade plans report
+  zero upgrades.
 - Debian, pgvector, Dockerfile frontend `1.28.0`, BuildKit `0.34.0`, the Syft
   generator `1.12.0`, Buildx `0.38.0`, and action pins still match upstream
   release metadata. Action tag commits were checked individually.
@@ -79,18 +81,25 @@ indexes for both architectures; only curl changed in the direct package locks.
 
 ## Security changes
 
-The stable Debian update resolves four curl advisories:
+The accepted PR 41 Debian update already resolves four curl advisories:
 [CVE-2026-8286][curl-8286], [CVE-2026-8927][curl-8927],
-[CVE-2026-92392][curl-92392], and [CVE-2026-8924][curl-8924]. Baseline scans
-reported 84 fixed-version matches across curl/libcurl in seven job images.
-The rebuilt images remove all 84 matches. PostgreSQL had none of these matches.
+[CVE-2026-92392][curl-92392], and [CVE-2026-8924][curl-8924]. Those fixes remain
+in place. No additional stable Debian package fix is available in this assessment.
 
-The repository already applies depth guards for [the braces advisory][braces]
-in the Node image. The host CI documentation job previously installed the
-unpatched package. It now applies the same checksum-guarded patch and runs the
-existing public API and Markdown CLI security regressions before linting.
-That regression failed on a clean unpatched install and passed after the patch.
-Package version `3.0.3` is preserved so scanners and SBOMs retain the advisory.
+Undici `6.29.1` fixes three HIGH and two MEDIUM issues in the npm replacement:
+TLS verification callback loss, TLS renegotiation errors, excessive content
+encodings, EventSource parser state, and WebSocket PONG buffering. The
+[upstream release][undici-release] lists the advisories. New runtime regressions
+use a trusted local TLS fixture to require custom certificate rejection and a
+malformed HTTP response to require controlled fetch rejection. Against `6.29.0`,
+the TLS callback is lost and the malformed response crashes the process despite
+a caught fetch rejection. Both regressions pass against the replacement `6.29.1`.
+These checks cover npm's installed module, not Node's separate built-in copy.
+
+The checksum-guarded [braces mitigation][braces] remains in the Node image and
+host CI Markdown checks. The public API and Markdown CLI regressions remain
+required. Package version `3.0.3` stays truthful so scanners and SBOMs retain the
+upstream advisory.
 
 [curl-8286]: https://security-tracker.debian.org/tracker/CVE-2026-8286
 [curl-8927]: https://security-tracker.debian.org/tracker/CVE-2026-8927
@@ -100,49 +109,48 @@ Package version `3.0.3` is preserved so scanners and SBOMs retain the advisory.
 
 ## Verification
 
-All eight images built and passed native ARM64 smoke checks. The checks cover
-non-root identity, caches, protected Git configuration, Go race execution,
-sqlc generation/CEL rules, npm replacements, Markdown math and depth guards,
-frontend compiler/lint/test commands, repository-local tool precedence,
-Chromium launch, PostgreSQL/pgvector, and Docker/Compose offline behavior.
-A new Goose smoke fixture verifies SQLite migration application, persisted data,
-and rollback after the Goose/libc updates. The capability helper's race tests
-pass during its image build.
+All eight images were rebuilt and passed native ARM64 smoke checks for this
+assessment. The checks cover non-root identity, caches, protected Git settings,
+Go race execution, Goose SQLite migrations and rollback, sqlc/CEL behavior,
+npm replacements, Markdown math and depth guards, frontend commands and local
+tool precedence, Chromium launch, PostgreSQL/pgvector, and Docker/Compose offline
+behavior. The new npm Undici regressions pass inside the rebuilt Node image.
 
-Static/release/publication/helper regressions, shell syntax, ShellCheck, shfmt,
-workflow validation, all eight Dockerfile checks, and Markdown lint pass.
-The workflow tests pass 3 cases, image-resolution tests pass 16 cases, and
-Linux utility tests pass 114 cases. Four network E2E cases pass. Real-daemon
-Compose fixtures pass HTTP behavior, intentional failure, and owned cleanup.
-The containerd utility suite passes 16 cases with its documented dangling-image
-case skipped; all 17 cases pass with classic overlay2, including that case.
-
-Standalone systemd verification returns success when its missing Docker service
-dependency is supplied as a test fixture. It reports the pre-existing warning
-`Unknown key 'ConditionPathIsSocket' in section [Unit], ignoring.` The service
-examples are unchanged from the baseline; correcting that unsupported condition
-requires separate host-adapter review. This check does not qualify deployment.
+A separate frontend fixture passes Vitest `5.0.5` with its paired V8 coverage
+provider and 100% line coverage of the fixture, TypeScript checking, and a Vite
+production build. Static/release/publication/helper regressions, ShellCheck,
+shfmt, JavaScript syntax, and Markdown security checks pass. Utility unit tests
+pass 114 cases in Linux; image-resolution tests pass 16 cases; workflow tests
+pass 3 cases.
 
 All image labels and final scans match manifest SHA-256:
 
-`56346731b530731d092704906853390cfde847ec9bdb3f3cf8a644de3dc693b3`
+`ce41588a79b4a4771e6ad27740633f60d8544974e6fdb8174d73a52c24bd73fe`
 
-Trivy `0.76.0` scans all severities and OS/library packages with vulnerability
-metadata updated at `2026-10-15T01:13:01Z`. The unchanged fixed HIGH/CRITICAL
-scan gate passes on all eight images. Baseline inventories used local builds;
-three matched the baseline manifest and five used the preceding local manifest.
-They establish the installed curl versions, not exact published-main layers.
+Trivy `0.76.0` scans all eight final images at all severities with vulnerability
+metadata updated at `2026-10-16T01:13:54Z`. The unchanged fixed HIGH/CRITICAL
+scan gate passes on every image. Baseline images for this assessment all match
+the accepted PR 41 manifest. The material fixed-version exception remains the
+legacy Buildx module described below.
 
-`govulncheck` `1.9.0` scans 30 distinct Go executables, including Go compiler
-tools, frontend native binaries, Buildx, the capability helper, and gosu. Its
-current feed reports modification time `2026-10-08T22:31:09Z`. No finding with
-a recorded fixed version remains in that feed. Binary findings do not establish
+`govulncheck` `1.9.0` scans 30 distinct Go executables from the final images,
+including compiler tools, frontend native binaries, Buildx, the capability
+helper, and gosu. Its feed reports modification time `2026-10-08T22:31:09Z`.
+No finding has a recorded fixed version. Binary findings do not establish
 runtime exploitability or complete source-level reachability.
 
-npm `12.2.0` audits report zero findings for the Node, npm-replacement, Vite,
-and Playwright locks. The Markdown lock reports five HIGH dependency entries
-from the single braces advisory. Lockfile auditing cannot recognize the local
-build-time patch; its behavior is checked separately.
+npm `12.2.1` audits report zero findings for the Node, npm-replacement, Vite,
+and Playwright locks. The Markdown lock still reports five HIGH dependency
+entries from the single braces advisory; lock auditing cannot recognize the
+verified local patch. The audits did not report the new Undici issues even
+before the update. Upstream release evidence and behavior regressions establish
+the npm fix; zero audit findings do not establish complete security coverage.
+
+The Docker Engine cleanup/Compose E2E, network E2E, and systemd host-adapter
+suites from `task_000524` were not repeated. Their implementation, daemon pin,
+Go tools, Python, and OS package versions are unchanged. That prior systemd
+check reports an ignored `ConditionPathIsSocket` key; host deployment still
+requires separate correction and qualification.
 
 ## Remaining findings
 
@@ -151,28 +159,17 @@ below explain material exceptions and follow-up decisions from this assessment.
 No scan inventory is stored in the repository. A gate pass does not establish
 that unfixed findings are absent or that reported code is unreachable.
 
-- The only remaining Trivy match with a fixed version is MEDIUM
-  [CVE-2026-33997][docker-advisory] in Buildx's legacy
-  `github.com/docker/docker v28.5.2+incompatible` module. The advisory concerns
-  Docker Engine plugin privilege validation and names Engine `29.3.1` as fixed.
-  The legacy module's latest release is still `v28.5.2+incompatible`; querying
-  its `v29.3.1+incompatible` module returns 404. The utility image contains a
-  client, not a Docker daemon. A module migration or qualified backport remains
-  upstream work; this report neither suppresses the finding nor claims the
-  embedded code is fixed.
-- The Go feed retains [GO-2026-5932][openpgp] in the unmaintained OpenPGP
-  packages and five legacy Docker-module advisories in Buildx. Current module
-  releases provide no recorded compatible fix. Symbol detection is preserved
-  by the scanner; runtime reachability remains unqualified.
-- Critical OS findings remain against `gawk`, `libxml2`, and `linux-libc-dev`,
-  with no fixed version recorded for the installed stable packages. The latter
-  is userspace development headers and does not describe the host's kernel.
-  These and other unfixed OS findings remain review risks.
-- `http-cache-semantics` `4.3.0` still reproduces the shared-cache Set-Cookie /
-  `max-stale` scenario reproduced below.
-  The installed npm caller still explicitly uses `shared: false`. Retain the
-  manual [CVE-2026-93748][cache-advisory] observation for other callers; the
-  package upgrade is not proof that this advisory is resolved.
+| Finding | Component | Assessment and required action |
+| --- | --- | --- |
+| [GHSA-xjj6-f33q-929c][undici-encoding] | Node `26.12.0`, built-in Undici `8.11.2` | Built-in `fetch` crashes after a caught rejection on excessive content codings and early close. A disposable-container probe confirms an unhandled `UND_ERR_SOCKET`. Upstream Undici fixes start at `8.12.2`; no newer stable Node `26.x` archive is published. Adopt and qualify a fixed Node release. npm's replacement does not change this runtime copy. |
+| MEDIUM [CVE-2026-33997][docker-advisory] | Buildx's `github.com/docker/docker v28.5.2+incompatible` | The only Trivy match with a fixed version names Engine `29.3.1`. That release is unavailable on the legacy module path; its latest version is still `v28.5.2+incompatible`. The image contains a client, not a daemon, but embedded code is not claimed fixed. A qualified upstream migration or backport remains needed. |
+| [GO-2026-5932][openpgp] and legacy Docker advisories | Unmaintained OpenPGP packages and Buildx | The Go feed records no compatible fixed version. Binary symbol detection does not establish runtime reachability. Retain upstream follow-up. |
+| Critical OS advisories | Stable OS packages | See context below. |
+| [CVE-2026-93748][cache-advisory] | `http-cache-semantics 4.3.0` | The shared-cache Set-Cookie / `max-stale` scenario still reproduces. npm's installed caller uses `shared: false`. Retain the observation for other callers; the version update alone does not establish a fix. |
+
+The Node runtime finding is established by direct reproduction and upstream
+advisory ranges. Package-lock and image scans do not establish its absence.
+No new vulnerability ignore rule is added.
 
 ### Critical OS finding context
 
@@ -204,7 +201,7 @@ maximum age of zero. Run it with the installed npm dependency in `ci-node`:
 
 ```javascript
 const CachePolicy = require(
-  '/opt/ci-tools/npm/12.2.0/node_modules/http-cache-semantics'
+  '/opt/ci-tools/npm/12.2.1/node_modules/http-cache-semantics'
 );
 const request = {
   url: 'https://registry.example/package', method: 'GET', headers: {}
@@ -225,6 +222,7 @@ The installed npm `make-fetch-happen` caller explicitly selects `shared: false`.
 Retain this explanation even when a scanner omits the library version from
 its advisory range. No new vulnerability ignore rule is added.
 
+[undici-encoding]: https://github.com/nodejs/undici/security/advisories/GHSA-xjj6-f33q-929c
 [docker-advisory]: https://github.com/moby/moby/security/advisories/GHSA-pxq6-2prw-chj9
 [openpgp]: https://pkg.go.dev/vuln/GO-2026-5932
 [cache-advisory]: https://github.com/advisories/GHSA-ch52-4w7c-c8xp
