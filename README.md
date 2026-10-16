@@ -1,8 +1,6 @@
 # MyFlow CI Images
 
-`ci-images` defines the reusable Linux job and service images used by MyFlow
-GitHub Actions workflows. The images centralize stable runtimes and CI tooling
-without making them authoritative for application dependencies.
+`ci-images` defines the reusable Linux job and service images used by MyFlow GitHub Actions workflows. The images centralize stable runtimes and CI tooling without making them authoritative for application dependencies.
 
 ## Image hierarchy
 
@@ -20,35 +18,20 @@ pgvector/pgvector:0.8.7-pg18-trixie@<digest>
 └── ci-postgres
 ```
 
-`ci-base` builds CPython 3.14.8 from its checksum-pinned official source
-release with the reviewed Debian snapshot.
-`ci-node` imports Node 26.12.0 from its checksum-pinned official Linux archive.
+`ci-base` builds CPython 3.14.8 from its checksum-pinned official source release with the reviewed Debian snapshot. `ci-node` imports Node 26.12.0 from its checksum-pinned official Linux archive.
 
-- `ghcr.io/myflow-xyz/ci-base`: operating-system utilities, Python 3.14.8
-  standard-library scripting, OSV-Scanner, Trivy, and runtime-independent
-  repository policy tools.
-- `ghcr.io/myflow-xyz/ci-go`: Go toolchain, native race-test prerequisites,
-  and reusable Go CI executables.
-- `ghcr.io/myflow-xyz/ci-utils`: inherited base tools, pinned Buildx, and guarded
-  Docker cleanup. Its build reuses `ci-go`; its runtime inherits `ci-base`.
-- `ghcr.io/myflow-xyz/ci-net`: network diagnostics and isolated network tests,
-  with explicit namespace and capability constraints in its
-  [image contract](docs/images/net.md).
-- `ghcr.io/myflow-xyz/ci-node`: generic Node.js, Markdown, and OpenAPI jobs
-  that do not require a frontend toolchain.
-- `ghcr.io/myflow-xyz/ci-vite`: TypeScript, Vite, Vitest, Oxlint, and Oxfmt
-  quality and build jobs.
-- `ghcr.io/myflow-xyz/ci-playwright`: Vite jobs that also require a
-  version-matched Chromium browser.
-- `ghcr.io/myflow-xyz/ci-postgres`: PostgreSQL 18 service jobs requiring
-  pgvector and PostgreSQL contrib extensions.
+- `ghcr.io/myflow-xyz/ci-base`: operating-system utilities, Python 3.14.8 standard-library scripting, OSV-Scanner, Trivy, and runtime-independent repository policy tools.
+- `ghcr.io/myflow-xyz/ci-go`: Go toolchain, native race-test prerequisites, and reusable Go CI executables.
+- `ghcr.io/myflow-xyz/ci-utils`: inherited base tools, pinned Buildx, and guarded Docker cleanup. Its build reuses `ci-go`; its runtime inherits `ci-base`.
+- `ghcr.io/myflow-xyz/ci-net`: network diagnostics and isolated network tests, with explicit namespace and capability constraints in its [image contract](docs/images/net.md).
+- `ghcr.io/myflow-xyz/ci-node`: generic Node.js, Markdown, and OpenAPI jobs that do not require a frontend toolchain.
+- `ghcr.io/myflow-xyz/ci-vite`: TypeScript, Vite, Vitest, Oxlint, and Oxfmt quality and build jobs.
+- `ghcr.io/myflow-xyz/ci-playwright`: Vite jobs that also require a version-matched Chromium browser.
+- `ghcr.io/myflow-xyz/ci-postgres`: PostgreSQL 18 service jobs requiring pgvector and PostgreSQL contrib extensions.
 
-The seven job images support GitHub Actions `jobs.<job_id>.container`.
-`ci-postgres` is an independent service-image lineage and never inherits from a
-job image.
+The seven job images support GitHub Actions `jobs.<job_id>.container`. `ci-postgres` is an independent service-image lineage and never inherits from a job image.
 
-Repository-owned Bash scripts require Bash 5.0 or newer. `ci-base` and its job
-image descendants provide Bash 5.3.20.
+Repository-owned Bash scripts require Bash 5.0 or newer. `ci-base` and its job image descendants provide Bash 5.3.20.
 
 ## Repository structure
 
@@ -68,38 +51,22 @@ image descendants provide Bash 5.3.20.
     └── workflows/    # verification and GHCR publication
 ```
 
-Browse [the documentation index](docs/index.md) for detailed image contracts.
-Use [the usage guide](docs/usage.md) to select and pin an image, and follow
-[the release guide](docs/release.md) when publishing a stable suite version.
+Browse [the documentation index](docs/index.md) for detailed image contracts. Use [the usage guide](docs/usage.md) to select and pin an image, and follow [the release guide](docs/release.md) when publishing a stable suite version.
 
 ## Local image verification
 
-After building a target with `tests/build-local-image.sh <target>`, use
-`tests/scan-local-image.sh <target>` to scan its local `ci-<target>:test` image
-before pushing. The helper requires Trivy in the developer environment,
-restricts the image source to the local Docker daemon, and applies the publish
-policy: fixed HIGH or CRITICAL operating-system and library vulnerabilities
-fail the scan. Use `all` to scan all eight local images. Local verification covers
-the host platform; CI remains responsible for both published architectures.
+After building a target with `tests/build-local-image.sh <target>`, use `tests/scan-local-image.sh <target>` to scan its local `ci-<target>:test` image before pushing. The helper requires Trivy in the developer environment, restricts the image source to the local Docker daemon, and applies the publish policy: fixed HIGH or CRITICAL operating-system and library vulnerabilities fail the scan. Use `all` to scan all eight local images. Local verification covers the host platform; CI remains responsible for both published architectures.
 
 ## Design boundaries
 
 - Application lockfiles and Go modules remain authoritative.
 - Published images and upstream base images are consumed by immutable digest.
-- Direct downloads are checksum-verified. Direct Debian packages and npm
-  dependency graphs use committed lockfiles, and Go executables are built from
-  exact module versions or source commits with reviewed security overrides.
-- Images contain no application source, credentials, generated output, or
-  mutable service data.
-- Job images run as the non-root `ci` user with UID `1001` for GitHub-hosted
-  job-container compatibility and primary GID `2001`. Self-hosted bind mounts
-  delegate write access through the dedicated host group `mfci` with GID
-  `2001`, rather than matching the runner UID or using root.
+- Direct downloads are checksum-verified. Direct Debian packages and npm dependency graphs use committed lockfiles, and Go executables are built from exact module versions or source commits with reviewed security overrides.
+- Images contain no application source, credentials, generated output, or mutable service data.
+- Job images run as the non-root `ci` user with UID `1001` for GitHub-hosted job-container compatibility and primary GID `2001`. Self-hosted bind mounts delegate write access through the dedicated host group `mfci` with GID `2001`, rather than matching the runner UID or using root.
 - Job images do not imply Docker daemon access.
-- Writable caches are mounted explicitly and partitioned by trust domain,
-  runtime, architecture, and dependency lock hash.
+- Writable caches are mounted explicitly and partitioned by trust domain, runtime, architecture, and dependency lock hash.
 
 ## License
 
-This repository is licensed under the [GNU Affero General Public License
-v3.0](LICENSE).
+This repository is licensed under the [GNU Affero General Public License v3.0](LICENSE).

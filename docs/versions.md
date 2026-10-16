@@ -1,24 +1,16 @@
 # Image version inventory
 
-This page provides one view of the explicitly pinned runtimes and first-order
-tools owned by each image. Child-image sections do not repeat inherited tools.
-Direct Debian packages are listed; transitive packages resolved from the
-reviewed snapshot are intentionally omitted. The
-[version manifest](../manifests/versions.json) and its referenced lockfiles
-remain authoritative for source revisions, dependency overrides, package
-revisions, checksums, and upstream image digests.
+This page provides one view of the explicitly pinned runtimes and first-order tools owned by each image. Child-image sections do not repeat inherited tools. Direct Debian packages are listed; transitive packages resolved from the reviewed snapshot are intentionally omitted. The [version manifest](../manifests/versions.json) and its referenced lockfiles remain authoritative for source revisions, dependency overrides, package revisions, checksums, and upstream image digests.
 
 ## `ci-utils`
 
-The runtime inherits `ci-base`. Buildx and the capability helper reuse the
-existing `ci-go` toolchain; Go is not installed in the utility runtime.
+The runtime inherits `ci-base`. Buildx and the capability helper reuse the existing `ci-go` toolchain; Go is not installed in the utility runtime.
 
 | Component | Version |
 | --- | --- |
 | `Docker Buildx` | `0.38.0` |
 
-Cleanup and its internal capability helper are repository-owned commands tied
-to the suite source revision, with no independent release stream.
+Cleanup and its internal capability helper are repository-owned commands tied to the suite source revision, with no independent release stream.
 
 ## `ci-base`
 
@@ -44,13 +36,7 @@ to the suite source revision, with no independent release stream.
 
 ### Direct Debian packages
 
-These packages are installed at exact revisions from the pinned Debian
-snapshot. Transitive packages remain snapshot-controlled and are covered by
-the image vulnerability scan. The Debian `git` package supplies system
-integration files; the exposed Git executable is the source-built version
-listed above. The Debian `bash` package remains installed for package
-management, with its binary diverted; the exposed Bash is the patched upstream
-version listed above.
+These packages are installed at exact revisions from the pinned Debian snapshot. Transitive packages remain snapshot-controlled and are covered by the image vulnerability scan. The Debian `git` package supplies system integration files; the exposed Git executable is the source-built version listed above. The Debian `bash` package remains installed for package management, with its binary diverted; the exposed Bash is the patched upstream version listed above.
 
 | Package | Version |
 | --- | --- |
@@ -82,9 +68,7 @@ version listed above.
 
 ## `ci-net`
 
-The runtime inherits `ci-base` and adds these snapshot-pinned packages on both
-architectures. WireGuard kernel support is a Docker host prerequisite; no kernel
-image or `wireguard` metapackage is installed.
+The runtime inherits `ci-base` and adds these snapshot-pinned packages on both architectures. WireGuard kernel support is a Docker host prerequisite; no kernel image or `wireguard` metapackage is installed.
 
 | Package | Version |
 | --- | --- |
