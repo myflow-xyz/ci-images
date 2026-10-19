@@ -8,9 +8,9 @@ The initial image contract includes:
 
 - Node.js 26.12.0 imported from checksum-pinned official Linux archives;
 - npm and npx 12.2.1 from a hash-verified release artifact;
-- pnpm 12.11.2 from hash-verified native Linux release artifacts;
+- pnpm 12.14.0 from hash-verified native Linux release artifacts;
 - `markdownlint-cli2` 0.23.3;
-- Redocly CLI 2.64.0 for OpenAPI validation;
+- Redocly CLI 2.64.1 for OpenAPI validation;
 - explicit npm and pnpm cache paths.
 
 The npm release artifact is hash-verified, and its reviewed bundled dependency replacements are installed from a committed lockfile. They include the current compatible `undici` 6.x release and the fixed `postcss-selector-parser` release. The `http-cache-semantics` replacement uses the current compatible 4.3.0 release. Its remaining advisory scenario is recorded in the [stable toolchain qualification][security]. The Markdown tool lockfile overrides `smol-toml` and KaTeX with their reviewed fixed releases. The architecture-matched pnpm archive is installed independently of npm and includes its native executable. Other Node tool dependency trees are installed from committed lockfiles into immutable versioned directories. Stable command links are exposed through `/opt/ci-tools/bin`.
@@ -42,7 +42,7 @@ npm cache=/var/cache/npm
 pnpm store=/var/cache/pnpm/store
 ```
 
-pnpm creates a store-format directory below the configured store root. pnpm 12.11.2 retains the compatible `v11` store format; the manifest records the CLI and store-format versions independently. The caches contain package content only. Do not persist `node_modules`, build output, or a repository workspace.
+pnpm creates a store-format directory below the configured store root. pnpm 12.14.0 retains the compatible `v11` store format; the manifest records the CLI and store-format versions independently. The caches contain package content only. Do not persist `node_modules`, build output, or a repository workspace.
 
 ## Usage
 

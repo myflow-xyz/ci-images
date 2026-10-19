@@ -1,6 +1,6 @@
 # Stable toolchain maintenance and security qualification
 
-This is the maintained qualification guide and latest verification record. Keep scan procedures, compatibility decisions, and material exceptions here. Generate current findings with the scanners; do not commit generated scan inventories. Record the review date, source revision, and manifest hash with each assessment. Previous assessments remain in Git history.
+This page retains the previously accepted qualification record. The [manifest](../../manifests/versions.json) and lockfiles provide current pins. Record new maintenance findings, verification evidence, and compatibility decisions in the PMem task. Generate current findings with the scanners; keep generated scan inventories outside the repository.
 
 PMem `task_000533` requalifies the accepted maintenance from `task_000524` at `develop` commit `d780a25e0c26b8ebaf6ab3b94af384468b60f44f`. Stable `main` remains at `c9250a386f1d8ed183c25311a39e307949270624`; PR 41's compatible updates are already merged into `develop`. This assessment uses upstream metadata and vulnerability feeds retrieved on 2026-10-15 America/Los_Angeles (2026-10-16 UTC). It preserves runtime release lines, image names, user/cache contracts, and release policy. Local qualification does not confirm stable promotion or publication.
 
