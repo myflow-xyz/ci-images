@@ -9,7 +9,7 @@
     "uid": 1001,
     "gid": 2001
   },
-  "debian_snapshot": "20261015T030350Z",
+  "debian_snapshot": "20261018T202950Z",
   "upstream_images": {
     "dockerfile_frontend": {
       "reference": "docker.io/docker/dockerfile:1.28.0",
@@ -332,25 +332,25 @@
           }
         }
       },
-      "bundle_version": "14",
+      "bundle_version": "15",
       "lockfile": "images/node/npm/package-lock.json",
-      "lockfile_sha256": "46215dc16440942efcedeb53e2bf87e3f58cc0cddecaa47fdd41f7623d95be05",
+      "lockfile_sha256": "28935fbac2b3c98ec51490f2127b4a041b827ce76bace394c5dc186214c84686",
       "pnpm": {
-        "version": "12.11.2",
+        "version": "12.12.0",
         "store_version": "11",
         "source": "https://github.com/pnpm/pnpm",
         "assets": {
           "amd64": {
-            "url": "https://github.com/pnpm/pnpm/releases/download/v12.11.2/pnpm-linux-x64.tar.gz",
-            "sha256": "358f30541b42371360c0d48a8daddc0c0850a90c36fcbea598032a9850e2c9ab"
+            "url": "https://github.com/pnpm/pnpm/releases/download/v12.12.0/pnpm-linux-x64.tar.gz",
+            "sha256": "20d68d53bfa89ba9cf727c1ffd0d3c1c3193e933d097b36e7f29f743257713d9"
           },
           "arm64": {
-            "url": "https://github.com/pnpm/pnpm/releases/download/v12.11.2/pnpm-linux-arm64.tar.gz",
-            "sha256": "ad444fa06d7ff344d74ba1e4933f2ed71cc6357cc2d33707a5c60958b7d83085"
+            "url": "https://github.com/pnpm/pnpm/releases/download/v12.12.0/pnpm-linux-arm64.tar.gz",
+            "sha256": "cf3e59a576d3561b721ab214a8abde7a37982777001c4ba75019edeed1098ae6"
           }
         }
       },
-      "redocly": "2.64.0",
+      "redocly": "2.64.1",
       "source": "https://nodejs.org/dist/",
       "assets": {
         "amd64": {
@@ -364,9 +364,9 @@
       }
     },
     "vite": {
-      "bundle_version": "16",
+      "bundle_version": "17",
       "lockfile": "images/vite/npm/package-lock.json",
-      "lockfile_sha256": "b9abc1f05a5b7b81eae86c13f158d83e83024f9475f9b479e3eeaf064370a307",
+      "lockfile_sha256": "ff88f4372017e0c2a2d13e5befddb5f8c6479be6a52f9f0473c75a7d637bb66f",
       "typescript": "7.0.2",
       "typescript_source": {
         "repository": "https://github.com/microsoft/typescript-go",
