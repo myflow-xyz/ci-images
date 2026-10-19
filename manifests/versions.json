@@ -336,17 +336,17 @@
       "lockfile": "images/node/npm/package-lock.json",
       "lockfile_sha256": "28935fbac2b3c98ec51490f2127b4a041b827ce76bace394c5dc186214c84686",
       "pnpm": {
-        "version": "12.12.0",
+        "version": "12.14.0",
         "store_version": "11",
         "source": "https://github.com/pnpm/pnpm",
         "assets": {
           "amd64": {
-            "url": "https://github.com/pnpm/pnpm/releases/download/v12.12.0/pnpm-linux-x64.tar.gz",
-            "sha256": "20d68d53bfa89ba9cf727c1ffd0d3c1c3193e933d097b36e7f29f743257713d9"
+            "url": "https://github.com/pnpm/pnpm/releases/download/v12.14.0/pnpm-linux-x64.tar.gz",
+            "sha256": "3910c3852136bed5bc1511b9137a45fd4357ed6b3970d9d08893641e9005867e"
           },
           "arm64": {
-            "url": "https://github.com/pnpm/pnpm/releases/download/v12.12.0/pnpm-linux-arm64.tar.gz",
-            "sha256": "cf3e59a576d3561b721ab214a8abde7a37982777001c4ba75019edeed1098ae6"
+            "url": "https://github.com/pnpm/pnpm/releases/download/v12.14.0/pnpm-linux-arm64.tar.gz",
+            "sha256": "cfc780b9e690549e6633e1045fb1fb6ef84e390711e2099e6ccbae91c32456ea"
           }
         }
       },
