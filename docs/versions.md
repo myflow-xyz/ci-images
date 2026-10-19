@@ -86,7 +86,7 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | `Hurl` | `8.0.1` |
 | `sqlc` | `1.31.1` |
 | `goose` | `3.29.0` |
-| `golangci-lint` | `2.14.0` |
+| `golangci-lint` | `2.15.0` |
 | `goimports` | `0.52.0` |
 | `govulncheck` | `1.9.0` |
 
@@ -112,7 +112,7 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | `@vitest/coverage-v8` | `5.0.5` |
 | `oxlint` | `1.88.0` |
 | `oxlint-tsgolint` | `7.0.2004` |
-| `oxfmt` | `0.72.0` |
+| `oxfmt` | `0.73.0` |
 
 ## `ci-playwright`
 
