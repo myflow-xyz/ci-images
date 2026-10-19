@@ -9,7 +9,7 @@
     "uid": 1001,
     "gid": 2001
   },
-  "debian_snapshot": "20261015T030350Z",
+  "debian_snapshot": "20261018T202950Z",
   "upstream_images": {
     "dockerfile_frontend": {
       "reference": "docker.io/docker/dockerfile:1.28.0",
@@ -282,7 +282,7 @@
       },
       "golangci_lint": {
         "module": "github.com/golangci/golangci-lint/v2/cmd/golangci-lint",
-        "version": "v2.14.0",
+        "version": "v2.15.0",
         "dependency_overrides": {
           "golang.org/x/text": "v0.43.0"
         }
@@ -332,25 +332,25 @@
           }
         }
       },
-      "bundle_version": "14",
+      "bundle_version": "15",
       "lockfile": "images/node/npm/package-lock.json",
-      "lockfile_sha256": "46215dc16440942efcedeb53e2bf87e3f58cc0cddecaa47fdd41f7623d95be05",
+      "lockfile_sha256": "28935fbac2b3c98ec51490f2127b4a041b827ce76bace394c5dc186214c84686",
       "pnpm": {
-        "version": "12.11.2",
+        "version": "12.14.0",
         "store_version": "11",
         "source": "https://github.com/pnpm/pnpm",
         "assets": {
           "amd64": {
-            "url": "https://github.com/pnpm/pnpm/releases/download/v12.11.2/pnpm-linux-x64.tar.gz",
-            "sha256": "358f30541b42371360c0d48a8daddc0c0850a90c36fcbea598032a9850e2c9ab"
+            "url": "https://github.com/pnpm/pnpm/releases/download/v12.14.0/pnpm-linux-x64.tar.gz",
+            "sha256": "3910c3852136bed5bc1511b9137a45fd4357ed6b3970d9d08893641e9005867e"
           },
           "arm64": {
-            "url": "https://github.com/pnpm/pnpm/releases/download/v12.11.2/pnpm-linux-arm64.tar.gz",
-            "sha256": "ad444fa06d7ff344d74ba1e4933f2ed71cc6357cc2d33707a5c60958b7d83085"
+            "url": "https://github.com/pnpm/pnpm/releases/download/v12.14.0/pnpm-linux-arm64.tar.gz",
+            "sha256": "cfc780b9e690549e6633e1045fb1fb6ef84e390711e2099e6ccbae91c32456ea"
           }
         }
       },
-      "redocly": "2.64.0",
+      "redocly": "2.64.1",
       "source": "https://nodejs.org/dist/",
       "assets": {
         "amd64": {
@@ -364,9 +364,9 @@
       }
     },
     "vite": {
-      "bundle_version": "16",
+      "bundle_version": "18",
       "lockfile": "images/vite/npm/package-lock.json",
-      "lockfile_sha256": "b9abc1f05a5b7b81eae86c13f158d83e83024f9475f9b479e3eeaf064370a307",
+      "lockfile_sha256": "d71f49880d7053852d8469753aa121211e1e413ae7db1f7380ddc2f0f536ef37",
       "typescript": "7.0.2",
       "typescript_source": {
         "repository": "https://github.com/microsoft/typescript-go",
@@ -391,7 +391,7 @@
           "golang.org/x/text": "v0.43.0"
         }
       },
-      "oxfmt": "0.72.0"
+      "oxfmt": "0.73.0"
     },
     "playwright": {
       "version": "1.64.1",
