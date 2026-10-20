@@ -6,7 +6,7 @@
 
 The initial image contract includes:
 
-- Go 1.27.2, installed from the official per-architecture archive after SHA-256 verification, with local toolchain selection and the JSON v2 implementation enabled by default;
+- Go 1.27.3, installed from the official per-architecture archive after SHA-256 verification, with local toolchain selection and the JSON v2 implementation enabled by default;
 - a C compiler, libc development headers, and native build prerequisites for race-enabled tests;
 - Go's standard build, format, vet, test, and coverage commands;
 - HTTP/API end-to-end testing with Hurl 8.0.1 and request formatting with `hurlfmt`;

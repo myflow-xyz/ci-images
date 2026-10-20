@@ -133,6 +133,7 @@ RUN set -eu; \
     tar -xJf /var/tmp/python.tar.xz --strip-components=1 -C /var/tmp/python; \
     cd /var/tmp/python; \
     ./configure --prefix=/usr/local --enable-shared \
+      --without-system-libmpdec \
       --enable-loadable-sqlite-extensions --enable-option-checking=fatal \
       --with-ensurepip=no; \
     make -j2; \
