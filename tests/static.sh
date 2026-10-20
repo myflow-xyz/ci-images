@@ -242,7 +242,7 @@ jq --exit-status '
     $jq.assets.arm64.url ==
       ("https://github.com/jqlang/jq/releases/download/jq-" +
        $jq.version + "/jq-linux-arm64")) and
-  (.tools.base.python.version | test("^3\\.14\\.[0-9]+$")) and
+  (.tools.base.python.version | test("^3\\.15\\.[0-9]+$")) and
   .tools.base.python.asset.url ==
     ("https://www.python.org/ftp/python/" + .tools.base.python.version +
      "/Python-" + .tools.base.python.version + ".tar.xz") and

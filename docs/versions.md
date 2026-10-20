@@ -20,7 +20,7 @@ Cleanup and its internal capability helper are repository-owned commands tied to
 | `Git` | `2.56.0` |
 | `Git LFS` | `3.8.0` |
 | `GitHub CLI` | `2.102.0` |
-| `CPython` | `3.14.8` |
+| `CPython` | `3.15.0` |
 | `Docker CLI` | `29.9.1` |
 | `Docker Compose` | `5.6.0` |
 | `actionlint` | `1.7.12` |
@@ -82,7 +82,7 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 
 | Component | Version |
 | --- | --- |
-| `Go` | `1.27.2` |
+| `Go` | `1.27.3` |
 | `Hurl` | `8.0.1` |
 | `sqlc` | `1.31.1` |
 | `goose` | `3.29.0` |
@@ -98,7 +98,7 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | `npm` | `12.2.1` |
 | `pnpm` | `12.14.0` |
 | `markdownlint-cli2` | `0.23.3` |
-| `@redocly/cli` | `2.64.1` |
+| `@redocly/cli` | `2.66.0` |
 
 ## `ci-vite`
 
@@ -110,9 +110,9 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | `vite` | `8.3.4` |
 | `vitest` | `5.0.5` |
 | `@vitest/coverage-v8` | `5.0.5` |
-| `oxlint` | `1.88.0` |
+| `oxlint` | `1.89.0` |
 | `oxlint-tsgolint` | `7.0.2004` |
-| `oxfmt` | `0.73.0` |
+| `oxfmt` | `0.74.0` |
 
 ## `ci-playwright`
 
