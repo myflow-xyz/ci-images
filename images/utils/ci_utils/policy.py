@@ -350,7 +350,8 @@ def network_decision(item, policy, now, referenced=()):
     return _age(item, policy["network_min_age"], now)
 
 
-def image_decision(item, policy, now, referenced=(), protected=()):
+def image_safety(item, policy, referenced=(), protected=()):
+    """Shared protection and reference checks, independent of retention policy."""
     if (
         not isinstance(item, dict)
         or not isinstance(item.get("Id"), str)
@@ -390,6 +391,18 @@ def image_decision(item, policy, now, referenced=(), protected=()):
         return Decision(False, "protected")
     if item["Id"] in referenced:
         return Decision(False, "referenced")
+    return Decision(True, "eligible")
+
+
+def image_decision(item, policy, now, referenced=(), protected=()):
+    safety = image_safety(item, policy, referenced, protected)
+    if not safety.eligible:
+        return safety
+    aliases = [
+        reference_name(ref)
+        for ref in (item["RepoTags"] or []) + (item["RepoDigests"] or [])
+        if ref not in ("<none>:<none>", "<none>@<none>")
+    ]
     scope = policy["image_scope"]
     if scope["mode"] != "daemon-wide" and item["Id"] not in scope["ids"]:
         repos = {repository(ref) for ref in scope["repositories"]}

@@ -148,6 +148,21 @@ sudo /usr/local/libexec/ci-utils/ci-docker-maintenance apply --profile weekly
 
 The launcher passes a read-only policy snapshot and host observation, the selected socket, and a narrowly scoped lease socket. It uses a non-root identity, actual socket group, no network, read-only root, bounded scratch space, dropped capabilities, and no-new-privileges. It removes its stopped container after known completion without removing volumes. On uncertain completion it retains the container identity for investigation. It never changes socket permissions, relabels host paths, stops workloads, resets a builder, or restarts Docker.
 
+## Remove local suite versions
+
+Use the same installed adapter, trusted configuration, pre-pulled utility image, and participant integration for explicit version retirement. Preview first, then apply the same version list:
+
+```sh
+sudo /usr/local/libexec/ci-utils/ci-docker-maintenance \
+  --config /etc/ci-utils/host.json remove-images --versions 0.0.1
+sudo /usr/local/libexec/ci-utils/ci-docker-maintenance \
+  --config /etc/ci-utils/host.json remove-images --versions 0.0.1,0.0.2,0.0.3
+sudo /usr/local/libexec/ci-utils/ci-docker-maintenance \
+  --config /etc/ci-utils/host.json remove-images --versions 0.0.1,0.0.2,0.0.3 --apply
+```
+
+The adapter launches `ci-remove-images` in its protected utility container. Apply waits for the exclusive maintenance lease (`--wait 15m` by default), bound to the selected daemon, policy, image digest, and version list. It removes only eligible exact suite tags, preserves images referenced by any container or protected through any alias, and leaves unselected tags intact. Retention age and pressure do not apply to explicit retirement. See the [command contract](images/utils.md#remove-explicit-suite-versions). Unknown completion retains the admission block and requires the recovery below.
+
 ## Reconcile uncertain completion
 
 Disable new dispatch through every participant and inspect `status` plus the retained job/maintenance record and logs. Establish that the selected daemon has finished the relevant work. A dead client, an unlocked file, or a stopped maintenance container alone does not prove that backend pruning/builds completed. Keep admission blocked if that evidence is unavailable.

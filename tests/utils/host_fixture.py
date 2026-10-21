@@ -2,6 +2,7 @@
 
 import contextlib
 import json
+import pathlib
 import socketserver
 import subprocess
 import sys
@@ -105,7 +106,13 @@ sys.exit(response["status"])
                 return {"status": 125, "stdout": ""}
             self.create = args
             image_position = args.index(DIGEST)
+            self.entrypoint = pathlib.Path(
+                args[args.index("--entrypoint") + 1]
+            ).name
             self.application_args = args[image_position + 1 :]
+            if self.mode == "wrong-versions":
+                position = self.application_args.index("--versions") + 1
+                self.application_args[position] = "0.0.2"
             mounts = {}
             self.environment = {
                 "PATH": "/usr/local/bin:/usr/bin:/bin",
@@ -135,7 +142,7 @@ sys.exit(response["status"])
                 [
                     sys.executable,
                     "-B",
-                    str(ROOT / "images/utils/bin/ci-docker-cleanup"),
+                    str(ROOT / "images/utils/bin" / self.entrypoint),
                     *self.application_args,
                 ],
                 stdout=self.output,

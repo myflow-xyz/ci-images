@@ -510,6 +510,23 @@ def interrupted(signum, frame):
     )
 
 
+def check_environment():
+    for key in (
+        "DOCKER_HOST",
+        "DOCKER_CONTEXT",
+        "DOCKER_API_VERSION",
+        "DOCKER_CONFIG",
+        "DOCKER_TLS_VERIFY",
+        "DOCKER_CERT_PATH",
+        "BUILDX_BUILDER",
+        "BUILDX_CONFIG",
+    ):
+        if os.environ.get(key):
+            raise InvalidPolicy(
+                f"inherited {key} conflicts with explicit maintenance configuration"
+            )
+
+
 def main(argv=None):
     report = Report()
     code = 0
@@ -545,20 +562,7 @@ def main(argv=None):
             )
         }
         policy = load_policy(args.config, os.environ, overrides)
-        for key in (
-            "DOCKER_HOST",
-            "DOCKER_CONTEXT",
-            "DOCKER_API_VERSION",
-            "DOCKER_CONFIG",
-            "DOCKER_TLS_VERIFY",
-            "DOCKER_CERT_PATH",
-            "BUILDX_BUILDER",
-            "BUILDX_CONFIG",
-        ):
-            if os.environ.get(key):
-                raise InvalidPolicy(
-                    f"inherited {key} conflicts with explicit maintenance configuration"
-                )
+        check_environment()
         if args.operation == "apply" and not policy["expected_daemon_id"]:
             raise InvalidPolicy("apply requires expected_daemon_id")
         policy_hash = hashlib.sha256(
