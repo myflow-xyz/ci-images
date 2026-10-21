@@ -444,6 +444,97 @@ class DockerE2E(unittest.TestCase):
                 )
         self.assertEqual(decisions, [("excluded", "multi-tag-image-unsupported")] * 2)
 
+    def test_explicit_versions_preserve_unselected_and_protected_aliases(self):
+        original, identifier = self.build("version-retirement")
+        selected = [
+            "ghcr.io/myflow-xyz/ci-go:0.0.1",
+            "ghcr.io/myflow-xyz/ci-go:v0.0.1",
+            "ghcr.io/myflow-xyz/ci-node:0.0.2",
+        ]
+        retained = [
+            original,
+            "ghcr.io/myflow-xyz/ci-go:0.0.10",
+            "ghcr.io/myflow-xyz/ci-go:latest",
+            "example.test/ci-go:0.0.1",
+        ]
+        for reference in selected + retained[1:]:
+            docker("tag", original, reference)
+        keep, _ = self.build("version-protected")
+        protected = "ghcr.io/myflow-xyz/ci-utils:0.0.1"
+        docker("tag", keep, protected)
+        self.policy["protected"]["image_references"] = [keep]
+        self.save()
+        def inventory():
+            engine = Engine(SOCKET)
+            images = {
+                item["Id"]: (
+                    sorted(item["RepoTags"] or []),
+                    sorted(item["RepoDigests"] or []),
+                )
+                for item in engine.get("/images/json?all=true")
+            }
+            containers = sorted(
+                item["Id"] for item in engine.get("/containers/json?all=true")
+            )
+            return images, containers
+
+        before = inventory()
+        events = self.host("remove-images", "--versions", "0.0.1,0.0.2,0.0.3")
+        self.assertEqual(
+            {e["id"] for e in events if e["event"] == "would-remove"},
+            set(selected),
+        )
+        self.assertEqual(inventory(), before)
+        events = self.host(
+            "remove-images", "--versions", "0.0.1,0.0.2,0.0.3", "--apply"
+        )
+        self.assertEqual(
+            {e["id"] for e in events if e["event"] == "removed"}, set(selected)
+        )
+        for reference in selected:
+            self.assertFalse(self.exists("image", reference))
+        for reference in retained:
+            self.assertEqual(
+                docker("image", "inspect", reference, "--format", "{{.Id}}"),
+                identifier,
+            )
+        self.assertTrue(self.exists("image", protected))
+        again = self.host("remove-images", "--versions", "0.0.2", "--apply")
+        self.assertTrue(any(e["event"] == "not-found" for e in again))
+        self.assertFalse(any(e["event"] == "removed" for e in again))
+
+    def test_explicit_version_preserves_images_used_by_all_container_states(self):
+        # A derived executable image lets this test cover running and stopped
+        # containers without relying on the maintenance image's protection.
+        context = self.root / "used-version"
+        context.mkdir()
+        (context / "Dockerfile").write_text(
+            f"FROM {os.environ['CI_UTILS_TEST_FIXTURE']}:fixture\n"
+            f"LABEL ci-utils-test-case={self.root.name}\n"
+        )
+        reference = "ghcr.io/myflow-xyz/ci-base:0.0.4"
+        docker("buildx", "build", "--load", "--tag", reference, str(context),
+               timeout=120)
+        identifier = docker("image", "inspect", reference, "--format", "{{.Id}}")
+        reservation = docker("create", "--network=none", "--pull=never",
+                             reference, "sleep", "60")
+        for state in ("created", "running", "exited"):
+            if state == "running":
+                docker("start", reservation)
+            elif state == "exited":
+                docker("stop", "--time", "1", reservation)
+            events = self.host("remove-images", "--versions", "0.0.4", "--apply")
+            self.assertTrue(any(e.get("reason") == "referenced" for e in events))
+            self.assertEqual(
+                docker("image", "inspect", reference, "--format", "{{.Id}}"),
+                identifier,
+            )
+            self.assertTrue(self.exists("container", reservation))
+        docker("rm", reservation)
+        events = self.host("remove-images", "--versions", "0.0.4", "--apply")
+        self.assertTrue(any(e["event"] == "removed" for e in events))
+        self.assertFalse(self.exists("image", reference))
+
     def test_dangling_images_preserve_existing_container_references(self):
         if self.containerd_store:
             self.skipTest(

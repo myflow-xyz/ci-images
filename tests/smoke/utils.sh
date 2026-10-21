@@ -15,12 +15,14 @@ if command -v go >/dev/null 2>&1; then
 	printf 'Go build toolchain leaked into the utility runtime\n' >&2
 	exit 1
 fi
-for tool in ci-utils ci-docker-cleanup ci-buildkit-probe; do
+for tool in ci-utils ci-docker-cleanup ci-remove-images ci-buildkit-probe; do
 	[[ $(command -v "$tool") == "/opt/ci-tools/bin/${tool}" ]]
 	[[ ! -w $(command -v "$tool") ]]
 done
 
 ci-utils | grep --fixed-strings ci-docker-cleanup >/dev/null
+ci-utils | grep --fixed-strings ci-remove-images >/dev/null
+ci-remove-images --help | grep --fixed-strings 'dry-run' >/dev/null
 ci-docker-cleanup --help | grep --fixed-strings 'check,plan,apply,version' >/dev/null
 ci-docker-cleanup version | python3 -c '
 import json, sys
