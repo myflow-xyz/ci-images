@@ -29,13 +29,13 @@ The base image includes:
 
 - shell and build utilities: `sh`, Bash 5.3.20, Make, coreutils, findutils, diffutils, grep, sed, awk, and `procps`;
 - source and transfer utilities: Git, Git LFS, CA certificates, curl, wget, OpenSSL, tar, gzip, xz, zip, and unzip;
-- CPython 3.15.0 and its standard-library modules for repository-owned CI automation;
+- CPython 3.15.1 and its standard-library modules for repository-owned CI automation;
 - Docker CLI 29.9.1 and the Compose 5.6.0 CLI plugin;
 - structured-data and diagnosis tools: `jq`, `yq`, ripgrep, and GitHub CLI;
 - shared policy tools: OSV-Scanner 2.7.0, Trivy 0.76.0, gitleaks, actionlint, shfmt, ShellCheck, and ShellSpec;
 - `tini` for descendants that require subprocess reaping.
 
-Python is built from its checksum-pinned official 3.15.0 source release using the reviewed Debian snapshot. Its shared-library dependencies are installed from the same snapshot. The runtime is limited to the interpreter and standard library: the image does not include pip, virtual-environment support, development headers, or third-party Python packages.
+Python is built from its checksum-pinned official 3.15.1 source release using the reviewed Debian snapshot. Its shared-library dependencies are installed from the same snapshot. The runtime is limited to the interpreter and standard library: the image does not include pip, virtual-environment support, development headers, or third-party Python packages.
 
 Git is built from a checksum-pinned upstream source release so the protected system configuration can scope trust to GitHub's workspace tree. jq, ripgrep, and ShellCheck use checksum-pinned upstream release artifacts for each supported architecture. GitHub CLI, Git LFS, actionlint, gitleaks, OSV-Scanner, shfmt, and yq are built from exact module releases with Go 1.27.3. Trivy 0.76.0 uses the same toolchain with the `jsonv2` build mode required by that release. Narrow dependency overrides used to remove known vulnerabilities from released tools are recorded in the version manifest and verified by image smoke tests. Go tools are installed into immutable versioned directories and exposed through stable links in `/opt/ci-tools/bin`. Compilers are build inputs and are not retained in this image. Their pure-Go binaries are compiled on the native build platform for each target architecture. Publication uses native AMD64 and ARM64 runners for all image stages, avoiding emulated Git and Go compilation. Vulnerability data is not embedded in the image; online scans by OSV-Scanner and Trivy still query or download their external data sources.
 
