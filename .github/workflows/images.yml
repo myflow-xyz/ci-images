@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  BUILDX_VERSION: v0.38.0
+  BUILDX_VERSION: v0.38.1
 
 jobs:
   contract:
@@ -495,7 +495,7 @@ jobs:
           TRIVY_USERNAME: ${{ github.actor }}
         with:
           image-ref: ${{ matrix.image.ref }}
-          version: v0.76.0
+          version: v0.76.1
           scanners: vuln
           vuln-type: os,library
           severity: HIGH,CRITICAL

@@ -20,7 +20,7 @@ Cleanup and its internal capability helper are repository-owned commands tied to
 | `Git` | `2.56.0` |
 | `Git LFS` | `3.8.0` |
 | `GitHub CLI` | `2.102.0` |
-| `CPython` | `3.15.0` |
+| `CPython` | `3.15.1` |
 | `Docker CLI` | `29.9.1` |
 | `Docker Compose` | `5.6.0` |
 | `actionlint` | `1.7.12` |
@@ -41,7 +41,7 @@ These packages are installed at exact revisions from the pinned Debian snapshot.
 | Package | Version |
 | --- | --- |
 | `bash` | `5.2.37-2+b10` |
-| `ca-certificates` | `20250419` |
+| `ca-certificates` | `20250419+deb13u1` |
 | `coreutils` | `9.7-3` |
 | `curl` | `8.14.1-2+deb13u7` |
 | `dash` | `0.5.12-12` |
@@ -94,9 +94,9 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 
 | Component | Version |
 | --- | --- |
-| `Node.js` | `26.12.0` |
+| `Node.js` | `26.12.1` |
 | `npm` | `12.2.1` |
-| `pnpm` | `12.14.0` |
+| `pnpm` | `12.15.0` |
 | `markdownlint-cli2` | `0.23.3` |
 | `@redocly/cli` | `2.66.0` |
 
