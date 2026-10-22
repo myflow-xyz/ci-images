@@ -9,7 +9,7 @@
     "uid": 1001,
     "gid": 2001
   },
-  "debian_snapshot": "20261020T142926Z",
+  "debian_snapshot": "20261022T082531Z",
   "upstream_images": {
     "dockerfile_frontend": {
       "reference": "docker.io/docker/dockerfile:1.28.0",
@@ -17,7 +17,7 @@
     },
     "debian": {
       "reference": "docker.io/library/debian:trixie-slim",
-      "digest": "sha256:a29215f6a35e51e22adffa17f89e9d2ef06214e64a2bad10d765c46aea49f11f"
+      "digest": "sha256:62bd423aeee912639ca8ee681c2b762cb3e25137e0a92b20be455898a9f034ad"
     },
     "pgvector": {
       "reference": "docker.io/pgvector/pgvector:0.8.7-pg18-trixie",
@@ -86,11 +86,11 @@
         "lockfiles": {
           "amd64": {
             "lockfile": "images/base/debian-packages.amd64.lock",
-            "lockfile_sha256": "2494a7c40c92d1923256c92722a8d50c2648a0884e81b23ff1906ca4dee90597"
+            "lockfile_sha256": "f36d49ed01712dd9e2b812683a0b72843c9e03c09ecca1dd0b6979e20580e8f5"
           },
           "arm64": {
             "lockfile": "images/base/debian-packages.arm64.lock",
-            "lockfile_sha256": "c5c1617f3fc5bfdd78059c2656c3a09e55c123d274a137c14085050f0791b442"
+            "lockfile_sha256": "66bee0f7cc5bbc8d9065520135e46841fad013d1179ee639feb5ba4680e1f95c"
           }
         }
       },
@@ -162,11 +162,11 @@
         }
       },
       "python": {
-        "version": "3.15.0",
+        "version": "3.15.1",
         "source": "https://www.python.org/",
         "asset": {
-          "url": "https://www.python.org/ftp/python/3.15.0/Python-3.15.0.tar.xz",
-          "sha256": "ba4bed1ba346b916890b76d9e320451420aa69f6408997d33c66482eeae3d575"
+          "url": "https://www.python.org/ftp/python/3.15.1/Python-3.15.1.tar.xz",
+          "sha256": "673ae7232d84c894729882c8257d300ef2d26523911bfd3917ec8ce7f526f99b"
         }
       },
       "ripgrep": {
@@ -297,7 +297,7 @@
       }
     },
     "node": {
-      "runtime": "26.12.0",
+      "runtime": "26.12.1",
       "npm": {
         "version": "12.2.1",
         "asset": {
@@ -337,17 +337,17 @@
       "lockfile": "images/node/npm/package-lock.json",
       "lockfile_sha256": "62c3ae8ce347c0be2b81351d1ef4a1d12912e4388b0a9028c33e6e149ab25bef",
       "pnpm": {
-        "version": "12.14.0",
+        "version": "12.15.0",
         "store_version": "11",
         "source": "https://github.com/pnpm/pnpm",
         "assets": {
           "amd64": {
-            "url": "https://github.com/pnpm/pnpm/releases/download/v12.14.0/pnpm-linux-x64.tar.gz",
-            "sha256": "3910c3852136bed5bc1511b9137a45fd4357ed6b3970d9d08893641e9005867e"
+            "url": "https://github.com/pnpm/pnpm/releases/download/v12.15.0/pnpm-linux-x64.tar.gz",
+            "sha256": "55b5ed0092bd11176c1669598e231ae52e7cedac59de6efd0d415730f37d0598"
           },
           "arm64": {
-            "url": "https://github.com/pnpm/pnpm/releases/download/v12.14.0/pnpm-linux-arm64.tar.gz",
-            "sha256": "cfc780b9e690549e6633e1045fb1fb6ef84e390711e2099e6ccbae91c32456ea"
+            "url": "https://github.com/pnpm/pnpm/releases/download/v12.15.0/pnpm-linux-arm64.tar.gz",
+            "sha256": "d7ce93a2c7d847d3a34bd3f559b60c14f578b1320c17cc352a2c5c5fdf956117"
           }
         }
       },
@@ -355,12 +355,12 @@
       "source": "https://nodejs.org/dist/",
       "assets": {
         "amd64": {
-          "url": "https://nodejs.org/dist/v26.12.0/node-v26.12.0-linux-x64.tar.xz",
-          "sha256": "fd47865ecd6391ebb431fc815e01b9135bf83ded5cf373247e9331e196b7aded"
+          "url": "https://nodejs.org/dist/v26.12.1/node-v26.12.1-linux-x64.tar.xz",
+          "sha256": "6170b2d474e1c626f43cff3adc118df9fe3b573258a4fc3d850c8dbc6b079bbd"
         },
         "arm64": {
-          "url": "https://nodejs.org/dist/v26.12.0/node-v26.12.0-linux-arm64.tar.xz",
-          "sha256": "fd6cc729fa4448c2ac27c3fca5606019ced63c65a15c152c8df03e0cbce7f4c5"
+          "url": "https://nodejs.org/dist/v26.12.1/node-v26.12.1-linux-arm64.tar.xz",
+          "sha256": "42aa04922591ee5d4dbc7740d452621acf28508239daa512f5ee8c47ee224fdb"
         }
       }
     },

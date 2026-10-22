@@ -127,6 +127,55 @@ class HostCLITests(unittest.TestCase):
         self.assertIsNone(Gate(self.root / "gate").status()["maintenance"])
         self.assertFalse(any(method == "DELETE" for method, _ in self.api.requests))
 
+    def version_fixture(self):
+        from test_remove_images import VersionAPI
+
+        self.api = self.enterContext(VersionAPI())
+        self.docker.endpoint = self.api.endpoint
+        self.policy["endpoint"] = self.api.endpoint
+        self.save()
+
+    def test_version_removal_uses_hardened_host_and_preserves_other_tags(self):
+        from test_remove_images import ALIAS, IID
+
+        self.version_fixture()
+        result, events = self.invoke("remove-images", "--versions", "0.0.1")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertTrue(any(e["event"] == "would-remove" for e in events))
+        self.assertTrue(all(method == "GET" for method, _ in self.api.requests))
+        result, events = self.invoke(
+            "remove-images", "--versions", "0.0.1", "--apply"
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.api.objects["images"][IID]["RepoTags"], [ALIAS])
+        self.assertEqual(self.docker.entrypoint, "ci-remove-images")
+        self.assertIn("--network=none", self.docker.create)
+        self.assertIn("--user=1001:2001", self.docker.create)
+        self.assertIsNone(Gate(self.root / "gate").status()["maintenance"])
+
+    def test_version_lease_rejects_changed_selection(self):
+        self.version_fixture()
+        self.docker.mode = "wrong-versions"
+        result, _ = self.invoke(
+            "remove-images", "--versions", "0.0.1", "--apply"
+        )
+        self.assertEqual(result.returncode, 6, result.stdout + result.stderr)
+        self.assertTrue(all(method == "GET" for method, _ in self.api.requests))
+        self.assertEqual(
+            Gate(self.root / "gate").status()["maintenance"]["phase"], "uncertain"
+        )
+
+    def test_version_removal_lost_report_retains_admission_block(self):
+        self.version_fixture()
+        self.docker.mode = "lost-report"
+        result, _ = self.invoke(
+            "remove-images", "--versions", "0.0.1", "--apply"
+        )
+        self.assertEqual(result.returncode, 6, result.stdout + result.stderr)
+        self.assertEqual(
+            Gate(self.root / "gate").status()["maintenance"]["phase"], "uncertain"
+        )
+
     def test_unknown_start_or_lost_terminal_report_preserves_admission_block(self):
         # Separate cases need separate provisioned gates; no test reset conceals uncertainty.
         self.docker.mode = "lost-report"

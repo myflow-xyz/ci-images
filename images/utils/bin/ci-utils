@@ -6,7 +6,10 @@ import argparse
 parser = argparse.ArgumentParser(
     prog="ci-utils",
     description="Reusable CI operations tools. Invoke each command directly.",
-    epilog="Available: ci-docker-cleanup check|plan|apply|version. Cleanup defaults to plan.",
+    formatter_class=argparse.RawDescriptionHelpFormatter,
+    epilog="Available commands:\n"
+    "  ci-docker-cleanup check|plan|apply|version (default: plan)\n"
+    "  ci-remove-images --versions X.Y.Z[,X.Y.Z] [--apply] (default: dry-run)",
 )
 parser.add_argument("operation", nargs="?", choices=("help",), default="help")
 parser.parse_args()

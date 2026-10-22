@@ -23,6 +23,7 @@ from ci_docker_storage import measure
 from ci_utils.cleanup import reject_constant, strict_object
 from ci_utils.engine import Engine, Failure
 from ci_utils.policy import InvalidPolicy, configuration, duration, reference_name
+from ci_utils.remove_images import PROFILE, scope_hash, versions
 
 
 def emit(event, **fields):
@@ -239,7 +240,8 @@ def verify_image(docker, reference):
 
 
 def launch_args(
-    settings, policy, root, run_id, operation, profile, socket_gid, lease_path=None
+    settings, policy, root, run_id, operation, profile, socket_gid,
+    lease_path=None, selected=None,
 ):
     def mount(source, target):
         if any(character in str(source) for character in (",", "\n", "\r")):
@@ -286,17 +288,18 @@ def launch_args(
     ]
     if lease_path:
         args += mount(lease_path, "/run/ci-utils/lease.sock")
+    if selected:
+        command = ["ci-remove-images", "--versions", ",".join(selected)]
+        if operation == "apply":
+            command.append("--apply")
+    else:
+        command = [
+            "ci-docker-cleanup", operation, "--profile", profile,
+            "--observations", "/run/ci-utils/storage.json",
+        ]
     args += [
-        "--entrypoint",
-        "/opt/ci-tools/bin/ci-docker-cleanup",
-        settings["image"],
-        operation,
-        "--profile",
-        profile,
-        "--run-id",
-        run_id,
-        "--observations",
-        "/run/ci-utils/storage.json",
+        "--entrypoint", "/opt/ci-tools/bin/" + command[0],
+        settings["image"], *command[1:], "--run-id", run_id,
     ]
     if lease_path:
         args += ["--lease-socket", "/run/ci-utils/lease.sock"]
@@ -356,7 +359,7 @@ def snapshot(path, value):
     path.chmod(0o444)
 
 
-def maintain(settings, policy, operation, profile, wait_seconds):
+def maintain(settings, policy, operation, profile, wait_seconds, selected=None):
     if os.geteuid() != 0:
         raise GateError(2, "maintenance requires the native host administrator")
     gate = Gate(settings["gate_directory"])
@@ -371,6 +374,8 @@ def maintain(settings, policy, operation, profile, wait_seconds):
     policy_hash = hashlib.sha256(
         json.dumps(policy, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
+    if selected:
+        policy_hash = scope_hash(policy, selected)
     context = (
         gate.maintenance(info["ID"], policy_hash, wait_seconds)
         if operation == "apply"
@@ -430,6 +435,7 @@ def maintain(settings, policy, operation, profile, wait_seconds):
                             profile,
                             metadata.st_gid,
                             server.path if server else None,
+                            selected,
                         )
                     ).strip()
                     if not re.fullmatch(r"[a-f0-9]{64}", identifier):
@@ -533,6 +539,10 @@ def arguments(argv):
         command = sub.add_parser(operation)
         command.add_argument("--profile", choices=("daily", "weekly"), default="daily")
         command.add_argument("--wait", default="15m")
+    retirement = sub.add_parser("remove-images")
+    retirement.add_argument("--versions", required=True)
+    retirement.add_argument("--apply", action="store_true")
+    retirement.add_argument("--wait", default="15m")
     return parser.parse_args(argv)
 
 
@@ -546,6 +556,7 @@ def main(argv=None):
     old_signals = {}
     try:
         args = arguments(argv)
+        selected = versions(args.versions) if args.operation == PROFILE else None
         if sys.platform != "linux":
             raise GateError(
                 2,
@@ -571,6 +582,11 @@ def main(argv=None):
         if args.operation == "reconcile":
             return reconcile(
                 settings, policy, args.record_id, trusted_json(args.evidence), emit
+            )
+        if selected:
+            return maintain(
+                settings, policy, "apply" if args.apply else "plan", PROFILE,
+                duration(args.wait), selected,
             )
         return maintain(
             settings, policy, args.operation, args.profile, duration(args.wait)

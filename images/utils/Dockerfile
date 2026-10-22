@@ -69,6 +69,7 @@ RUN set -eu; \
     install -d /etc/ci-utils /run/ci-utils; \
     ln -s ../ci-utils/bin/ci-utils /opt/ci-tools/bin/ci-utils; \
     ln -s ../ci-utils/bin/ci-docker-cleanup /opt/ci-tools/bin/ci-docker-cleanup; \
+    ln -s ../ci-utils/bin/ci-remove-images /opt/ci-tools/bin/ci-remove-images; \
     ln -s ../ci-utils/ci-buildkit-probe /opt/ci-tools/bin/ci-buildkit-probe; \
     ln -s "/opt/ci-tools/buildx/${BUILDX_VERSION}/docker-buildx" /usr/local/lib/docker/cli-plugins/docker-buildx; \
     python3 -c 'import json,sys; from pathlib import Path; Path("/opt/ci-tools/ci-utils/build.json").write_text(json.dumps({"revision":sys.argv[1],"version":"sha-"+sys.argv[1]})+"\n")' "${BUILD_REVISION}"; \
