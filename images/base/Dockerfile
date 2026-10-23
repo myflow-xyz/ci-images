@@ -293,6 +293,23 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
     --mount=type=cache,target=/var/cache/go/trivy-mod,sharing=locked \
     --mount=type=cache,target=/var/cache/go/trivy-build,sharing=locked \
     set -eu; \
+    download_go() { \
+      download_attempt=1; \
+      while :; do \
+        if /usr/local/go/bin/go "$@"; then \
+          return 0; \
+        else \
+          download_status=$?; \
+        fi; \
+        if [ "${download_attempt}" -ge 3 ]; then \
+          return "${download_status}"; \
+        fi; \
+        printf 'Go dependency download failed (attempt %s/3); retrying\n' \
+          "${download_attempt}" >&2; \
+        sleep "$((download_attempt * 5))"; \
+        download_attempt=$((download_attempt + 1)); \
+      done; \
+    }; \
     build_tool() { \
       name=$1; \
       package=$2; \
@@ -306,16 +323,20 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
         cd "${build_directory}"; \
         GOCACHE=/var/cache/go/trivy-build \
           GOMODCACHE=/var/cache/go/trivy-mod \
-          /usr/local/go/bin/go mod download \
+          download_go mod download \
           "github.com/aquasecurity/trivy@${version}"; \
         cp -R "${source_directory}/." "${build_directory}/"; \
         chmod -R u+w "${build_directory}"; \
         for dependency in "$@"; do \
           GOCACHE=/var/cache/go/trivy-build \
             GOMODCACHE=/var/cache/go/trivy-mod \
-            /usr/local/go/bin/go get "${dependency}"; \
+            download_go get "${dependency}"; \
         done; \
+        GOCACHE=/var/cache/go/trivy-build \
+          GOMODCACHE=/var/cache/go/trivy-mod \
+          download_go mod download all; \
         CGO_ENABLED=0 GOARCH="${TARGETARCH}" GOOS=linux \
+          GOPROXY=off \
           GOEXPERIMENT=jsonv2 \
           GOCACHE=/var/cache/go/trivy-build \
           GOMODCACHE=/var/cache/go/trivy-mod \
@@ -336,7 +357,7 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
           else \
             module=github.com/docker/compose/v5; \
           fi; \
-          /usr/local/go/bin/go mod download "${module}@${version}"; \
+          download_go mod download "${module}@${version}"; \
           cp -R "/var/cache/go/mod/${module}@${version}/." "${build_directory}/"; \
           chmod -R u+w "${build_directory}"; \
           cd "${build_directory}"; \
@@ -348,11 +369,11 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
         *) \
           cd "${build_directory}"; \
           /usr/local/go/bin/go mod init "ci.invalid/${name}"; \
-          /usr/local/go/bin/go get "${package}@${version}" \
+          download_go get "${package}@${version}" \
           ;; \
       esac; \
       for dependency in "$@"; do \
-        /usr/local/go/bin/go get "${dependency}"; \
+        download_go get "${dependency}"; \
       done; \
       if [ "${name}" = gitleaks ]; then \
         CGO_ENABLED=0 GOARCH="${TARGETARCH}" GOOS=linux \

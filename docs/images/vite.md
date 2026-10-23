@@ -7,11 +7,11 @@
 The compatibility bundle includes:
 
 - TypeScript 7.0.2 (`tsc`), with TypeScript 6.0.3 available as `tsc6` for tools that still require its API;
-- Vite 8.3.4;
+- Vite 8.3.5;
 - Vitest 5.0.5;
 - `@vitest/coverage-v8` 5.0.5;
 - Oxlint 1.89.0;
-- `oxlint-tsgolint` 7.0.2004;
+- `oxlint-tsgolint` 7.0.2005;
 - Oxfmt 0.74.0.
 
 The bundle and its transitive dependencies are installed from a committed npm lockfile into an immutable versioned directory. The platform-specific `tsc` and `tsgolint` executables are rebuilt from the exact upstream commits recorded in the manifest with the same Go release as `ci-go`, then replace the matching prebuilt executables from the npm packages. Reviewed dependency overrides for those builds are also recorded in the manifest and verified by smoke tests. The Go compiler and source trees are not retained in the runtime image.

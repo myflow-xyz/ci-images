@@ -9,7 +9,7 @@
     "uid": 1001,
     "gid": 2001
   },
-  "debian_snapshot": "20261022T082531Z",
+  "debian_snapshot": "20261023T023732Z",
   "upstream_images": {
     "dockerfile_frontend": {
       "reference": "docker.io/docker/dockerfile:1.28.0",
@@ -86,16 +86,16 @@
         "lockfiles": {
           "amd64": {
             "lockfile": "images/base/debian-packages.amd64.lock",
-            "lockfile_sha256": "f36d49ed01712dd9e2b812683a0b72843c9e03c09ecca1dd0b6979e20580e8f5"
+            "lockfile_sha256": "e0b76bde7e8abfcb14c6fe1395977cc06b59506c5354089bff5fff80659d55bb"
           },
           "arm64": {
             "lockfile": "images/base/debian-packages.arm64.lock",
-            "lockfile_sha256": "66bee0f7cc5bbc8d9065520135e46841fad013d1179ee639feb5ba4680e1f95c"
+            "lockfile_sha256": "1b5a892c9f26941fa0e900744a31a65ed3473be16929b3243bf19f0b6cc9f379"
           }
         }
       },
       "gh": {
-        "version": "2.102.0",
+        "version": "2.103.0",
         "source": "https://github.com/cli/cli",
         "module": "github.com/cli/cli/v2/cmd/gh",
         "dependency_overrides": {
@@ -111,7 +111,7 @@
         }
       },
       "git_lfs": {
-        "version": "3.8.0",
+        "version": "3.8.1",
         "source": "https://github.com/git-lfs/git-lfs",
         "module": "github.com/git-lfs/git-lfs/v3",
         "dependency_overrides": {
@@ -153,7 +153,7 @@
         }
       },
       "trivy": {
-        "version": "0.76.0",
+        "version": "0.76.1",
         "source": "https://github.com/aquasecurity/trivy",
         "module": "github.com/aquasecurity/trivy/cmd/trivy",
         "dependency_overrides": {
@@ -220,13 +220,13 @@
         }
       },
       "docker": {
-        "version": "29.9.1",
+        "version": "29.9.2",
         "source": "https://github.com/docker/cli",
         "module": "github.com/docker/cli",
-        "commit": "dfc520dcc28994c4c699b9b219fd2f5a6bcec0ff"
+        "commit": "a82e528901260c8df6073311379eac65f92db204"
       },
       "compose": {
-        "version": "5.6.0",
+        "version": "5.6.1",
         "source": "https://github.com/docker/compose",
         "module": "github.com/docker/compose/v5",
         "dependency_overrides": {
@@ -316,9 +316,9 @@
         }
       },
       "markdownlint_cli2": {
-        "version": "0.23.3",
+        "version": "0.24.0",
         "lockfile": "images/node/markdownlint/package-lock.json",
-        "lockfile_sha256": "ece95f7fc39d5f2220b81fa174524abbc199e0f6a0ddcbfc39cc91dc8dacd872",
+        "lockfile_sha256": "8ca2cc7bef08f89222967a7dd0ffbf3ccb5c88fbf512868c4b38f864fb8194a0",
         "dependency_overrides": {
           "smol-toml": "1.9.1",
           "katex": "0.19.0",
@@ -333,9 +333,9 @@
           }
         }
       },
-      "bundle_version": "16",
+      "bundle_version": "17",
       "lockfile": "images/node/npm/package-lock.json",
-      "lockfile_sha256": "62c3ae8ce347c0be2b81351d1ef4a1d12912e4388b0a9028c33e6e149ab25bef",
+      "lockfile_sha256": "d3db906dba0339710dfc3bc05d057c8de069924234416cab576cf38f894edddd",
       "pnpm": {
         "version": "12.15.0",
         "store_version": "11",
@@ -351,7 +351,7 @@
           }
         }
       },
-      "redocly": "2.66.0",
+      "redocly": "2.69.0",
       "source": "https://nodejs.org/dist/",
       "assets": {
         "amd64": {
@@ -365,9 +365,9 @@
       }
     },
     "vite": {
-      "bundle_version": "19",
+      "bundle_version": "20",
       "lockfile": "images/vite/npm/package-lock.json",
-      "lockfile_sha256": "99c3bc3d804e9c7de0f55c968ea7ca64aae5f17bf7ff0736135847dd3fcc1cd2",
+      "lockfile_sha256": "dbffb817977aeb41a8dac70b0cf8aa5a1a3de6ecc3fc95577d6dbb3a56e2bc93",
       "typescript": "7.0.2",
       "typescript_source": {
         "repository": "https://github.com/microsoft/typescript-go",
@@ -380,14 +380,14 @@
         "compat_package": "6.0.2",
         "compiler": "6.0.3"
       },
-      "vite": "8.3.4",
+      "vite": "8.3.5",
       "vitest": "5.0.5",
       "coverage_v8": "5.0.5",
       "oxlint": "1.89.0",
-      "oxlint_tsgolint": "7.0.2004",
+      "oxlint_tsgolint": "7.0.2005",
       "oxlint_tsgolint_source": {
         "repository": "https://github.com/oxc-project/tsgolint",
-        "commit": "a61289117febcb1a60cf3bc75ef2b6bbccc4b665",
+        "commit": "4ebf80fd2b166cba4890c6896220fec4a1462b29",
         "dependency_overrides": {
           "golang.org/x/text": "v0.43.0"
         }
@@ -414,10 +414,10 @@
     },
     "utils": {
       "buildx": {
-        "version": "0.38.0",
+        "version": "0.38.1",
         "source": "https://github.com/docker/buildx",
         "commit": "0dbe87f36ed472fe36b6796c3f70b4210a731fc5",
-        "module_sum": "h1:LKfznm3wgm0hYaQDkiuoK9hyDS1GU/GChnXYsBr3A00=",
+        "module_sum": "h1:7J7nReQndOnDTUFjun6otmQqehoi9sCOvRwFjkngYlc=",
         "dependency_overrides": {
           "github.com/moby/go-archive": "v0.3.3",
           "golang.org/x/net": "v0.61.0"
