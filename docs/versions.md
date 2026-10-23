@@ -8,7 +8,7 @@ The runtime inherits `ci-base`. Buildx and the capability helper reuse the exist
 
 | Component | Version |
 | --- | --- |
-| `Docker Buildx` | `0.38.0` |
+| `Docker Buildx` | `0.38.1` |
 
 Cleanup and its internal capability helper are repository-owned commands tied to the suite source revision, with no independent release stream.
 
@@ -18,11 +18,11 @@ Cleanup and its internal capability helper are repository-owned commands tied to
 | --- | --- |
 | `Bash` | `5.3.20` |
 | `Git` | `2.56.0` |
-| `Git LFS` | `3.8.0` |
-| `GitHub CLI` | `2.102.0` |
+| `Git LFS` | `3.8.1` |
+| `GitHub CLI` | `2.103.0` |
 | `CPython` | `3.15.1` |
-| `Docker CLI` | `29.9.1` |
-| `Docker Compose` | `5.6.0` |
+| `Docker CLI` | `29.9.2` |
+| `Docker Compose` | `5.6.1` |
 | `actionlint` | `1.7.12` |
 | `gitleaks` | `8.30.1` |
 | `jq` | `1.8.2` |
@@ -31,7 +31,7 @@ Cleanup and its internal capability helper are repository-owned commands tied to
 | `ShellCheck` | `0.11.0` |
 | `shellspec` | `0.28.1` |
 | `shfmt` | `3.14.1` |
-| `Trivy` | `0.76.0` |
+| `Trivy` | `0.76.1` |
 | `yq` | `4.54.1` |
 
 ### Direct Debian packages
@@ -60,7 +60,7 @@ These packages are installed at exact revisions from the pinned Debian snapshot.
 | `sed` | `4.9-2+deb13u1` |
 | `tar` | `1.35+dfsg-3.1` |
 | `tini` | `0.19.0-3+b8` |
-| `tzdata` | `2026c-0+deb13u1` |
+| `tzdata` | `2026e-0+deb13u1` |
 | `unzip` | `6.0-29+deb13u1` |
 | `wget` | `1.25.0-2` |
 | `xz-utils` | `5.8.1-1+deb13u2` |
@@ -97,8 +97,8 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | `Node.js` | `26.12.1` |
 | `npm` | `12.2.1` |
 | `pnpm` | `12.15.0` |
-| `markdownlint-cli2` | `0.23.3` |
-| `@redocly/cli` | `2.66.0` |
+| `markdownlint-cli2` | `0.24.0` |
+| `@redocly/cli` | `2.69.0` |
 
 ## `ci-vite`
 
@@ -107,11 +107,11 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | `@typescript/native` | `7.0.2` |
 | `TypeScript compatibility package` | `6.0.2` |
 | `TypeScript legacy compiler` | `6.0.3` |
-| `vite` | `8.3.4` |
+| `vite` | `8.3.5` |
 | `vitest` | `5.0.5` |
 | `@vitest/coverage-v8` | `5.0.5` |
 | `oxlint` | `1.89.0` |
-| `oxlint-tsgolint` | `7.0.2004` |
+| `oxlint-tsgolint` | `7.0.2005` |
 | `oxfmt` | `0.74.0` |
 
 ## `ci-playwright`

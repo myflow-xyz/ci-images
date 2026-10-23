@@ -9,8 +9,8 @@ The initial image contract includes:
 - Node.js 26.12.1 imported from checksum-pinned official Linux archives;
 - npm and npx 12.2.1 from a hash-verified release artifact;
 - pnpm 12.15.0 from hash-verified native Linux release artifacts;
-- `markdownlint-cli2` 0.23.3;
-- Redocly CLI 2.66.0 for OpenAPI validation;
+- `markdownlint-cli2` 0.24.0;
+- Redocly CLI 2.69.0 for OpenAPI validation;
 - explicit npm and pnpm cache paths.
 
 The npm release artifact is hash-verified, and its reviewed bundled dependency replacements are installed from a committed lockfile. They include the current compatible `undici` 6.x release and the fixed `postcss-selector-parser` release. The `http-cache-semantics` replacement uses the current compatible 4.3.0 release. Its remaining advisory scenario is recorded in the [stable toolchain qualification][security]. The Markdown tool lockfile overrides `smol-toml`, KaTeX, and `markdown-it` with their reviewed fixed releases. The architecture-matched pnpm archive is installed independently of npm and includes its native executable. Other Node tool dependency trees are installed from committed lockfiles into immutable versioned directories. Stable command links are exposed through `/opt/ci-tools/bin`.
