@@ -326,7 +326,7 @@
           "sha256": "228bd64aaef23270dbdbd2cf3d5ef5c467602ef38c4066246cef1984adab9a67"
         },
         "lockfile": "images/node/npm-runtime/package-lock.json",
-        "lockfile_sha256": "1a4e623f572025c77efbaef4be85cb38ffee8d0107bdb5eb12e00562199f4690",
+        "lockfile_sha256": "239a2d778c06aa14d6cb19821962c9f4e7bd0457b39cd84c8f27a13bbd59631d",
         "dependency_replacements": {
           "brace-expansion": "5.0.12",
           "http-cache-semantics": "4.3.0",
@@ -337,7 +337,8 @@
           "glob": "14.0.2",
           "minimatch": "11.0.1",
           "path-scurry": "3.0.0",
-          "@isaacs/nonrecursive-glob-match": "1.0.1"
+          "@isaacs/nonrecursive-glob-match": "1.0.1",
+          "lru-cache": "11.5.3"
         }
       },
       "markdownlint_cli2": {
@@ -374,7 +375,7 @@
         "lockfile": "images/node/pnpm/Cargo.lock",
         "lockfile_sha256": "25a63a607a4e481db464cd01867e12ed2bde5702fe7206a0bcaeb93d40b2b563",
         "dependency_patch": "images/node/pnpm/dependencies.patch",
-        "dependency_patch_sha256": "021adbeb766769dd04d02fa17dfdbc15491d0c3aae56e2f6406fe6ccf1169534"
+        "dependency_patch_sha256": "5057e92cb6405f5ecaf8c48158b5f1793e9c3fff271a404b0c77a3fcea3f811e"
       },
       "redocly": "2.69.0",
       "source": {

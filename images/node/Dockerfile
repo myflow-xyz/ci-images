@@ -67,7 +67,8 @@ RUN --mount=type=cache,target=/var/cache/cargo,sharing=locked \
     cp /var/tmp/pnpm-inputs/Cargo.lock Cargo.lock; \
     export CARGO_HOME=/var/cache/cargo CARGO_TARGET_DIR=/var/cache/pnpm-target; \
     cargo build --release --locked -j2 --package pnpm-cli --bin pnpm; \
-    cargo test --release --locked -j2 --package pnpm-tarball --package pnpm-crypto-shasums-file --lib; \
+    cargo test --release --locked -j2 --package pnpm-tarball --package pnpm-crypto-shasums-file --package pnpr-osv --lib; \
+    cargo test --release --locked -j2 --package pnpr --lib resolver::pypi; \
     test "$(/var/cache/pnpm-target/release/pnpm --version)" = "${PNPM_VERSION}"; \
     install -d /out; \
     install -m 0755 /var/cache/pnpm-target/release/pnpm /out/pnpm; \
@@ -253,6 +254,7 @@ RUN --mount=from=node-bootstrap,source=/usr/local/lib/node_modules/npm,target=/u
     rm -rf \
       /var/tmp/npm-package/node_modules/brace-expansion \
       /var/tmp/npm-package/node_modules/glob \
+      /var/tmp/npm-package/node_modules/lru-cache \
       /var/tmp/npm-package/node_modules/minimatch \
       /var/tmp/npm-package/node_modules/path-scurry \
       /var/tmp/npm-package/node_modules/@isaacs/nonrecursive-glob-match \
@@ -282,6 +284,8 @@ RUN --mount=from=node-bootstrap,source=/usr/local/lib/node_modules/npm,target=/u
     install -d /var/tmp/npm-package/node_modules/@isaacs; \
     mv /var/tmp/npm-runtime/node_modules/glob \
       /var/tmp/npm-package/node_modules/glob; \
+    mv /var/tmp/npm-runtime/node_modules/lru-cache \
+      /var/tmp/npm-package/node_modules/lru-cache; \
     mv /var/tmp/npm-runtime/node_modules/minimatch \
       /var/tmp/npm-package/node_modules/minimatch; \
     mv /var/tmp/npm-runtime/node_modules/path-scurry \

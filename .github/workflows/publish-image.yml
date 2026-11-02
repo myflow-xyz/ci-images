@@ -40,7 +40,7 @@ jobs:
   build:
     name: Build ${{ inputs.image }} (${{ matrix.architecture }})
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 60
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
