@@ -9,13 +9,17 @@ The initial image contract includes:
 - Go 1.27.3, installed from the official per-architecture archive after SHA-256 verification, with local toolchain selection and the JSON v2 implementation enabled by default;
 - a C compiler, libc development headers, and native build prerequisites for race-enabled tests;
 - Go's standard build, format, vet, test, and coverage commands;
-- HTTP/API end-to-end testing with Hurl 8.0.1 and request formatting with `hurlfmt`;
+- HTTP/API end-to-end testing with Hurl 8.1.0 and request formatting with `hurlfmt`;
 - sqlc 1.31.1;
 - Goose 3.29.0;
 - golangci-lint 2.15.0;
 - `goimports` 0.52.0 and `govulncheck` 1.9.0.
 
-External Go executables are built from exact module versions into immutable versioned directories. Stable links are exposed through `/opt/ci-tools/bin`. Hurl executables are installed from checksum-pinned upstream Linux archives for both supported architectures.
+External Go executables are built from exact module versions into immutable versioned directories. Stable links are exposed through `/opt/ci-tools/bin`.
+
+Hurl and `hurlfmt` are built from checksum-pinned 8.1.0 source and a reviewed Cargo lockfile. Their private library directory contains patched Brotli, curl, OpenSSL, nghttp3, and ngtcp2 builds. HTTP/3 support and the system CA certificate paths are retained. The manifest pins the source archives and Rust compiler. Build compilers are excluded from the runtime image; the Go image's existing C compiler remains available for Go jobs.
+
+The image pins Debian `linux-libc-dev` 6.12.115-2 from the signed security archive, ahead of the general package snapshot. Its source package contains fixes for CVE-2026-98432 and CVE-2026-99083. These userspace headers do not update the [runner's kernel](../usage.md#workload-patterns).
 
 The manifest records narrow dependency overrides used to rebuild a tool when its released dependency graph contains a known vulnerability with a fixed version or an upstream-retracted module version. The image smoke contract verifies those resolved module versions; an override is removed when the upstream tool release incorporates the fix.
 
