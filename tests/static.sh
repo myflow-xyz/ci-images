@@ -120,6 +120,7 @@ done < <(
       ["Trivy", .tools.base.trivy.version],
       ["yq", .tools.base.yq.version],
       ["Go", .tools.go.runtime],
+      ["linux-libc-dev", .tools.go.linux_libc_dev.version],
       ["Hurl", .tools.go.hurl.version],
       ["sqlc", .tools.go.sqlc.version],
       ["goose", .tools.go.goose.version],
@@ -183,6 +184,7 @@ jq --exit-status '
     endswith("debian:trixie-slim")) and
   (.tools.node as $node |
     ($node.runtime | test("^26\\.[0-9]+\\.[0-9]+$")) and
+    $node.source.url == ("https://nodejs.org/dist/v" + $node.runtime + "/node-v" + $node.runtime + ".tar.xz") and
     $node.assets.amd64.url ==
       ("https://nodejs.org/dist/v" + $node.runtime + "/node-v" +
        $node.runtime + "-linux-x64.tar.xz") and
@@ -278,14 +280,9 @@ jq --exit-status '
     ($docker.commit | test("^[0-9a-f]{40}$"))) and
   .tools.base.compose.module == "github.com/docker/compose/v5" and
   (.tools.go.hurl as $hurl |
-    $hurl.assets.amd64.url ==
-      ("https://github.com/Orange-OpenSource/hurl/releases/download/" +
-       $hurl.version + "/hurl-" + $hurl.version +
-       "-x86_64-unknown-linux-gnu.tar.gz") and
-    $hurl.assets.arm64.url ==
-      ("https://github.com/Orange-OpenSource/hurl/releases/download/" +
-       $hurl.version + "/hurl-" + $hurl.version +
-       "-aarch64-unknown-linux-gnu.tar.gz")) and
+    ($hurl.source_archive.commit | test("^[0-9a-f]{40}$")) and
+    $hurl.source_archive.url ==
+      ("https://codeload.github.com/Orange-OpenSource/hurl/tar.gz/" + $hurl.source_archive.commit)) and
   (.tools.node.npm as $npm |
     $npm.asset.url ==
       ("https://registry.npmjs.org/npm/-/npm-" +
@@ -293,12 +290,9 @@ jq --exit-status '
   (.tools.node.pnpm as $pnpm |
     $pnpm.source == "https://github.com/pnpm/pnpm" and
     ($pnpm.store_version | test("^[0-9]+$")) and
-    $pnpm.assets.amd64.url ==
-      ("https://github.com/pnpm/pnpm/releases/download/v" +
-       $pnpm.version + "/pnpm-linux-x64.tar.gz") and
-    $pnpm.assets.arm64.url ==
-      ("https://github.com/pnpm/pnpm/releases/download/v" +
-       $pnpm.version + "/pnpm-linux-arm64.tar.gz")) and
+    ($pnpm.source_archive.commit | test("^[0-9a-f]{40}$")) and
+    $pnpm.source_archive.url ==
+      ("https://codeload.github.com/pnpm/pnpm/tar.gz/" + $pnpm.source_archive.commit)) and
   ([.tools.base.actionlint.dependency_overrides[],
     .tools.base.compose.dependency_overrides[],
     .tools.base.gh.dependency_overrides[],
@@ -338,6 +332,10 @@ done < <(
     @tsv
   ' "$manifest"
 )
+
+pnpm_patch=$(jq -r '.tools.node.pnpm.dependency_patch' "$manifest")
+[[ $(sha256_file "${repository_root}/${pnpm_patch}") == "$(jq -r '.tools.node.pnpm.dependency_patch_sha256' "$manifest")" ]] ||
+	fail 'pnpm dependency patch checksum mismatch'
 
 while IFS= read -r debian_package_lock; do
 	debian_package_lock_path="${repository_root}/${debian_package_lock}"

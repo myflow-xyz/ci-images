@@ -128,7 +128,8 @@
           "github.com/klauspost/compress": "v1.20.3",
           "github.com/nwaples/rardecode/v2": "v2.4.5",
           "github.com/ulikunitz/xz": "v0.5.17",
-          "golang.org/x/crypto": "v0.58.0"
+          "golang.org/x/crypto": "v0.58.0",
+          "github.com/andybalholm/brotli": "v1.2.7"
         }
       },
       "jq": {
@@ -150,7 +151,9 @@
         "source": "https://github.com/google/osv-scanner",
         "module": "github.com/google/osv-scanner/v2/cmd/osv-scanner",
         "dependency_overrides": {
-          "golang.org/x/net": "v0.62.0"
+          "golang.org/x/net": "v0.62.0",
+          "modernc.org/sqlite": "v1.61.1",
+          "modernc.org/libc": "v1.79.0"
         }
       },
       "trivy": {
@@ -159,7 +162,10 @@
         "module": "github.com/aquasecurity/trivy/cmd/trivy",
         "dependency_overrides": {
           "golang.org/x/net": "v0.62.0",
-          "google.golang.org/grpc": "v1.85.0"
+          "google.golang.org/grpc": "v1.85.0",
+          "github.com/go-jose/go-jose/v4": "v4.1.7",
+          "modernc.org/sqlite": "v1.61.1",
+          "modernc.org/libc": "v1.79.0"
         }
       },
       "python": {
@@ -226,7 +232,8 @@
         "module": "github.com/docker/cli",
         "commit": "a82e528901260c8df6073311379eac65f92db204",
         "dependency_overrides": {
-          "golang.org/x/net": "v0.62.0"
+          "golang.org/x/net": "v0.62.0",
+          "github.com/go-jose/go-jose/v4": "v4.1.7"
         }
       },
       "compose": {
@@ -254,16 +261,13 @@
       "hurl": {
         "version": "8.1.0",
         "source": "https://github.com/Orange-OpenSource/hurl",
-        "assets": {
-          "amd64": {
-            "url": "https://github.com/Orange-OpenSource/hurl/releases/download/8.1.0/hurl-8.1.0-x86_64-unknown-linux-gnu.tar.gz",
-            "sha256": "b497e7ab328100c507f1f3323ebe7cc5990d831ae4f9473b74d40b02971da4ca"
-          },
-          "arm64": {
-            "url": "https://github.com/Orange-OpenSource/hurl/releases/download/8.1.0/hurl-8.1.0-aarch64-unknown-linux-gnu.tar.gz",
-            "sha256": "33c39409d4a24febb91d3766d3a5cb4074b7b86ad89d612f26fa35ab5e8cec79"
-          }
-        }
+        "source_archive": {
+          "url": "https://codeload.github.com/Orange-OpenSource/hurl/tar.gz/2641800501e077c835cc4059e39e5a251e8b1ccb",
+          "sha256": "5fe345a2d3f16e759e3123c8469e99078d9ab53b4a63cf54d78b47d21e2be8c6",
+          "commit": "2641800501e077c835cc4059e39e5a251e8b1ccb"
+        },
+        "lockfile": "images/go/hurl/Cargo.lock",
+        "lockfile_sha256": "c4401e4dbb0a312cd537f9647eb5627857af31b927d6b33eec9fd977013f8972"
       },
       "sqlc": {
         "module": "github.com/sqlc-dev/sqlc/cmd/sqlc",
@@ -282,7 +286,8 @@
           "golang.org/x/net": "v0.62.0",
           "google.golang.org/grpc": "v1.85.0",
           "modernc.org/libc": "v1.79.0",
-          "modernc.org/sqlite": "v1.61.1"
+          "modernc.org/sqlite": "v1.61.1",
+          "github.com/andybalholm/brotli": "v1.2.7"
         }
       },
       "golangci_lint": {
@@ -302,6 +307,14 @@
       "govulncheck": {
         "module": "golang.org/x/vuln/cmd/govulncheck",
         "version": "v1.9.0"
+      },
+      "linux_libc_dev": {
+        "version": "6.12.115-2",
+        "asset": {
+          "url": "https://security.debian.org/debian-security/pool/updates/main/l/linux/linux-libc-dev_6.12.115-2_all.deb",
+          "sha256": "235ba2cb2ea677f4acaf402b027e76d305342870f6d80d822d7ee9713e2f0ff5"
+        },
+        "source": "https://security-tracker.debian.org/tracker/CVE-2026-99083"
       }
     },
     "node": {
@@ -313,14 +326,18 @@
           "sha256": "228bd64aaef23270dbdbd2cf3d5ef5c467602ef38c4066246cef1984adab9a67"
         },
         "lockfile": "images/node/npm-runtime/package-lock.json",
-        "lockfile_sha256": "fbdf3605524da093ce7917c87300141c4375eed24651621b459a0e807b9651dd",
+        "lockfile_sha256": "1a4e623f572025c77efbaef4be85cb38ffee8d0107bdb5eb12e00562199f4690",
         "dependency_replacements": {
           "brace-expansion": "5.0.12",
           "http-cache-semantics": "4.3.0",
           "ip-address": "10.7.5",
           "postcss-selector-parser": "7.1.7",
           "tar": "7.5.22",
-          "undici": "6.29.1"
+          "undici": "6.29.1",
+          "glob": "14.0.2",
+          "minimatch": "11.0.1",
+          "path-scurry": "3.0.0",
+          "@isaacs/nonrecursive-glob-match": "1.0.1"
         }
       },
       "markdownlint_cli2": {
@@ -349,19 +366,21 @@
         "version": "12.17.0",
         "store_version": "11",
         "source": "https://github.com/pnpm/pnpm",
-        "assets": {
-          "amd64": {
-            "url": "https://github.com/pnpm/pnpm/releases/download/v12.17.0/pnpm-linux-x64.tar.gz",
-            "sha256": "2c58959fd5df5cb9f4e72784c08a60ffc7ee558fed9b04b22254e29112203a51"
-          },
-          "arm64": {
-            "url": "https://github.com/pnpm/pnpm/releases/download/v12.17.0/pnpm-linux-arm64.tar.gz",
-            "sha256": "ce5a5b95a9974a0bbd713a5ef74416dbcd0e3fdf11f69ea92c5995b9c18ccb47"
-          }
-        }
+        "source_archive": {
+          "url": "https://codeload.github.com/pnpm/pnpm/tar.gz/896dc10265faf931e64d8fa94006f4ea1501ce99",
+          "sha256": "a330d534f9a6002c3b16eb8bcd4899e6c55ed26bf3e31cbed51e8376a3c0fd71",
+          "commit": "896dc10265faf931e64d8fa94006f4ea1501ce99"
+        },
+        "lockfile": "images/node/pnpm/Cargo.lock",
+        "lockfile_sha256": "25a63a607a4e481db464cd01867e12ed2bde5702fe7206a0bcaeb93d40b2b563",
+        "dependency_patch": "images/node/pnpm/dependencies.patch",
+        "dependency_patch_sha256": "021adbeb766769dd04d02fa17dfdbc15491d0c3aae56e2f6406fe6ccf1169534"
       },
       "redocly": "2.69.0",
-      "source": "https://nodejs.org/dist/",
+      "source": {
+        "url": "https://nodejs.org/dist/v26.13.0/node-v26.13.0.tar.xz",
+        "sha256": "263f639ecfa7a17b49438d76cdbf9aff73179e3c7cb789da69b900718427fa2e"
+      },
       "assets": {
         "amd64": {
           "url": "https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-x64.tar.xz",
@@ -371,6 +390,12 @@
           "url": "https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-arm64.tar.xz",
           "sha256": "406fe3fbde1c054adff8b297c16fdb5af6659db327c1ac8acd46b56ef1af9a92"
         }
+      },
+      "runtime_build": {
+        "lockfile": "images/node/runtime/package-lock.json",
+        "lockfile_sha256": "9253fb95b5683d4a3d61ae406903d9ec4a4f436f205d496ea960e227269a2b04",
+        "undici": "8.12.3",
+        "esbuild": "0.28.2"
       }
     },
     "vite": {
@@ -445,6 +470,56 @@
             "lockfile_sha256": "15f7cb20e3b6f99d7e904eedd0dfb031c8ff39c04d8d6fea15d65827cb5a3f4b"
           }
         }
+      }
+    }
+  },
+  "build_dependencies": {
+    "brotli": {
+      "version": "1.2.1",
+      "asset": {
+        "url": "https://codeload.github.com/google/brotli/tar.gz/db24a98aed38a16de78cc05ca15cdd8dc2a0d92d",
+        "sha256": "113b9685dfc14dd2f3360d077283266eec2fbdfb0fe3e5600f11be151da0d68e"
+      }
+    },
+    "curl": {
+      "version": "8.23.0",
+      "asset": {
+        "url": "https://github.com/curl/curl/releases/download/curl-8_23_0/curl-8.23.0.tar.xz",
+        "sha256": "8dadd7d2536a314f982ad05a651b713f426bf7d02cc2c76cffb9796f2218e6c5"
+      }
+    },
+    "openssl": {
+      "version": "3.5.9",
+      "asset": {
+        "url": "https://github.com/openssl/openssl/releases/download/openssl-3.5.9/openssl-3.5.9.tar.gz",
+        "sha256": "603f5602e2eef00d77fbd429d34dcd5822bb301757a1bc9cdb24c670f1eb859a"
+      }
+    },
+    "rust": {
+      "version": "1.99.1",
+      "assets": {
+        "amd64": {
+          "url": "https://static.rust-lang.org/dist/2026-10-15/rust-1.99.1-x86_64-unknown-linux-gnu.tar.xz",
+          "sha256": "231fcae47ee950621374725b5fc3b5441d2fbda2955ac45dd7dc816d8876cfe7"
+        },
+        "arm64": {
+          "url": "https://static.rust-lang.org/dist/2026-10-15/rust-1.99.1-aarch64-unknown-linux-gnu.tar.xz",
+          "sha256": "a48fb1e853be56ce9b8e2751f5464dbd5e16440cd81e237920f3a5e7e806333e"
+        }
+      }
+    },
+    "nghttp3": {
+      "version": "1.19.0",
+      "asset": {
+        "url": "https://github.com/ngtcp2/nghttp3/releases/download/v1.19.0/nghttp3-1.19.0.tar.xz",
+        "sha256": "228e17f5cc3d4de7bfced9912bd09de30e7f45741cc47503cf88d3fa9209e155"
+      }
+    },
+    "ngtcp2": {
+      "version": "1.26.0",
+      "asset": {
+        "url": "https://github.com/ngtcp2/ngtcp2/releases/download/v1.26.0/ngtcp2-1.26.0.tar.xz",
+        "sha256": "7804aa0fa1c39942ba322a90805824c37231f7675b08d0c3cc4332858a7b085e"
       }
     }
   }

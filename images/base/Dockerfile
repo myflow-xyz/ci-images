@@ -211,6 +211,7 @@ ARG DEBIAN_SNAPSHOT
 ARG DOCKER_COMMIT
 ARG DOCKER_VERSION
 ARG DOCKER_X_NET_VERSION
+ARG DOCKER_GO_JOSE_VERSION
 ARG GH_VERSION
 ARG GH_X_NET_VERSION
 ARG GIT_LFS_VERSION
@@ -218,6 +219,7 @@ ARG GIT_LFS_X_NET_VERSION
 ARG GIT_LFS_X_CRYPTO_VERSION
 ARG GITLEAKS_VERSION
 ARG GITLEAKS_COMPRESS_VERSION
+ARG GITLEAKS_BROTLI_VERSION
 ARG GITLEAKS_RARDECODE_VERSION
 ARG GITLEAKS_X_CRYPTO_VERSION
 ARG GITLEAKS_XZ_VERSION
@@ -231,6 +233,8 @@ ARG JQ_SHA256_ARM64
 ARG JQ_VERSION
 ARG OSV_SCANNER_VERSION
 ARG OSV_SCANNER_X_NET_VERSION
+ARG OSV_SCANNER_MODERNC_LIBC_VERSION
+ARG OSV_SCANNER_MODERNC_SQLITE_VERSION
 ARG RIPGREP_ASSET_URL_AMD64
 ARG RIPGREP_ASSET_URL_ARM64
 ARG RIPGREP_SHA256_AMD64
@@ -246,6 +250,9 @@ ARG TARGETARCH
 ARG TRIVY_GRPC_VERSION
 ARG TRIVY_VERSION
 ARG TRIVY_X_NET_VERSION
+ARG TRIVY_MODERNC_LIBC_VERSION
+ARG TRIVY_MODERNC_SQLITE_VERSION
+ARG TRIVY_GO_JOSE_VERSION
 ARG YQ_VERSION
 ARG YQ_X_NET_VERSION
 ARG YQ_X_TEXT_VERSION
@@ -431,6 +438,7 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       docker \
       ./cmd/docker \
       "v${DOCKER_VERSION}+incompatible" \
+      "github.com/go-jose/go-jose/v4@${DOCKER_GO_JOSE_VERSION}" \
       "golang.org/x/net@${DOCKER_X_NET_VERSION}"; \
     mv "/out/docker/${DOCKER_VERSION}+incompatible" "/out/docker/${DOCKER_VERSION}"; \
     build_tool \
@@ -451,11 +459,14 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       "github.com/ulikunitz/xz@${GITLEAKS_XZ_VERSION}" \
       "github.com/nwaples/rardecode/v2@${GITLEAKS_RARDECODE_VERSION}" \
       "golang.org/x/crypto@${GITLEAKS_X_CRYPTO_VERSION}" \
+      "github.com/andybalholm/brotli@${GITLEAKS_BROTLI_VERSION}" \
       "github.com/klauspost/compress@${GITLEAKS_COMPRESS_VERSION}"; \
     build_tool \
       osv-scanner \
       github.com/google/osv-scanner/v2/cmd/osv-scanner \
       "v${OSV_SCANNER_VERSION}" \
+      "modernc.org/sqlite@${OSV_SCANNER_MODERNC_SQLITE_VERSION}" \
+      "modernc.org/libc@${OSV_SCANNER_MODERNC_LIBC_VERSION}" \
       "golang.org/x/net@${OSV_SCANNER_X_NET_VERSION}"; \
     build_tool \
       shfmt \
@@ -466,6 +477,9 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       github.com/aquasecurity/trivy/cmd/trivy \
       "v${TRIVY_VERSION}" \
       "google.golang.org/grpc@${TRIVY_GRPC_VERSION}" \
+      "github.com/go-jose/go-jose/v4@${TRIVY_GO_JOSE_VERSION}" \
+      "modernc.org/sqlite@${TRIVY_MODERNC_SQLITE_VERSION}" \
+      "modernc.org/libc@${TRIVY_MODERNC_LIBC_VERSION}" \
       "golang.org/x/net@${TRIVY_X_NET_VERSION}"; \
     build_tool \
       yq \

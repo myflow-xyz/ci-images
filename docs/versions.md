@@ -83,6 +83,7 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | Component | Version |
 | --- | --- |
 | `Go` | `1.27.3` |
+| `linux-libc-dev` | `6.12.115-2` |
 | `Hurl` | `8.1.0` |
 | `sqlc` | `1.31.1` |
 | `goose` | `3.29.0` |

@@ -6,14 +6,18 @@
 
 The initial image contract includes:
 
-- Node.js 26.13.0 imported from checksum-pinned official Linux archives;
+- Node.js 26.13.0 built from checksum-pinned official source;
 - npm and npx 12.2.1 from a hash-verified release artifact;
-- pnpm 12.17.0 from hash-verified native Linux release artifacts;
+- pnpm 12.17.0 built from its checksum-pinned release source and a reviewed Cargo lockfile;
 - `markdownlint-cli2` 0.24.0;
 - Redocly CLI 2.69.0 for OpenAPI validation;
 - explicit npm and pnpm cache paths.
 
-The npm release artifact is hash-verified, and its reviewed bundled dependency replacements are installed from a committed lockfile. They include the current compatible `undici` 6.x release and the fixed `postcss-selector-parser` release. The `http-cache-semantics` replacement uses the current compatible 4.3.0 release. Its remaining advisory scenario is recorded in the [stable toolchain qualification][security]. The Markdown tool lockfile overrides `smol-toml`, KaTeX, and `markdown-it` with their reviewed fixed releases. The architecture-matched pnpm archive is installed independently of npm and includes its native executable. Other Node tool dependency trees are installed from committed lockfiles into immutable versioned directories. Stable command links are exposed through `/opt/ci-tools/bin`.
+Node's source build updates embedded Brotli to 1.2.1 and Undici to 8.12.3. It preserves full ICU and Temporal support. The official Node binary is used only to prepare the build inputs. Build compilers and that bootstrap binary are excluded from the runtime image.
+
+The npm release artifact is hash-verified, and its reviewed bundled dependency replacements are installed from a committed lockfile. They include `undici` 6.x, `postcss-selector-parser`, and the approved `glob` 14 / `minimatch` 11 security updates. The `http-cache-semantics` replacement uses the current compatible 4.3.0 release. Its remaining advisory scenario is recorded in the [stable toolchain qualification][security]. The Markdown tool lockfile overrides `smol-toml`, KaTeX, and `markdown-it` with their reviewed fixed releases. Other Node tool dependency trees are installed from committed lockfiles into immutable versioned directories. Stable command links are exposed through `/opt/ci-tools/bin`.
+
+The pnpm source build retains the 12.17.0 CLI and store contract. Its committed patch updates the ZIP and OpenPGP dependencies and adapts ZIP entry-name error handling. The build runs the upstream archive and signature-verification unit tests. The manifest records the source, patch, lockfile, and Rust toolchain hashes.
 
 The Markdown bundle also applies a source-checked local patch for [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm). The parser and recursive tree walkers reject nesting deeper than 128 containers with a controlled syntax error. Regression tests cover string and AST APIs, CLI and configuration globs, and ordinary file selection and lint failures. The build rejects unexpected source hashes so a dependency update requires review of the patch. The upstream package remains identified as `braces` 3.0.3; no patched release is available, so dependency alerts may still report it. Remove the local patch only after adopting and testing an upstream fixed release.
 
