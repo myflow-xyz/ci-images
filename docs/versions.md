@@ -19,10 +19,10 @@ Cleanup and its internal capability helper are repository-owned commands tied to
 | `Bash` | `5.3.20` |
 | `Git` | `2.56.0` |
 | `Git LFS` | `3.8.1` |
-| `GitHub CLI` | `2.103.0` |
-| `CPython` | `3.15.1` |
+| `GitHub CLI` | `2.103.3` |
+| `CPython` | `3.15.2` |
 | `Docker CLI` | `29.9.2` |
-| `Docker Compose` | `5.6.1` |
+| `Docker Compose` | `5.7.0` |
 | `actionlint` | `1.7.12` |
 | `gitleaks` | `8.30.1` |
 | `jq` | `1.8.2` |
@@ -60,7 +60,7 @@ These packages are installed at exact revisions from the pinned Debian snapshot.
 | `sed` | `4.9-2+deb13u1` |
 | `tar` | `1.35+dfsg-3.1` |
 | `tini` | `0.19.0-3+b8` |
-| `tzdata` | `2026e-0+deb13u1` |
+| `tzdata` | `2026f-0+deb13u1` |
 | `unzip` | `6.0-29+deb13u1` |
 | `wget` | `1.25.0-2` |
 | `xz-utils` | `5.8.1-1+deb13u2` |
@@ -83,7 +83,8 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | Component | Version |
 | --- | --- |
 | `Go` | `1.27.3` |
-| `Hurl` | `8.0.1` |
+| `linux-libc-dev` | `6.12.115-2` |
+| `Hurl` | `8.1.0` |
 | `sqlc` | `1.31.1` |
 | `goose` | `3.29.0` |
 | `golangci-lint` | `2.15.0` |
@@ -94,9 +95,9 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 
 | Component | Version |
 | --- | --- |
-| `Node.js` | `26.12.1` |
+| `Node.js` | `26.13.0` |
 | `npm` | `12.2.1` |
-| `pnpm` | `12.15.0` |
+| `pnpm` | `12.17.0` |
 | `markdownlint-cli2` | `0.24.0` |
 | `@redocly/cli` | `2.69.0` |
 
@@ -108,11 +109,11 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | `TypeScript compatibility package` | `6.0.2` |
 | `TypeScript legacy compiler` | `6.0.3` |
 | `vite` | `8.3.5` |
-| `vitest` | `5.0.5` |
-| `@vitest/coverage-v8` | `5.0.5` |
-| `oxlint` | `1.89.0` |
+| `vitest` | `5.1.0` |
+| `@vitest/coverage-v8` | `5.1.0` |
+| `oxlint` | `1.90.0` |
 | `oxlint-tsgolint` | `7.0.2005` |
-| `oxfmt` | `0.74.0` |
+| `oxfmt` | `0.75.0` |
 
 ## `ci-playwright`
 
@@ -126,4 +127,4 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | --- | --- |
 | `PostgreSQL` | `18` |
 | `pgvector` | `0.8.7` |
-| `gosu` | `1.19` |
+| `gosu` | `1.20` |

@@ -1,0 +1,72 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -217,3 +217,3 @@
+ pep508_rs = { version = "0.9.2" }
+-pgp = { version = "0.20.0", default-features = false }
++pgp = { version = "0.21.0", default-features = false }
+ qrcode = { version = "0.14.1", default-features = false }
+@@ -268,3 +268,3 @@
+ which = { version = "8.0.2" }
+-zip = { version = "8", default-features = false, features = ["deflate"] }
++zip = { version = "9.2.2", default-features = false, features = ["deflate"] }
+ zstd = { version = "0.14.3", default-features = false }
+--- a/pnpm/crates/tarball/src/zip_archive.rs
++++ b/pnpm/crates/tarball/src/zip_archive.rs
+@@ -161,3 +161,9 @@
+     // error code.
+-    let raw_name = entry.name().to_string();
++    let raw_name = entry
++        .name()
++        .map_err(|source| TarballError::ReadZipArchive {
++            url: package_url.to_string(),
++            source,
++        })?
++        .into_owned();
+     let traversal = |entry_path: String| TarballError::PathTraversal {
+--- a/pnpr/crates/osv/src/loader.rs
++++ b/pnpr/crates/osv/src/loader.rs
+@@ -27,3 +27,9 @@
+             })?;
+-        if !entry.is_file() || !entry.name().ends_with(".json") {
++        if !entry.is_file() {
++            continue;
++        }
++        let name = entry.name().map_err(|err| {
++            invalid_config(format!("failed to read OSV zip entry name in {}: {err}", path.display()))
++        })?;
++        if !name.ends_with(".json") {
+             continue;
+@@ -72,9 +78,12 @@
+ ) -> Result<(String, Vec<u8>), RegistryError> {
+-    if entry.name().len() > MAX_OSV_NAME_BYTES {
++    let name = entry
++        .name()
++        .map_err(|err| invalid_config(format!("failed to read OSV zip entry name: {err}")))?
++        .into_owned();
++    if name.len() > MAX_OSV_NAME_BYTES {
+         return Err(invalid_config(format!(
+             "OSV zip entry name is {} bytes, over the {MAX_OSV_NAME_BYTES}-byte limit",
+-            entry.name().len(),
++            name.len(),
+         )));
+     }
+-    let name = entry.name().to_string();
+     if entry.size() > MAX_OSV_RECORD_BYTES {
+--- a/pnpr/crates/pnpr/src/resolver/pypi/metadata.rs
++++ b/pnpr/crates/pnpr/src/resolver/pypi/metadata.rs
+@@ -100,3 +100,4 @@
+                     .name()
+-                    .to_string(),
++                    .ok()?
++                    .into_owned(),
+             )
+--- a/pnpm/crates/cli/tests/suite/python/validation.rs
++++ b/pnpm/crates/cli/tests/suite/python/validation.rs
+@@ -392,5 +392,5 @@
+         altered
+-            .start_file(entry.name(), SimpleFileOptions::default())
++            .start_file(entry.name().unwrap(), SimpleFileOptions::default())
+             .unwrap();
+-        if entry.name() == "alpha/__init__.py" {
++        if entry.name().unwrap() == "alpha/__init__.py" {
+             altered.write_all(b"TAMPERED = True\n").unwrap();

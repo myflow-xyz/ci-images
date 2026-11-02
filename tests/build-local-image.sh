@@ -74,6 +74,8 @@ build_base() {
 		"ACTIONLINT_VERSION=$(json '.tools.base.actionlint.version')" \
 		--build-arg \
 		"ACTIONLINT_X_SYS_VERSION=$(json '.tools.base.actionlint.dependency_overrides["golang.org/x/sys"]')" \
+		--build-arg \
+		"ACTIONLINT_X_NET_VERSION=$(json '.tools.base.actionlint.dependency_overrides["golang.org/x/net"]')" \
 		--build-arg "BASH_RELEASE=$(json '.tools.base.bash.release')" \
 		--build-arg \
 		"BASH_PATCHLEVEL=$(json '.tools.base.bash.patchlevel')" \
@@ -81,6 +83,10 @@ build_base() {
 		"BASH_SHA256=$(json '.tools.base.bash.asset.sha256')" \
 		--build-arg "DOCKER_VERSION=$(json '.tools.base.docker.version')" \
 		--build-arg "DOCKER_COMMIT=$(json '.tools.base.docker.commit')" \
+		--build-arg \
+		"DOCKER_X_NET_VERSION=$(json '.tools.base.docker.dependency_overrides["golang.org/x/net"]')" \
+		--build-arg \
+		"DOCKER_GO_JOSE_VERSION=$(json '.tools.base.docker.dependency_overrides["github.com/go-jose/go-jose/v4"]')" \
 		--build-arg "COMPOSE_VERSION=$(json '.tools.base.compose.version')" \
 		--build-arg \
 		"COMPOSE_X_NET_VERSION=$(json '.tools.base.compose.dependency_overrides["golang.org/x/net"]')" \
@@ -102,6 +108,8 @@ build_base() {
 		--build-arg \
 		"GITLEAKS_COMPRESS_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["github.com/klauspost/compress"]')" \
 		--build-arg \
+		"GITLEAKS_BROTLI_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["github.com/andybalholm/brotli"]')" \
+		--build-arg \
 		"GITLEAKS_RARDECODE_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["github.com/nwaples/rardecode/v2"]')" \
 		--build-arg \
 		"GITLEAKS_X_CRYPTO_VERSION=$(json '.tools.base.gitleaks.dependency_overrides["golang.org/x/crypto"]')" \
@@ -120,6 +128,10 @@ build_base() {
 		"OSV_SCANNER_VERSION=$(json '.tools.base.osv_scanner.version')" \
 		--build-arg \
 		"OSV_SCANNER_X_NET_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["golang.org/x/net"]')" \
+		--build-arg \
+		"OSV_SCANNER_MODERNC_LIBC_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["modernc.org/libc"]')" \
+		--build-arg \
+		"OSV_SCANNER_MODERNC_SQLITE_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["modernc.org/sqlite"]')" \
 		--build-arg \
 		"PYTHON_VERSION=$(json '.tools.base.python.version')" \
 		--build-arg \
@@ -160,6 +172,12 @@ build_base() {
 		--build-arg "TRIVY_VERSION=$(json '.tools.base.trivy.version')" \
 		--build-arg \
 		"TRIVY_X_NET_VERSION=$(json '.tools.base.trivy.dependency_overrides["golang.org/x/net"]')" \
+		--build-arg \
+		"TRIVY_MODERNC_LIBC_VERSION=$(json '.tools.base.trivy.dependency_overrides["modernc.org/libc"]')" \
+		--build-arg \
+		"TRIVY_MODERNC_SQLITE_VERSION=$(json '.tools.base.trivy.dependency_overrides["modernc.org/sqlite"]')" \
+		--build-arg \
+		"TRIVY_GO_JOSE_VERSION=$(json '.tools.base.trivy.dependency_overrides["github.com/go-jose/go-jose/v4"]')" \
 		--build-arg \
 		"TRIVY_GRPC_VERSION=$(json '.tools.base.trivy.dependency_overrides["google.golang.org/grpc"]')" \
 		--build-arg "YQ_VERSION=$(json '.tools.base.yq.version')" \
@@ -205,10 +223,28 @@ build_go() {
 		--build-arg \
 		"GO_SHA256_ARM64=$(json '.tools.go.assets.arm64.sha256')" \
 		--build-arg "HURL_VERSION=$(json '.tools.go.hurl.version')" \
-		--build-arg \
-		"HURL_SHA256_AMD64=$(json '.tools.go.hurl.assets.amd64.sha256')" \
-		--build-arg \
-		"HURL_SHA256_ARM64=$(json '.tools.go.hurl.assets.arm64.sha256')" \
+		--build-arg "LINUX_LIBC_DEV_VERSION=$(json '.tools.go.linux_libc_dev.version')" \
+		--build-arg "LINUX_LIBC_DEV_ASSET_URL=$(json '.tools.go.linux_libc_dev.asset.url')" \
+		--build-arg "LINUX_LIBC_DEV_SHA256=$(json '.tools.go.linux_libc_dev.asset.sha256')" \
+		--build-arg "BUILDER_IMAGE=$(json '.upstream_images.debian | "\(.reference)@\(.digest)"')" \
+		--build-arg "DEBIAN_SNAPSHOT=$(json '.debian_snapshot')" \
+		--build-arg "HURL_SOURCE_URL=$(json '.tools.go.hurl.source_archive.url')" \
+		--build-arg "HURL_SOURCE_SHA256=$(json '.tools.go.hurl.source_archive.sha256')" \
+		--build-arg "RUST_VERSION=$(json '.build_dependencies.rust.version')" \
+		--build-arg "BROTLI_ASSET_URL=$(json '.build_dependencies.brotli.asset.url')" \
+		--build-arg "BROTLI_SHA256=$(json '.build_dependencies.brotli.asset.sha256')" \
+		--build-arg "CURL_ASSET_URL=$(json '.build_dependencies.curl.asset.url')" \
+		--build-arg "CURL_SHA256=$(json '.build_dependencies.curl.asset.sha256')" \
+		--build-arg "OPENSSL_ASSET_URL=$(json '.build_dependencies.openssl.asset.url')" \
+		--build-arg "OPENSSL_SHA256=$(json '.build_dependencies.openssl.asset.sha256')" \
+		--build-arg "NGHTTP3_ASSET_URL=$(json '.build_dependencies.nghttp3.asset.url')" \
+		--build-arg "NGHTTP3_SHA256=$(json '.build_dependencies.nghttp3.asset.sha256')" \
+		--build-arg "NGTCP2_ASSET_URL=$(json '.build_dependencies.ngtcp2.asset.url')" \
+		--build-arg "NGTCP2_SHA256=$(json '.build_dependencies.ngtcp2.asset.sha256')" \
+		--build-arg "RUST_ASSET_URL_AMD64=$(json '.build_dependencies.rust.assets.amd64.url')" \
+		--build-arg "RUST_SHA256_AMD64=$(json '.build_dependencies.rust.assets.amd64.sha256')" \
+		--build-arg "RUST_ASSET_URL_ARM64=$(json '.build_dependencies.rust.assets.arm64.url')" \
+		--build-arg "RUST_SHA256_ARM64=$(json '.build_dependencies.rust.assets.arm64.sha256')" \
 		--build-arg "SQLC_VERSION=$(json '.tools.go.sqlc.version')" \
 		--build-arg \
 		"SQLC_CEL_GO_VERSION=$(json '.tools.go.sqlc.dependency_overrides["github.com/google/cel-go"]')" \
@@ -222,15 +258,21 @@ build_go() {
 		--build-arg \
 		"GOOSE_X_NET_VERSION=$(json '.tools.go.goose.dependency_overrides["golang.org/x/net"]')" \
 		--build-arg \
+		"GOOSE_BROTLI_VERSION=$(json '.tools.go.goose.dependency_overrides["github.com/andybalholm/brotli"]')" \
+		--build-arg \
 		"GOOSE_GRPC_VERSION=$(json '.tools.go.goose.dependency_overrides["google.golang.org/grpc"]')" \
 		--build-arg \
 		"GOOSE_MODERNC_LIBC_VERSION=$(json '.tools.go.goose.dependency_overrides["modernc.org/libc"]')" \
+		--build-arg \
+		"GOOSE_MODERNC_SQLITE_VERSION=$(json '.tools.go.goose.dependency_overrides["modernc.org/sqlite"]')" \
 		--build-arg \
 		"GOLANGCI_LINT_VERSION=$(json '.tools.go.golangci_lint.version')" \
 		--build-arg \
 		"GOLANGCI_LINT_X_TEXT_VERSION=$(json '.tools.go.golangci_lint.dependency_overrides["golang.org/x/text"]')" \
 		--build-arg \
 		"GOIMPORTS_VERSION=$(json '.tools.go.goimports.version')" \
+		--build-arg \
+		"GOIMPORTS_X_NET_VERSION=$(json '.tools.go.goimports.dependency_overrides["golang.org/x/net"]')" \
 		--build-arg \
 		"GOVULNCHECK_VERSION=$(json '.tools.go.govulncheck.version')" \
 		"$repository_root"
@@ -242,6 +284,19 @@ build_node() {
 		--tag ci-node:test \
 		"${common_labels[@]}" \
 		--build-arg BASE_IMAGE=ci-base:test \
+		--build-arg "BUILDER_IMAGE=$(json '.upstream_images.debian | "\(.reference)@\(.digest)"')" \
+		--build-arg "DEBIAN_SNAPSHOT=$(json '.debian_snapshot')" \
+		--build-arg "RUST_VERSION=$(json '.build_dependencies.rust.version')" \
+		--build-arg "RUST_ASSET_URL_AMD64=$(json '.build_dependencies.rust.assets.amd64.url')" \
+		--build-arg "RUST_ASSET_URL_ARM64=$(json '.build_dependencies.rust.assets.arm64.url')" \
+		--build-arg "RUST_SHA256_AMD64=$(json '.build_dependencies.rust.assets.amd64.sha256')" \
+		--build-arg "RUST_SHA256_ARM64=$(json '.build_dependencies.rust.assets.arm64.sha256')" \
+		--build-arg "NODE_SOURCE_URL=$(json '.tools.node.source.url')" \
+		--build-arg "NODE_SOURCE_SHA256=$(json '.tools.node.source.sha256')" \
+		--build-arg "NODE_UNDICI_VERSION=$(json '.tools.node.runtime_build.undici')" \
+		--build-arg "BROTLI_ASSET_URL=$(json '.build_dependencies.brotli.asset.url')" \
+		--build-arg "BROTLI_SHA256=$(json '.build_dependencies.brotli.asset.sha256')" \
+		--build-arg "BROTLI_VERSION=$(json '.build_dependencies.brotli.version')" \
 		--build-arg "NODE_ASSET_URL_AMD64=$(json '.tools.node.assets.amd64.url')" \
 		--build-arg "NODE_ASSET_URL_ARM64=$(json '.tools.node.assets.arm64.url')" \
 		--build-arg "NODE_SHA256_AMD64=$(json '.tools.node.assets.amd64.sha256')" \
@@ -273,14 +328,10 @@ build_node() {
 		"NPM_TAR_VERSION=$(json '.tools.node.npm.dependency_replacements.tar')" \
 		--build-arg \
 		"NPM_UNDICI_VERSION=$(json '.tools.node.npm.dependency_replacements.undici')" \
-		--build-arg \
-		"PNPM_ASSET_URL_AMD64=$(json '.tools.node.pnpm.assets.amd64.url')" \
-		--build-arg \
-		"PNPM_ASSET_URL_ARM64=$(json '.tools.node.pnpm.assets.arm64.url')" \
-		--build-arg \
-		"PNPM_SHA256_AMD64=$(json '.tools.node.pnpm.assets.amd64.sha256')" \
-		--build-arg \
-		"PNPM_SHA256_ARM64=$(json '.tools.node.pnpm.assets.arm64.sha256')" \
+		--build-arg "PNPM_SOURCE_URL=$(json '.tools.node.pnpm.source_archive.url')" \
+		--build-arg "PNPM_SOURCE_SHA256=$(json '.tools.node.pnpm.source_archive.sha256')" \
+		--build-arg "PNPM_SUPPORT_ASSET_URL=$(json '.tools.node.pnpm.support_asset.url')" \
+		--build-arg "PNPM_SUPPORT_SHA256=$(json '.tools.node.pnpm.support_asset.sha256')" \
 		--build-arg "PNPM_VERSION=$(json '.tools.node.pnpm.version')" \
 		--build-arg "REDOCLY_VERSION=$(json '.tools.node.redocly')" \
 		"$repository_root"
