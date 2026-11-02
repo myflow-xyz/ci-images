@@ -202,6 +202,7 @@ RUN set -eu; \
 FROM --platform=${BUILDPLATFORM} ${BASE_IMAGE} AS base-go-tools-builder
 
 ARG ACTIONLINT_VERSION
+ARG ACTIONLINT_X_NET_VERSION
 ARG ACTIONLINT_X_SYS_VERSION
 ARG BUILDARCH
 ARG COMPOSE_VERSION
@@ -209,6 +210,7 @@ ARG COMPOSE_X_NET_VERSION
 ARG DEBIAN_SNAPSHOT
 ARG DOCKER_COMMIT
 ARG DOCKER_VERSION
+ARG DOCKER_X_NET_VERSION
 ARG GH_VERSION
 ARG GH_X_NET_VERSION
 ARG GIT_LFS_VERSION
@@ -418,6 +420,7 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       actionlint \
       github.com/rhysd/actionlint/cmd/actionlint \
       "v${ACTIONLINT_VERSION}" \
+      "golang.org/x/net@${ACTIONLINT_X_NET_VERSION}" \
       "golang.org/x/sys@${ACTIONLINT_X_SYS_VERSION}"; \
     build_tool \
       gh \
@@ -427,7 +430,8 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
     build_tool \
       docker \
       ./cmd/docker \
-      "v${DOCKER_VERSION}+incompatible"; \
+      "v${DOCKER_VERSION}+incompatible" \
+      "golang.org/x/net@${DOCKER_X_NET_VERSION}"; \
     mv "/out/docker/${DOCKER_VERSION}+incompatible" "/out/docker/${DOCKER_VERSION}"; \
     build_tool \
       docker-compose \

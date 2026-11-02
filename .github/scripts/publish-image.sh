@@ -220,6 +220,8 @@ base)
 		"ACTIONLINT_VERSION=$(json '.tools.base.actionlint.version')" \
 		--build-arg \
 		"ACTIONLINT_X_SYS_VERSION=$(json '.tools.base.actionlint.dependency_overrides["golang.org/x/sys"]')" \
+		--build-arg \
+		"ACTIONLINT_X_NET_VERSION=$(json '.tools.base.actionlint.dependency_overrides["golang.org/x/net"]')" \
 		--build-arg "BASH_RELEASE=$(json '.tools.base.bash.release')" \
 		--build-arg \
 		"BASH_PATCHLEVEL=$(json '.tools.base.bash.patchlevel')" \
@@ -227,6 +229,8 @@ base)
 		"BASH_SHA256=$(json '.tools.base.bash.asset.sha256')" \
 		--build-arg "DOCKER_VERSION=$(json '.tools.base.docker.version')" \
 		--build-arg "DOCKER_COMMIT=$(json '.tools.base.docker.commit')" \
+		--build-arg \
+		"DOCKER_X_NET_VERSION=$(json '.tools.base.docker.dependency_overrides["golang.org/x/net"]')" \
 		--build-arg "COMPOSE_VERSION=$(json '.tools.base.compose.version')" \
 		--build-arg \
 		"COMPOSE_X_NET_VERSION=$(json '.tools.base.compose.dependency_overrides["golang.org/x/net"]')" \
@@ -344,11 +348,15 @@ go)
 		--build-arg \
 		"GOOSE_MODERNC_LIBC_VERSION=$(json '.tools.go.goose.dependency_overrides["modernc.org/libc"]')" \
 		--build-arg \
+		"GOOSE_MODERNC_SQLITE_VERSION=$(json '.tools.go.goose.dependency_overrides["modernc.org/sqlite"]')" \
+		--build-arg \
 		"GOLANGCI_LINT_VERSION=$(json '.tools.go.golangci_lint.version')" \
 		--build-arg \
 		"GOLANGCI_LINT_X_TEXT_VERSION=$(json '.tools.go.golangci_lint.dependency_overrides["golang.org/x/text"]')" \
 		--build-arg \
 		"GOIMPORTS_VERSION=$(json '.tools.go.goimports.version')" \
+		--build-arg \
+		"GOIMPORTS_X_NET_VERSION=$(json '.tools.go.goimports.dependency_overrides["golang.org/x/net"]')" \
 		--build-arg \
 		"GOVULNCHECK_VERSION=$(json '.tools.go.govulncheck.version')"
 	;;

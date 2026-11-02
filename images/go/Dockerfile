@@ -9,10 +9,12 @@ ARG BUILD_REVISION=unknown
 ARG GOLANGCI_LINT_VERSION
 ARG GOLANGCI_LINT_X_TEXT_VERSION
 ARG GOIMPORTS_VERSION
+ARG GOIMPORTS_X_NET_VERSION
 ARG GOOSE_VERSION
 ARG GOOSE_X_CRYPTO_VERSION
 ARG GOOSE_GRPC_VERSION
 ARG GOOSE_MODERNC_LIBC_VERSION
+ARG GOOSE_MODERNC_SQLITE_VERSION
 ARG GOOSE_X_NET_VERSION
 ARG GOVULNCHECK_VERSION
 ARG GO_SHA256_AMD64
@@ -136,7 +138,8 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       "golang.org/x/crypto@${GOOSE_X_CRYPTO_VERSION}" \
       "golang.org/x/net@${GOOSE_X_NET_VERSION}" \
       "google.golang.org/grpc@${GOOSE_GRPC_VERSION}" \
-      "modernc.org/libc@${GOOSE_MODERNC_LIBC_VERSION}"; \
+      "modernc.org/libc@${GOOSE_MODERNC_LIBC_VERSION}" \
+      "modernc.org/sqlite@${GOOSE_MODERNC_SQLITE_VERSION}"; \
     build_tool \
       golangci-lint \
       github.com/golangci/golangci-lint/v2/cmd/golangci-lint \
@@ -145,7 +148,8 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
     build_tool \
       goimports \
       golang.org/x/tools/cmd/goimports \
-      "${GOIMPORTS_VERSION}"; \
+      "${GOIMPORTS_VERSION}" \
+      "golang.org/x/net@${GOIMPORTS_X_NET_VERSION}"; \
     build_tool \
       govulncheck \
       golang.org/x/vuln/cmd/govulncheck \

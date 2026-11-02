@@ -24,6 +24,8 @@ Select the narrowest image that satisfies a job. This reduces download size, sec
 
 Repository-specific dependencies, configuration, and migrations remain in the consumer repository rather than the shared images.
 
+All images share the Docker host's running Linux kernel. The runner must use a vendor kernel with the [CVE-2026-98432 fix](https://security-tracker.debian.org/tracker/CVE-2026-98432); Debian Trixie includes it from kernel source version `6.12.113-1`. Install the applicable host update and reboot into the fixed kernel before running jobs. Updating an image or its `linux-libc-dev` userspace headers does not update the host kernel. Verify the running kernel against the host vendor's advisory, since distribution backports do not share one universal version threshold.
+
 ## Pulling and pinning
 
 The current GHCR packages are private. For local access, authenticate with a personal access token (classic) that has `read:packages` and an account that can read the packages:
