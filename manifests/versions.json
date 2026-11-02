@@ -372,6 +372,10 @@
           "sha256": "a330d534f9a6002c3b16eb8bcd4899e6c55ed26bf3e31cbed51e8376a3c0fd71",
           "commit": "896dc10265faf931e64d8fa94006f4ea1501ce99"
         },
+        "support_asset": {
+          "url": "https://registry.npmjs.org/pnpm/-/pnpm-12.17.0.tgz",
+          "sha256": "6d776e285187f9e334d8826cc5a88e82e41606345f196a5a93f4403bd332553e"
+        },
         "lockfile": "images/node/pnpm/Cargo.lock",
         "lockfile_sha256": "25a63a607a4e481db464cd01867e12ed2bde5702fe7206a0bcaeb93d40b2b563",
         "dependency_patch": "images/node/pnpm/dependencies.patch",

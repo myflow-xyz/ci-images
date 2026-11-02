@@ -446,6 +446,8 @@ node)
 		"NPM_UNDICI_VERSION=$(json '.tools.node.npm.dependency_replacements.undici')" \
 		--build-arg "PNPM_SOURCE_URL=$(json '.tools.node.pnpm.source_archive.url')" \
 		--build-arg "PNPM_SOURCE_SHA256=$(json '.tools.node.pnpm.source_archive.sha256')" \
+		--build-arg "PNPM_SUPPORT_ASSET_URL=$(json '.tools.node.pnpm.support_asset.url')" \
+		--build-arg "PNPM_SUPPORT_SHA256=$(json '.tools.node.pnpm.support_asset.sha256')" \
 		--build-arg "PNPM_VERSION=$(json '.tools.node.pnpm.version')" \
 		--build-arg "REDOCLY_VERSION=$(json '.tools.node.redocly')"
 	;;

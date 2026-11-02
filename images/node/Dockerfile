@@ -173,6 +173,8 @@ ARG NPM_SHA256
 ARG NPM_TAR_VERSION
 ARG NPM_UNDICI_VERSION
 ARG NPM_VERSION
+ARG PNPM_SUPPORT_ASSET_URL
+ARG PNPM_SUPPORT_SHA256
 ARG PNPM_VERSION
 ARG REDOCLY_VERSION
 ARG TARGETARCH
@@ -200,6 +202,16 @@ COPY --from=pnpm-builder /out/ /opt/ci-tools/pnpm/${PNPM_VERSION}/
 
 RUN set -eu; \
     pnpm_directory="/opt/ci-tools/pnpm/${PNPM_VERSION}"; \
+    /usr/local/libexec/ci/fetch-verified \
+      "${PNPM_SUPPORT_ASSET_URL}" "${PNPM_SUPPORT_SHA256}" /var/tmp/pnpm-support.tgz; \
+    install -d /var/tmp/pnpm-support; \
+    tar -xzf /var/tmp/pnpm-support.tgz --strip-components=1 -C /var/tmp/pnpm-support; \
+    test "$(node -p "require('/var/tmp/pnpm-support/package.json').version")" = "${PNPM_VERSION}"; \
+    mv /var/tmp/pnpm-support/dist "${pnpm_directory}/dist"; \
+    install -m 0644 /var/tmp/pnpm-support/THIRD-PARTY-NOTICES.md "${pnpm_directory}/"; \
+    test -x "${pnpm_directory}/dist/node-gyp-bin/node-gyp"; \
+    "${pnpm_directory}/dist/node-gyp-bin/node-gyp" --version; \
+    rm -rf /var/tmp/pnpm-support /var/tmp/pnpm-support.tgz; \
     test "$("${pnpm_directory}/pnpm" --version)" = "${PNPM_VERSION}"; \
     ln -s \
       "../pnpm/${PNPM_VERSION}/pnpm" \

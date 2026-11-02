@@ -361,6 +361,8 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 			"NODE_SOURCE_SHA256=$(jq -r '.tools.node.source.sha256' "$manifest")" \
 			"PNPM_SOURCE_URL=$(jq -r '.tools.node.pnpm.source_archive.url' "$manifest")" \
 			"PNPM_SOURCE_SHA256=$(jq -r '.tools.node.pnpm.source_archive.sha256' "$manifest")" \
+			"PNPM_SUPPORT_ASSET_URL=$(jq -r '.tools.node.pnpm.support_asset.url' "$manifest")" \
+			"PNPM_SUPPORT_SHA256=$(jq -r '.tools.node.pnpm.support_asset.sha256' "$manifest")" \
 			"RUST_VERSION=$(jq -r '.build_dependencies.rust.version' "$manifest")" \
 			"PNPM_VERSION=$(jq -r '.tools.node.pnpm.version' "$manifest")"; do
 			grep -Fq -- "--build-arg ${build_arg}" "$fake_log" ||

@@ -290,6 +290,8 @@ jq --exit-status '
   (.tools.node.pnpm as $pnpm |
     $pnpm.source == "https://github.com/pnpm/pnpm" and
     ($pnpm.store_version | test("^[0-9]+$")) and
+    $pnpm.support_asset.url ==
+      ("https://registry.npmjs.org/pnpm/-/pnpm-" + $pnpm.version + ".tgz") and
     ($pnpm.source_archive.commit | test("^[0-9a-f]{40}$")) and
     $pnpm.source_archive.url ==
       ("https://codeload.github.com/pnpm/pnpm/tar.gz/" + $pnpm.source_archive.commit)) and
