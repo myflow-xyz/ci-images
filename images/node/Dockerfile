@@ -69,7 +69,7 @@ RUN --mount=type=cache,target=/var/cache/cargo,sharing=locked \
     cargo build --release --locked -j2 --package pnpm-cli --bin pnpm; \
     cargo test --release --locked -j2 --package pnpm-tarball --package pnpm-crypto-shasums-file --package pnpr-osv --lib; \
     cargo test --release --locked -j2 --package pnpr --lib resolver::pypi; \
-    test "$(/var/cache/pnpm-target/release/pnpm --version)" = "${PNPM_VERSION}"; \
+    test "$(cd /; /var/cache/pnpm-target/release/pnpm --version)" = "${PNPM_VERSION}"; \
     install -d /out; \
     install -m 0755 /var/cache/pnpm-target/release/pnpm /out/pnpm; \
     install -m 0644 LICENSE /out/LICENSE
