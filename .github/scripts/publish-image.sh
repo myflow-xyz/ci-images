@@ -400,19 +400,6 @@ net)
 node)
 	publish_image \
 		--build-arg "BASE_IMAGE=${parent_reference}" \
-		--build-arg "BUILDER_IMAGE=$(json '.upstream_images.debian | "\(.reference)@\(.digest)"')" \
-		--build-arg "DEBIAN_SNAPSHOT=$(json '.debian_snapshot')" \
-		--build-arg "RUST_VERSION=$(json '.build_dependencies.rust.version')" \
-		--build-arg "RUST_ASSET_URL_AMD64=$(json '.build_dependencies.rust.assets.amd64.url')" \
-		--build-arg "RUST_ASSET_URL_ARM64=$(json '.build_dependencies.rust.assets.arm64.url')" \
-		--build-arg "RUST_SHA256_AMD64=$(json '.build_dependencies.rust.assets.amd64.sha256')" \
-		--build-arg "RUST_SHA256_ARM64=$(json '.build_dependencies.rust.assets.arm64.sha256')" \
-		--build-arg "NODE_SOURCE_URL=$(json '.tools.node.source.url')" \
-		--build-arg "NODE_SOURCE_SHA256=$(json '.tools.node.source.sha256')" \
-		--build-arg "NODE_UNDICI_VERSION=$(json '.tools.node.runtime_build.undici')" \
-		--build-arg "BROTLI_ASSET_URL=$(json '.build_dependencies.brotli.asset.url')" \
-		--build-arg "BROTLI_SHA256=$(json '.build_dependencies.brotli.asset.sha256')" \
-		--build-arg "BROTLI_VERSION=$(json '.build_dependencies.brotli.version')" \
 		--build-arg "NODE_ASSET_URL_AMD64=$(json '.tools.node.assets.amd64.url')" \
 		--build-arg "NODE_ASSET_URL_ARM64=$(json '.tools.node.assets.arm64.url')" \
 		--build-arg "NODE_SHA256_AMD64=$(json '.tools.node.assets.amd64.sha256')" \
@@ -444,10 +431,10 @@ node)
 		"NPM_TAR_VERSION=$(json '.tools.node.npm.dependency_replacements.tar')" \
 		--build-arg \
 		"NPM_UNDICI_VERSION=$(json '.tools.node.npm.dependency_replacements.undici')" \
-		--build-arg "PNPM_SOURCE_URL=$(json '.tools.node.pnpm.source_archive.url')" \
-		--build-arg "PNPM_SOURCE_SHA256=$(json '.tools.node.pnpm.source_archive.sha256')" \
-		--build-arg "PNPM_SUPPORT_ASSET_URL=$(json '.tools.node.pnpm.support_asset.url')" \
-		--build-arg "PNPM_SUPPORT_SHA256=$(json '.tools.node.pnpm.support_asset.sha256')" \
+		--build-arg "PNPM_ASSET_URL_AMD64=$(json '.tools.node.pnpm.assets.amd64.url')" \
+		--build-arg "PNPM_ASSET_URL_ARM64=$(json '.tools.node.pnpm.assets.arm64.url')" \
+		--build-arg "PNPM_SHA256_AMD64=$(json '.tools.node.pnpm.assets.amd64.sha256')" \
+		--build-arg "PNPM_SHA256_ARM64=$(json '.tools.node.pnpm.assets.arm64.sha256')" \
 		--build-arg "PNPM_VERSION=$(json '.tools.node.pnpm.version')" \
 		--build-arg "REDOCLY_VERSION=$(json '.tools.node.redocly')"
 	;;
