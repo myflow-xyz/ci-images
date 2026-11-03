@@ -33,7 +33,6 @@ docker buildx build \
 	--call=check \
 	--file "${repository_root}/images/node/Dockerfile" \
 	--build-arg "BASE_IMAGE=${debian_image}" \
-	--build-arg "BUILDER_IMAGE=${debian_image}" \
 	"$repository_root"
 
 for image in net vite playwright; do

@@ -357,13 +357,10 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 			"NPM_POSTCSS_SELECTOR_PARSER_VERSION=$(jq -r '.tools.node.npm.dependency_replacements["postcss-selector-parser"]' "$manifest")" \
 			"NPM_HTTP_CACHE_SEMANTICS_VERSION=$(jq -r '.tools.node.npm.dependency_replacements["http-cache-semantics"]' "$manifest")" \
 			"MARKDOWNLINT_SMOL_TOML_VERSION=$(jq -r '.tools.node.markdownlint_cli2.dependency_overrides["smol-toml"]' "$manifest")" \
-			"NODE_SOURCE_URL=$(jq -r '.tools.node.source.url' "$manifest")" \
-			"NODE_SOURCE_SHA256=$(jq -r '.tools.node.source.sha256' "$manifest")" \
-			"PNPM_SOURCE_URL=$(jq -r '.tools.node.pnpm.source_archive.url' "$manifest")" \
-			"PNPM_SOURCE_SHA256=$(jq -r '.tools.node.pnpm.source_archive.sha256' "$manifest")" \
-			"PNPM_SUPPORT_ASSET_URL=$(jq -r '.tools.node.pnpm.support_asset.url' "$manifest")" \
-			"PNPM_SUPPORT_SHA256=$(jq -r '.tools.node.pnpm.support_asset.sha256' "$manifest")" \
-			"RUST_VERSION=$(jq -r '.build_dependencies.rust.version' "$manifest")" \
+			"PNPM_ASSET_URL_AMD64=$(jq -r '.tools.node.pnpm.assets.amd64.url' "$manifest")" \
+			"PNPM_ASSET_URL_ARM64=$(jq -r '.tools.node.pnpm.assets.arm64.url' "$manifest")" \
+			"PNPM_SHA256_AMD64=$(jq -r '.tools.node.pnpm.assets.amd64.sha256' "$manifest")" \
+			"PNPM_SHA256_ARM64=$(jq -r '.tools.node.pnpm.assets.arm64.sha256' "$manifest")" \
 			"PNPM_VERSION=$(jq -r '.tools.node.pnpm.version' "$manifest")"; do
 			grep -Fq -- "--build-arg ${build_arg}" "$fake_log" ||
 				fail "missing node build argument: ${build_arg%%=*}"
