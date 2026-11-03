@@ -39,6 +39,8 @@ if [[ -n $writable_runtime_path ]]; then
 fi
 
 [[ $(node --version) == "v${expected_node}" ]]
+[[ $(node --print 'typeof Temporal') == object ]]
+[[ $(node --print 'process.config.variables.icu_small') == false ]]
 [[ $NODE_VERSION == "$expected_node" ]]
 [[ $(npm --version) == "$EXPECTED_NPM_VERSION" ]]
 [[ $(node --print \
@@ -100,6 +102,7 @@ pnpm_executable=$(readlink -f "$(command -v pnpm)")
 [[ $pnpm_executable == "/opt/ci-tools/pnpm/${expected_pnpm}/pnpm" ]]
 [[ $(PATH=/usr/bin:/bin "$pnpm_executable" --version) == "$expected_pnpm" ]]
 [[ $(od -An -tx1 -N4 "$pnpm_executable" | tr -d '[:space:]') == 7f454c46 ]]
+"$(dirname "$pnpm_executable")/dist/node-gyp-bin/node-gyp" --version
 [[ $(pnpx --version) == "$expected_pnpm" ]]
 dpkg-query --status libatomic1 |
 	grep --line-regexp 'Status: install ok installed' >/dev/null
