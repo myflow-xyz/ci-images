@@ -63,7 +63,9 @@ The host measures the configured Docker/containerd backing directories and dedup
 
 Set `pressure.reserve_bytes` from concurrent-job peak requirements and a margin. Jobs are refused when measurements are unavailable, the reserve is absent or insufficient, or the critical threshold is reached. Maintenance can still run while capacity prevents new jobs. At the default 80% pressure threshold, weekly tagged-image cleanup remains subject to its existing scope, age, and protection. The default critical threshold is 90%. Pressure never authorizes volume deletion or wider image scope.
 
-Review native BuildKit GC with the operator. Scheduled pruning neither disables native GC nor guarantees a 14-day minimum retention after the space-budget stage. Keep backend accounting, host free space, and any VM physical-host measurements separate. Logical reclamation is not proof that a VM disk image shrank.
+Review native BuildKit GC with the operator. Scheduled pruning neither disables native GC nor guarantees a seven-day minimum retention after the space-budget stage. Keep backend accounting, host free space, and any VM physical-host measurements separate. Logical reclamation is not proof that a VM disk image shrank.
+
+Shared Go and pnpm filesystem caches use separate [cache reset commands](images/utils.md#reset-shared-go-and-pnpm-caches). The Docker admission gate does not prove that all filesystem-cache consumers have stopped. Drain those consumers before a reset; the Docker age policy does not apply to these directories.
 
 ## Schedule and run maintenance
 

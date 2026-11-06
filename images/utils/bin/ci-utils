@@ -1,16 +1,12 @@
 #!/usr/bin/env python3
 """Discover the utility image's maintained commands without daemon access."""
 
-import argparse
+import pathlib
+import sys
 
-parser = argparse.ArgumentParser(
-    prog="ci-utils",
-    description="Reusable CI operations tools. Invoke each command directly.",
-    formatter_class=argparse.RawDescriptionHelpFormatter,
-    epilog="Available commands:\n"
-    "  ci-docker-cleanup check|plan|apply|version (default: plan)\n"
-    "  ci-remove-images --versions X.Y.Z[,X.Y.Z] [--apply] (default: dry-run)",
-)
-parser.add_argument("operation", nargs="?", choices=("help",), default="help")
-parser.parse_args()
-parser.print_help()
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+
+from ci_utils.catalog import main
+
+raise SystemExit(main())
