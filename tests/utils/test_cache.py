@@ -27,6 +27,45 @@ class Events:
 
 
 class CacheTests(unittest.TestCase):
+    def test_default_age_stage_preserves_cache_used_within_seven_days(self):
+        now = dt.datetime.now(dt.timezone.utc)
+        with (
+            CacheTools() as tools,
+            APIFixture(daemon_routes() | tools.routes()) as api,
+            patch.dict(os.environ, {"PATH": str(tools.path)}),
+        ):
+            base = tools.state["records"][0]
+            records = [
+                {
+                    **base,
+                    "ID": f"age-{hours}",
+                    "Size": 100,
+                    "LastUsedAt": (now - dt.timedelta(hours=hours)).isoformat(),
+                }
+                for hours in (167, 168, 169)
+            ]
+            tools.state["records"] = records
+            tools.state["after_age"] = records[:2]
+            tools.save()
+            engine = Engine(api.endpoint)
+            engine.preflight()
+            events = Events()
+            with BuildCache(engine, configured(), "fixture-daemon", events) as cache:
+                cache.preflight()
+                cache.plan(now)
+                cache.prune(now, lambda: None)
+            plan = next(
+                event for event in events.items if event["event"] == "cache_plan"
+            )
+            self.assertEqual(plan["age_candidates"], 1)
+            self.assertEqual(len(tools.prunes), 1)
+            filters = json.loads(tools.prunes[0]["filters"][0])
+            self.assertIn("until", filters)
+            pattern = filters["id"][0]
+            self.assertRegex("age-169", pattern)
+            self.assertIsNone(re.search(pattern, "age-168"))
+            self.assertIsNone(re.search(pattern, "age-167"))
+
     def test_each_stage_submits_the_complete_eligible_set(self):
         now = dt.datetime.now(dt.timezone.utc)
         for stage in ("age", "budget"):

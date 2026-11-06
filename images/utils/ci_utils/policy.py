@@ -13,10 +13,10 @@ DEFAULTS = {
     "schema_version": 1,
     "endpoint": None,
     "expected_daemon_id": None,
-    "container_min_age": "24h",
-    "network_min_age": "24h",
-    "dangling_image_min_age": "24h",
-    "tagged_image_min_age": "720h",
+    "container_min_age": "168h",
+    "network_min_age": "168h",
+    "dangling_image_min_age": "168h",
+    "tagged_image_min_age": "168h",
     "tagged_image_trigger": "pressure",
     "image_scope": {
         "mode": "allowlist",
@@ -35,7 +35,7 @@ DEFAULTS = {
     "cache": {
         "mode": "scheduled",
         "builder": "default",
-        "max_unused_age": "336h",
+        "max_unused_age": "168h",
         "max_used_space": "20gb",
         "include_internal": False,
     },
