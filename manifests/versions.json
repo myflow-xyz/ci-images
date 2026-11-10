@@ -87,11 +87,11 @@
         "lockfiles": {
           "amd64": {
             "lockfile": "images/base/debian-packages.amd64.lock",
-            "lockfile_sha256": "d82e139c039f289422fbdf6dc705b3232177b4fde57a0230120b0a28832698b3"
+            "lockfile_sha256": "5e51d10028403e6f3346b7f05add556fb61fa8e656aec0d3c17e92a13ec0f401"
           },
           "arm64": {
             "lockfile": "images/base/debian-packages.arm64.lock",
-            "lockfile_sha256": "5e85ef5d98441ecd6ccdd8dde0b0f428d93b071c8338d773563079fe3c70b62d"
+            "lockfile_sha256": "684ebfacd9cd25d7773bd8137dec16d43de84e13ea9a7776160de742c2be6f27"
           }
         }
       },

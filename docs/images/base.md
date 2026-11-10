@@ -28,7 +28,7 @@ TZ=UTC
 The base image includes:
 
 - shell and build utilities: `sh`, Bash 5.3.20, Make, coreutils, findutils, diffutils, grep, sed, awk, and `procps`;
-- source and transfer utilities: Git, Git LFS, CA certificates, curl, wget, OpenSSL, tar, gzip, xz, zip, and unzip;
+- Source and transfer tools include Git, Git LFS, CA certificates, curl, wget, OpenBSD netcat (`nc`), OpenSSL, tar, gzip, xz, zip, and unzip.
 - CPython 3.15.2 and its standard-library modules for repository-owned CI automation;
 - Docker CLI 29.9.2 and the Compose 5.7.0 CLI plugin;
 - structured-data and diagnosis tools: `jq`, `yq`, ripgrep, and GitHub CLI;

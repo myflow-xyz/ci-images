@@ -55,6 +55,7 @@ These packages are installed at exact revisions from the pinned Debian snapshot.
 | `make` | `4.4.1-2` |
 | `media-types` | `13.0.0` |
 | `netbase` | `6.5` |
+| `netcat-openbsd` | `1.229-1` |
 | `openssl` | `3.5.7-1~deb13u3` |
 | `procps` | `2:4.0.4-9` |
 | `sed` | `4.9-2+deb13u1` |
