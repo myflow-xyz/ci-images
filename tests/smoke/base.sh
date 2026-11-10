@@ -68,6 +68,7 @@ for command in \
 	gitleaks \
 	jq \
 	make \
+	nc \
 	osv-scanner \
 	python3 \
 	rg \
@@ -85,6 +86,7 @@ for package in \
 	curl \
 	git \
 	grep \
+	netcat-openbsd \
 	openssl \
 	sed \
 	tar \
@@ -129,6 +131,7 @@ import readline
 import socket
 import sqlite3
 import ssl
+import subprocess
 import sys
 import urllib.parse
 import urllib.request
@@ -142,6 +145,13 @@ assert mimetypes.guess_type("artifact.zst") == ("application/zstd", None)
 assert socket.gethostname()
 assert sys.version.split()[0] == sys.argv[1]
 assert urllib.parse.urlsplit("https://ci.example/path").hostname == "ci.example"
+
+with socket.create_server(("127.0.0.1", 0)) as server:
+    subprocess.run(
+        ["nc", "-z", "-w", "2", "127.0.0.1", str(server.getsockname()[1])],
+        check=True,
+        timeout=5,
+    )
 PY
 
 actionlint --version 2>&1 |
