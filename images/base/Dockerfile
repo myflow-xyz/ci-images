@@ -206,6 +206,7 @@ ARG ACTIONLINT_X_NET_VERSION
 ARG ACTIONLINT_X_SYS_VERSION
 ARG BUILDARCH
 ARG COMPOSE_VERSION
+ARG COMPOSE_COMPRESS_VERSION
 ARG COMPOSE_X_NET_VERSION
 ARG DEBIAN_SNAPSHOT
 ARG DOCKER_COMMIT
@@ -215,6 +216,7 @@ ARG DOCKER_GO_JOSE_VERSION
 ARG GH_VERSION
 ARG GH_X_NET_VERSION
 ARG GIT_LFS_VERSION
+ARG GIT_LFS_COMPRESS_VERSION
 ARG GIT_LFS_X_NET_VERSION
 ARG GIT_LFS_X_CRYPTO_VERSION
 ARG GITLEAKS_VERSION
@@ -249,6 +251,7 @@ ARG SHFMT_VERSION
 ARG TARGETARCH
 ARG TRIVY_GRPC_VERSION
 ARG TRIVY_VERSION
+ARG TRIVY_COMPRESS_VERSION
 ARG TRIVY_X_NET_VERSION
 ARG TRIVY_MODERNC_LIBC_VERSION
 ARG TRIVY_MODERNC_SQLITE_VERSION
@@ -445,13 +448,15 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       docker-compose \
       ./cmd \
       "v${COMPOSE_VERSION}" \
-      "golang.org/x/net@${COMPOSE_X_NET_VERSION}"; \
+      "golang.org/x/net@${COMPOSE_X_NET_VERSION}" \
+      "github.com/klauspost/compress@${COMPOSE_COMPRESS_VERSION}"; \
     build_tool \
       git-lfs \
       github.com/git-lfs/git-lfs/v3 \
       "v${GIT_LFS_VERSION}" \
       "golang.org/x/crypto@${GIT_LFS_X_CRYPTO_VERSION}" \
-      "golang.org/x/net@${GIT_LFS_X_NET_VERSION}"; \
+      "golang.org/x/net@${GIT_LFS_X_NET_VERSION}" \
+      "github.com/klauspost/compress@${GIT_LFS_COMPRESS_VERSION}"; \
     build_tool \
       gitleaks \
       github.com/zricethezav/gitleaks/v8 \
@@ -480,7 +485,8 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       "github.com/go-jose/go-jose/v4@${TRIVY_GO_JOSE_VERSION}" \
       "modernc.org/sqlite@${TRIVY_MODERNC_SQLITE_VERSION}" \
       "modernc.org/libc@${TRIVY_MODERNC_LIBC_VERSION}" \
-      "golang.org/x/net@${TRIVY_X_NET_VERSION}"; \
+      "golang.org/x/net@${TRIVY_X_NET_VERSION}" \
+      "github.com/klauspost/compress@${TRIVY_COMPRESS_VERSION}"; \
     build_tool \
       yq \
       github.com/mikefarah/yq/v4 \
