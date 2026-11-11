@@ -154,7 +154,7 @@
         "dependency_overrides": {
           "golang.org/x/net": "v0.62.0",
           "modernc.org/sqlite": "v1.62.0",
-          "modernc.org/libc": "v1.80.1"
+          "modernc.org/libc": "v1.81.0"
         }
       },
       "trivy": {
@@ -166,7 +166,7 @@
           "google.golang.org/grpc": "v1.85.0",
           "github.com/go-jose/go-jose/v4": "v4.1.9",
           "modernc.org/sqlite": "v1.62.0",
-          "modernc.org/libc": "v1.80.1",
+          "modernc.org/libc": "v1.81.0",
           "github.com/klauspost/compress": "v1.20.4"
         }
       },
@@ -283,12 +283,12 @@
       },
       "goose": {
         "module": "github.com/pressly/goose/v3/cmd/goose",
-        "version": "v3.29.0",
+        "version": "v3.30.0",
         "dependency_overrides": {
           "golang.org/x/crypto": "v0.58.0",
           "golang.org/x/net": "v0.62.0",
           "google.golang.org/grpc": "v1.85.0",
-          "modernc.org/libc": "v1.80.1",
+          "modernc.org/libc": "v1.81.0",
           "modernc.org/sqlite": "v1.62.0",
           "github.com/andybalholm/brotli": "v1.3.0",
           "github.com/klauspost/compress": "v1.20.4"
