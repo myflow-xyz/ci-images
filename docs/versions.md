@@ -96,7 +96,7 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 
 | Component | Version |
 | --- | --- |
-| `Node.js` | `26.13.0` |
+| `Node.js` | `26.13.1` |
 | `npm` | `12.2.2` |
 | `pnpm` | `12.19.0` |
 | `markdownlint-cli2` | `0.24.0` |
