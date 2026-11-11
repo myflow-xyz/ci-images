@@ -30,7 +30,7 @@ The base image includes:
 - shell and build utilities: `sh`, Bash 5.3.20, Make, coreutils, findutils, diffutils, grep, sed, awk, and `procps`;
 - Source and transfer tools include Git, Git LFS, CA certificates, curl, wget, OpenBSD netcat (`nc`), OpenSSL, tar, gzip, xz, zip, and unzip.
 - CPython 3.15.2 and its standard-library modules for repository-owned CI automation;
-- Docker CLI 29.9.2 and the Compose 5.7.0 CLI plugin;
+- Docker CLI 29.9.3 and the Compose 5.7.1 CLI plugin;
 - structured-data and diagnosis tools: `jq`, `yq`, ripgrep, and GitHub CLI;
 - shared policy tools: OSV-Scanner 2.7.0, Trivy 0.76.2, gitleaks, actionlint, shfmt, ShellCheck, and ShellSpec;
 - `tini` for descendants that require subprocess reaping.
@@ -49,7 +49,7 @@ The client is exposed through `/opt/ci-tools/bin/docker`. Compose is exposed at 
 
 Version queries and offline Compose configuration need no daemon, socket, network, registry credentials, or startup installation. Daemon operations require an endpoint explicitly supplied by a trusted workflow. Installation never grants daemon access or changes host/socket permissions. Registry credentials remain job-scoped, preferably in a private client configuration.
 
-The supported target range is Linux Docker Engine 28.x and 29.x, using normal API negotiation and the API overlap with Docker CLI 29.9.2 and Compose 5.7.0. [Docker documents negotiation as best effort][docker-api]; feature-specific consumer qualification is still required. This includes the 28.0.4 daemon listed in the [GitHub Ubuntu 24.04 runner inventory][runner-tools]; the image-managed client version does not require an identical host daemon. The integration check records the actual daemon/API/platform and verifies fixture startup, HTTP receipt, and owned container/network/volume cleanup after both successful and failed verification. Qualification of the whole version range is not implied by a passing check against one daemon. Older daemons, Windows daemons, rootless/user-namespace networking and remapped socket permissions need separate qualification.
+The supported target range is Linux Docker Engine 28.x and 29.x, using normal API negotiation and the API overlap with Docker CLI 29.9.3 and Compose 5.7.1. [Docker documents negotiation as best effort][docker-api]; feature-specific consumer qualification is still required. This includes the 28.0.4 daemon listed in the [GitHub Ubuntu 24.04 runner inventory][runner-tools]; the image-managed client version does not require an identical host daemon. The integration check records the actual daemon/API/platform and verifies fixture startup, HTTP receipt, and owned container/network/volume cleanup after both successful and failed verification. Qualification of the whole version range is not implied by a passing check against one daemon. Older daemons, Windows daemons, rootless/user-namespace networking and remapped socket permissions need separate qualification.
 
 Local qualification used a Linux ARM64 client against Docker Engine 29.4.0 with API 1.54. Native AMD64/ARM64 Actions repeat the checks against their runner daemons. Other versions in the target range have not been directly qualified by this local run. The preflight regression covers admission of 28.x and 29.x daemons, including 28.0.4, and explicit rejection diagnostics; it does not replace live integration qualification of those versions.
 
