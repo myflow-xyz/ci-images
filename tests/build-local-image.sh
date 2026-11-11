@@ -89,6 +89,8 @@ build_base() {
 		"DOCKER_GO_JOSE_VERSION=$(json '.tools.base.docker.dependency_overrides["github.com/go-jose/go-jose/v4"]')" \
 		--build-arg "COMPOSE_VERSION=$(json '.tools.base.compose.version')" \
 		--build-arg \
+		"COMPOSE_COMPRESS_VERSION=$(json '.tools.base.compose.dependency_overrides["github.com/klauspost/compress"]')" \
+		--build-arg \
 		"COMPOSE_X_NET_VERSION=$(json '.tools.base.compose.dependency_overrides["golang.org/x/net"]')" \
 		--build-arg "GH_VERSION=$(json '.tools.base.gh.version')" \
 		--build-arg \
@@ -99,6 +101,8 @@ build_base() {
 		"GIT_SHA256=$(json '.tools.base.git.asset.sha256')" \
 		--build-arg \
 		"GIT_LFS_VERSION=$(json '.tools.base.git_lfs.version')" \
+		--build-arg \
+		"GIT_LFS_COMPRESS_VERSION=$(json '.tools.base.git_lfs.dependency_overrides["github.com/klauspost/compress"]')" \
 		--build-arg \
 		"GIT_LFS_X_NET_VERSION=$(json '.tools.base.git_lfs.dependency_overrides["golang.org/x/net"]')" \
 		--build-arg \
@@ -170,6 +174,8 @@ build_base() {
 		"SHELLCHECK_SHA256_ARM64=$(json '.tools.base.shellcheck.assets.arm64.sha256')" \
 		--build-arg "SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
 		--build-arg "TRIVY_VERSION=$(json '.tools.base.trivy.version')" \
+		--build-arg \
+		"TRIVY_COMPRESS_VERSION=$(json '.tools.base.trivy.dependency_overrides["github.com/klauspost/compress"]')" \
 		--build-arg \
 		"TRIVY_X_NET_VERSION=$(json '.tools.base.trivy.dependency_overrides["golang.org/x/net"]')" \
 		--build-arg \
@@ -253,6 +259,8 @@ build_go() {
 		--build-arg \
 		"SQLC_GRPC_VERSION=$(json '.tools.go.sqlc.dependency_overrides["google.golang.org/grpc"]')" \
 		--build-arg "GOOSE_VERSION=$(json '.tools.go.goose.version')" \
+		--build-arg \
+		"GOOSE_COMPRESS_VERSION=$(json '.tools.go.goose.dependency_overrides["github.com/klauspost/compress"]')" \
 		--build-arg \
 		"GOOSE_X_CRYPTO_VERSION=$(json '.tools.go.goose.dependency_overrides["golang.org/x/crypto"]')" \
 		--build-arg \

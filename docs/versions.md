@@ -8,7 +8,7 @@ The runtime inherits `ci-base`. Buildx and the capability helper reuse the exist
 
 | Component | Version |
 | --- | --- |
-| `Docker Buildx` | `0.38.1` |
+| `Docker Buildx` | `0.38.2` |
 
 Cleanup and its internal capability helper are repository-owned commands tied to the suite source revision, with no independent release stream.
 
@@ -21,18 +21,18 @@ Cleanup and its internal capability helper are repository-owned commands tied to
 | `Git LFS` | `3.8.1` |
 | `GitHub CLI` | `2.103.3` |
 | `CPython` | `3.15.2` |
-| `Docker CLI` | `29.9.2` |
+| `Docker CLI` | `29.9.3` |
 | `Docker Compose` | `5.7.0` |
 | `actionlint` | `1.7.12` |
 | `gitleaks` | `8.30.1` |
 | `jq` | `1.8.2` |
-| `osv-scanner` | `2.7.0` |
+| `osv-scanner` | `2.7.1` |
 | `ripgrep` | `15.2.0` |
 | `ShellCheck` | `0.11.0` |
 | `shellspec` | `0.28.1` |
 | `shfmt` | `3.14.1` |
-| `Trivy` | `0.76.1` |
-| `yq` | `4.54.1` |
+| `Trivy` | `0.76.2` |
+| `yq` | `4.54.3` |
 
 ### Direct Debian packages
 
@@ -55,6 +55,7 @@ These packages are installed at exact revisions from the pinned Debian snapshot.
 | `make` | `4.4.1-2` |
 | `media-types` | `13.0.0` |
 | `netbase` | `6.5` |
+| `netcat-openbsd` | `1.229-1` |
 | `openssl` | `3.5.7-1~deb13u3` |
 | `procps` | `2:4.0.4-9` |
 | `sed` | `4.9-2+deb13u1` |
@@ -82,11 +83,11 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 
 | Component | Version |
 | --- | --- |
-| `Go` | `1.27.3` |
-| `linux-libc-dev` | `6.12.115-2` |
+| `Go` | `1.27.4` |
+| `linux-libc-dev` | `6.12.116-1` |
 | `Hurl` | `8.1.0` |
 | `sqlc` | `1.31.1` |
-| `goose` | `3.29.0` |
+| `goose` | `3.30.0` |
 | `golangci-lint` | `2.15.0` |
 | `goimports` | `0.52.0` |
 | `govulncheck` | `1.9.0` |
@@ -96,10 +97,10 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | Component | Version |
 | --- | --- |
 | `Node.js` | `26.13.0` |
-| `npm` | `12.2.1` |
-| `pnpm` | `12.17.0` |
+| `npm` | `12.2.2` |
+| `pnpm` | `12.19.0` |
 | `markdownlint-cli2` | `0.24.0` |
-| `@redocly/cli` | `2.69.0` |
+| `@redocly/cli` | `2.77.0` |
 
 ## `ci-vite`
 
@@ -108,18 +109,18 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | `@typescript/native` | `7.0.2` |
 | `TypeScript compatibility package` | `6.0.2` |
 | `TypeScript legacy compiler` | `6.0.3` |
-| `vite` | `8.3.5` |
+| `vite` | `8.3.7` |
 | `vitest` | `5.1.0` |
 | `@vitest/coverage-v8` | `5.1.0` |
-| `oxlint` | `1.90.0` |
-| `oxlint-tsgolint` | `7.0.2005` |
-| `oxfmt` | `0.75.0` |
+| `oxlint` | `1.93.0` |
+| `oxlint-tsgolint` | `7.0.2006` |
+| `oxfmt` | `0.78.0` |
 
 ## `ci-playwright`
 
 | Component | Version |
 | --- | --- |
-| `@playwright/test` | `1.64.1` |
+| `@playwright/test` | `1.65.0` |
 
 ## `ci-postgres`
 

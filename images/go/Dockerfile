@@ -142,6 +142,7 @@ ARG GOLANGCI_LINT_X_TEXT_VERSION
 ARG GOIMPORTS_VERSION
 ARG GOIMPORTS_X_NET_VERSION
 ARG GOOSE_VERSION
+ARG GOOSE_COMPRESS_VERSION
 ARG GOOSE_X_CRYPTO_VERSION
 ARG GOOSE_GRPC_VERSION
 ARG GOOSE_MODERNC_LIBC_VERSION
@@ -253,7 +254,8 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       "golang.org/x/net@${GOOSE_X_NET_VERSION}" \
       "google.golang.org/grpc@${GOOSE_GRPC_VERSION}" \
       "modernc.org/libc@${GOOSE_MODERNC_LIBC_VERSION}" \
-      "modernc.org/sqlite@${GOOSE_MODERNC_SQLITE_VERSION}"; \
+      "modernc.org/sqlite@${GOOSE_MODERNC_SQLITE_VERSION}" \
+      "github.com/klauspost/compress@${GOOSE_COMPRESS_VERSION}"; \
     build_tool \
       golangci-lint \
       github.com/golangci/golangci-lint/v2/cmd/golangci-lint \
