@@ -22,7 +22,7 @@ Cleanup and its internal capability helper are repository-owned commands tied to
 | `GitHub CLI` | `2.103.3` |
 | `CPython` | `3.15.2` |
 | `Docker CLI` | `29.9.3` |
-| `Docker Compose` | `5.7.0` |
+| `Docker Compose` | `5.7.1` |
 | `actionlint` | `1.7.12` |
 | `gitleaks` | `8.30.1` |
 | `jq` | `1.8.2` |
@@ -109,7 +109,7 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | `@typescript/native` | `7.0.2` |
 | `TypeScript compatibility package` | `6.0.2` |
 | `TypeScript legacy compiler` | `6.0.3` |
-| `vite` | `8.3.7` |
+| `vite` | `8.3.8` |
 | `vitest` | `5.1.0` |
 | `@vitest/coverage-v8` | `5.1.0` |
 | `oxlint` | `1.93.0` |

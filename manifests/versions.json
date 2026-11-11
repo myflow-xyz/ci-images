@@ -239,7 +239,7 @@
         }
       },
       "compose": {
-        "version": "5.7.0",
+        "version": "5.7.1",
         "source": "https://github.com/docker/compose",
         "module": "github.com/docker/compose/v5",
         "dependency_overrides": {
@@ -330,7 +330,7 @@
           "sha256": "07fecbf753e2c3bc10ebeb3e9ed8738f6a0cc1292998b79e2e9f1dd2a5525e0c"
         },
         "lockfile": "images/node/npm-runtime/package-lock.json",
-        "lockfile_sha256": "cca8d406668518409a43997aba08d7bc4324d722e9c4cbdc1e6a0ac2f9eb13a2",
+        "lockfile_sha256": "c0cbbe7de4c37578dc79e64227ac01baa6ab221a93b72b90f5c59c18e962a57c",
         "dependency_replacements": {
           "brace-expansion": "5.0.12",
           "http-cache-semantics": "4.3.0",
@@ -339,7 +339,7 @@
           "tar": "7.5.22",
           "undici": "6.29.1",
           "glob": "14.0.4",
-          "minimatch": "11.0.7",
+          "minimatch": "11.0.8",
           "path-scurry": "3.0.0",
           "@isaacs/nonrecursive-glob-match": "1.1.0",
           "lru-cache": "11.5.3"
@@ -364,7 +364,7 @@
           }
         }
       },
-      "bundle_version": "19",
+      "bundle_version": "20",
       "lockfile": "images/node/npm/package-lock.json",
       "lockfile_sha256": "30255486f5c04c5f787799e8ff5fdb18d273197f4a202fc833e4da79e8e83297",
       "pnpm": {
@@ -396,9 +396,9 @@
       }
     },
     "vite": {
-      "bundle_version": "23",
+      "bundle_version": "24",
       "lockfile": "images/vite/npm/package-lock.json",
-      "lockfile_sha256": "3e39be42ef4bd1a15a65cb684935e5eda9b0e4c5769a5fc5cd5bfee63b1dbcf0",
+      "lockfile_sha256": "0d7ea9cdce40e05ef7736277b268dde4d3b143551c327b13e14d5a7eb4bb260a",
       "typescript": "7.0.2",
       "typescript_source": {
         "repository": "https://github.com/microsoft/typescript-go",
@@ -411,7 +411,7 @@
         "compat_package": "6.0.2",
         "compiler": "6.0.3"
       },
-      "vite": "8.3.7",
+      "vite": "8.3.8",
       "vitest": "5.1.0",
       "coverage_v8": "5.1.0",
       "oxlint": "1.93.0",
