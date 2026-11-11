@@ -83,7 +83,7 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 
 | Component | Version |
 | --- | --- |
-| `Go` | `1.27.3` |
+| `Go` | `1.27.4` |
 | `linux-libc-dev` | `6.12.116-1` |
 | `Hurl` | `8.1.0` |
 | `sqlc` | `1.31.1` |
@@ -98,7 +98,7 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | --- | --- |
 | `Node.js` | `26.13.0` |
 | `npm` | `12.2.2` |
-| `pnpm` | `12.18.0` |
+| `pnpm` | `12.19.0` |
 | `markdownlint-cli2` | `0.24.0` |
 | `@redocly/cli` | `2.77.0` |
 

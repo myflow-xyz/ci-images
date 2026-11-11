@@ -1,6 +1,6 @@
 module myflow.xyz/ci-utils/buildkit-probe
 
-go 1.27.3
+go 1.27.4
 
 require (
 	github.com/moby/buildkit v0.34.2
