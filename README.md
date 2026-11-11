@@ -18,7 +18,7 @@ pgvector/pgvector:0.8.7-pg18-trixie@<digest>
 └── ci-postgres
 ```
 
-`ci-base` builds CPython 3.15.2 from its checksum-pinned official source release with the reviewed Debian snapshot. `ci-node` builds Node 26.13.0 from checksum-pinned official source with reviewed Brotli and Undici security updates.
+`ci-base` builds CPython 3.15.2 from its checksum-pinned official source release with the reviewed Debian snapshot. `ci-node` installs Node 26.13.1 from checksum-pinned official Linux binary archives.
 
 - `ghcr.io/myflow-xyz/ci-base`: operating-system utilities, Python 3.15.2 standard-library scripting, OSV-Scanner, Trivy, and runtime-independent repository policy tools.
 - `ghcr.io/myflow-xyz/ci-go`: Go toolchain, native race-test prerequisites, and reusable Go CI executables.

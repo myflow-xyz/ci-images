@@ -322,7 +322,7 @@
       }
     },
     "node": {
-      "runtime": "26.13.0",
+      "runtime": "26.13.1",
       "npm": {
         "version": "12.2.2",
         "asset": {
@@ -386,12 +386,12 @@
       "source": "https://nodejs.org/dist/",
       "assets": {
         "amd64": {
-          "url": "https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-x64.tar.xz",
-          "sha256": "d28a96af6c38596f6d9d97c0ee531c13d238d757742387d1928de822d959e997"
+          "url": "https://nodejs.org/dist/v26.13.1/node-v26.13.1-linux-x64.tar.xz",
+          "sha256": "5c063e46bab0fbc1c17cc445d7ff129cbdcd0471be6ed83b6ab864f8143bc864"
         },
         "arm64": {
-          "url": "https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-arm64.tar.xz",
-          "sha256": "406fe3fbde1c054adff8b297c16fdb5af6659db327c1ac8acd46b56ef1af9a92"
+          "url": "https://nodejs.org/dist/v26.13.1/node-v26.13.1-linux-arm64.tar.xz",
+          "sha256": "89e1853138db51e8b82d3e98ba9c0d3f2956a28e5e55ea1b7e12d25aae92d5dd"
         }
       }
     },
