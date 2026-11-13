@@ -10,6 +10,7 @@
     "gid": 2001
   },
   "debian_snapshot": "20261109T210000Z",
+  "debian_updates_snapshot": "20261113T210000Z",
   "upstream_images": {
     "dockerfile_frontend": {
       "reference": "docker.io/docker/dockerfile:1.28.0",
@@ -87,11 +88,11 @@
         "lockfiles": {
           "amd64": {
             "lockfile": "images/base/debian-packages.amd64.lock",
-            "lockfile_sha256": "5e51d10028403e6f3346b7f05add556fb61fa8e656aec0d3c17e92a13ec0f401"
+            "lockfile_sha256": "b46694e15fa03acf7c74b7976ede1d6088ace0e1f3592cfaf11edec8faf9bf76"
           },
           "arm64": {
             "lockfile": "images/base/debian-packages.arm64.lock",
-            "lockfile_sha256": "684ebfacd9cd25d7773bd8137dec16d43de84e13ea9a7776160de742c2be6f27"
+            "lockfile_sha256": "00c8de1c6b147209871017b2cefa33c9393ade9d1e36736029b7422fc282362f"
           }
         }
       },
@@ -313,12 +314,11 @@
         "version": "v1.9.0"
       },
       "linux_libc_dev": {
-        "version": "6.12.116-1",
+        "version": "7.3.4-1",
         "asset": {
-          "url": "https://security.debian.org/debian-security/pool/updates/main/l/linux/linux-libc-dev_6.12.116-1_all.deb",
-          "sha256": "c43f5c6dc104f2a2ce985d6d68d3575a7be6fe904313efa7b10edfa0170f9dce"
-        },
-        "source": "https://security-tracker.debian.org/tracker/CVE-2026-99083"
+          "url": "https://snapshot.debian.org/archive/debian/20261113T210000Z/pool/main/l/linux/linux-libc-dev_7.3.4-1_all.deb",
+          "sha256": "d9f7b5ef29697cfa428c52be151dfc18645c8573c7707515fb98aed80851c78d"
+        }
       }
     },
     "node": {
@@ -428,7 +428,19 @@
     "playwright": {
       "version": "1.65.0",
       "lockfile": "images/playwright/npm/package-lock.json",
-      "lockfile_sha256": "e73c813e92f6d0acb8d5626289f75c362e6efd8e3f5540a9a2c3d169d9434c0a"
+      "lockfile_sha256": "e73c813e92f6d0acb8d5626289f75c362e6efd8e3f5540a9a2c3d169d9434c0a",
+      "debian_packages": {
+        "lockfiles": {
+          "amd64": {
+            "lockfile": "images/playwright/debian-packages.amd64.lock",
+            "lockfile_sha256": "33ce3c5f5d208dd623b7afb00a50c1466700a8fd5cf5ada8a6a086a8ad695c47"
+          },
+          "arm64": {
+            "lockfile": "images/playwright/debian-packages.arm64.lock",
+            "lockfile_sha256": "33ce3c5f5d208dd623b7afb00a50c1466700a8fd5cf5ada8a6a086a8ad695c47"
+          }
+        }
+      }
     },
     "postgres": {
       "postgres": "18",
@@ -440,6 +452,18 @@
         "dependency_overrides": {
           "github.com/moby/sys/user": "v0.5.0",
           "golang.org/x/sys": "v0.50.0"
+        }
+      },
+      "debian_packages": {
+        "lockfiles": {
+          "amd64": {
+            "lockfile": "images/postgres/debian-packages.amd64.lock",
+            "lockfile_sha256": "d3c9f25b549a5c79cb6d3cccd67bb9f8608bdbb5da34120deb23dff72abde7e0"
+          },
+          "arm64": {
+            "lockfile": "images/postgres/debian-packages.arm64.lock",
+            "lockfile_sha256": "d3c9f25b549a5c79cb6d3cccd67bb9f8608bdbb5da34120deb23dff72abde7e0"
+          }
         }
       }
     },
@@ -460,11 +484,11 @@
         "lockfiles": {
           "amd64": {
             "lockfile": "images/net/debian-packages.amd64.lock",
-            "lockfile_sha256": "15f7cb20e3b6f99d7e904eedd0dfb031c8ff39c04d8d6fea15d65827cb5a3f4b"
+            "lockfile_sha256": "970f2f88b702be020eb406c2f535342307fe972dbe31c847dc1b5e1cb54fe78d"
           },
           "arm64": {
             "lockfile": "images/net/debian-packages.arm64.lock",
-            "lockfile_sha256": "15f7cb20e3b6f99d7e904eedd0dfb031c8ff39c04d8d6fea15d65827cb5a3f4b"
+            "lockfile_sha256": "970f2f88b702be020eb406c2f535342307fe972dbe31c847dc1b5e1cb54fe78d"
           }
         }
       }

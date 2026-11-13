@@ -166,13 +166,15 @@ ARG TARGETARCH
 
 USER root
 
-RUN /usr/local/libexec/ci/fetch-verified \
+RUN libc_version=$(dpkg-query -W -f='${Version}' libc6) \
+    && /usr/local/libexec/ci/fetch-verified \
       "${LINUX_LIBC_DEV_ASSET_URL}" "${LINUX_LIBC_DEV_SHA256}" /var/tmp/linux-libc-dev.deb \
     && apt-get update \
     && apt-get install --yes --no-install-recommends \
       gcc \
       g++ \
-      libc6-dev \
+      "libc6-dev=${libc_version}" \
+      "libc-dev-bin=${libc_version}" \
       libxml2 \
       pkg-config \
       /var/tmp/linux-libc-dev.deb \

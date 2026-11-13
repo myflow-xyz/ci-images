@@ -581,6 +581,7 @@ ARG CI_GID=2001
 ARG CI_UID=1001
 ARG COMPOSE_VERSION
 ARG DEBIAN_SNAPSHOT
+ARG DEBIAN_UPDATES_SNAPSHOT
 ARG DOCKER_VERSION
 ARG GH_VERSION
 ARG GIT_LFS_VERSION
@@ -607,9 +608,16 @@ ENV CI=true \
 
 COPY images/common/fetch-verified /usr/local/libexec/ci/fetch-verified
 COPY images/base/debian-packages.*.lock /usr/local/share/ci/
+COPY images/common/debian-updates.sources \
+  /etc/apt/sources.list.d/ci-updates.sources
+COPY images/common/debian-updates.pref /etc/apt/preferences.d/ci-updates
 
 RUN --mount=from=base-python-runtime,source=/out/python-runtime-packages,target=/var/tmp/python-runtime-packages,ro \
     test -n "${DEBIAN_SNAPSHOT}" \
+    && test -n "${DEBIAN_UPDATES_SNAPSHOT}" \
+    && sed -i \
+      "s/@DEBIAN_UPDATES_SNAPSHOT@/${DEBIAN_UPDATES_SNAPSHOT}/g" \
+      /etc/apt/sources.list.d/ci-updates.sources \
     && sed -ri \
       "s|URIs: http://deb.debian.org/debian$|URIs: http://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}/|" \
       /etc/apt/sources.list.d/debian.sources \
@@ -643,6 +651,8 @@ RUN --mount=from=base-python-runtime,source=/out/python-runtime-packages,target=
     && xargs -r \
       apt-get install --yes --no-install-recommends \
       < /var/tmp/python-runtime-packages \
+    && apt-get purge --yes --no-install-recommends \
+      libperl5.40 perl-modules-5.40 \
     && sed -ri 's/^# (en_US.UTF-8 UTF-8)$/\1/' /etc/locale.gen \
     && locale-gen \
     && rm -f /usr/local/share/ci/debian-packages.*.lock \
