@@ -19,7 +19,7 @@ Cleanup and its internal capability helper are repository-owned commands tied to
 | `Bash` | `5.3.20` |
 | `Git` | `2.56.0` |
 | `Git LFS` | `3.8.1` |
-| `GitHub CLI` | `2.103.3` |
+| `GitHub CLI` | `2.104.0` |
 | `CPython` | `3.15.2` |
 | `Docker CLI` | `29.9.3` |
 | `Docker Compose` | `5.7.1` |
@@ -87,7 +87,7 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | `linux-libc-dev` | `6.12.116-1` |
 | `Hurl` | `8.1.0` |
 | `sqlc` | `1.31.1` |
-| `goose` | `3.30.0` |
+| `goose` | `3.30.1` |
 | `golangci-lint` | `2.15.0` |
 | `goimports` | `0.52.0` |
 | `govulncheck` | `1.9.0` |
