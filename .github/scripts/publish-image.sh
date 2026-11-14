@@ -217,6 +217,8 @@ base)
 		--build-arg "CI_UID=$(json '.ci_user.uid')" \
 		--build-arg "DEBIAN_SNAPSHOT=$(json '.debian_snapshot')" \
 		--build-arg \
+		"DEBIAN_UPDATES_SNAPSHOT=$(json '.debian_updates_snapshot')" \
+		--build-arg \
 		"ACTIONLINT_VERSION=$(json '.tools.base.actionlint.version')" \
 		--build-arg \
 		"ACTIONLINT_X_SYS_VERSION=$(json '.tools.base.actionlint.dependency_overrides["golang.org/x/sys"]')" \
@@ -492,6 +494,8 @@ postgres)
 	publish_image \
 		--build-arg "PGVECTOR_IMAGE=${pgvector_image}" \
 		--build-arg "DEBIAN_SNAPSHOT=$(json '.debian_snapshot')" \
+		--build-arg \
+		"DEBIAN_UPDATES_SNAPSHOT=$(json '.debian_updates_snapshot')" \
 		--build-arg "GO_VERSION=$(json '.tools.go.runtime')" \
 		--build-arg \
 		"GO_SHA256_AMD64=$(json '.tools.go.assets.amd64.sha256')" \

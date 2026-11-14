@@ -1,0 +1,5 @@
+libcups2t64=2.4.20-3
+libx11-xcb1=2:1.8.14-1
+libxi6=2:1.8.4-1
+xserver-common=2:21.1.26-1
+xvfb=2:21.1.26-1
