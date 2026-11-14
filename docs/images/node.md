@@ -6,9 +6,9 @@
 
 The initial image contract includes:
 
-- Node.js 26.13.0 from a checksum-pinned official Linux binary archive;
-- npm and npx 12.2.1 from a hash-verified release artifact;
-- pnpm 12.17.0 from a checksum-pinned official Linux binary archive;
+- Node.js 26.13.1 from a checksum-pinned official Linux binary archive;
+- npm and npx 12.2.2 from a hash-verified release artifact;
+- pnpm 12.20.0 from a checksum-pinned official Linux binary archive;
 - `markdownlint-cli2` 0.24.0;
 - Redocly CLI 2.69.0 for OpenAPI validation;
 - explicit npm and pnpm cache paths.
@@ -17,7 +17,7 @@ Node and pnpm use the official glibc binaries for the target architecture. Image
 
 The npm release artifact is hash-verified, and its reviewed bundled dependency replacements are installed from a committed lockfile. They include `undici` 6.x, `postcss-selector-parser`, and the approved `glob` 14 / `minimatch` 11 security updates. The `http-cache-semantics` replacement uses the current compatible 4.3.0 release. Its remaining advisory scenario is recorded in the [stable toolchain qualification][security]. The Markdown tool lockfile overrides `smol-toml`, KaTeX, and `markdown-it` with their reviewed fixed releases. Other Node tool dependency trees are installed from committed lockfiles into immutable versioned directories. Stable command links are exposed through `/opt/ci-tools/bin`.
 
-The pnpm release archive includes its native-addon build helpers beside the executable. The image preserves the 12.17.0 CLI, command links, and store contract. The manifest records the upstream binary URL and checksum for each supported architecture.
+The pnpm release archive includes its native-addon build helpers beside the executable. The image preserves the 12.20.0 CLI, command links, and store contract. The manifest records the upstream binary URL and checksum for each supported architecture.
 
 The Markdown bundle also applies a source-checked local patch for [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm). The parser and recursive tree walkers reject nesting deeper than 128 containers with a controlled syntax error. Regression tests cover string and AST APIs, CLI and configuration globs, and ordinary file selection and lint failures. The build rejects unexpected source hashes so a dependency update requires review of the patch. The upstream package remains identified as `braces` 3.0.3; no patched release is available, so dependency alerts may still report it. Remove the local patch only after adopting and testing an upstream fixed release.
 
@@ -26,7 +26,7 @@ The Markdown bundle also applies a source-checked local patch for [GHSA-vfj7-8cj
 This image adds these variables to the [`ci-base` environment](base.md#runtime-environment):
 
 ```text
-NODE_VERSION=26.13.0
+NODE_VERSION=26.13.1
 NPM_CONFIG_CACHE=/var/cache/npm
 PNPM_CONFIG_STORE_DIR=/var/cache/pnpm/store
 ```
@@ -46,7 +46,7 @@ npm cache=/var/cache/npm
 pnpm store=/var/cache/pnpm/store
 ```
 
-pnpm creates a store-format directory below the configured store root. pnpm 12.17.0 retains the compatible `v11` store format; the manifest records the CLI and store-format versions independently. The caches contain package content only. Do not persist `node_modules`, build output, or a repository workspace.
+pnpm creates a store-format directory below the configured store root. pnpm 12.20.0 retains the compatible `v11` store format; the manifest records the CLI and store-format versions independently. The caches contain package content only. Do not persist `node_modules`, build output, or a repository workspace.
 
 ## Usage
 

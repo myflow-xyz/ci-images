@@ -50,6 +50,8 @@ required_files=(
 	images/base/bash-5.3-patches.sha256
 	images/base/debian-packages.amd64.lock
 	images/base/debian-packages.arm64.lock
+	images/common/debian-updates.pref
+	images/common/debian-updates.sources
 	images/go/Dockerfile
 	images/net/Dockerfile
 	images/net/debian-packages.amd64.lock
@@ -68,7 +70,11 @@ required_files=(
 	images/node/npm-runtime/package-lock.json
 	images/vite/Dockerfile
 	images/playwright/Dockerfile
+	images/playwright/debian-packages.amd64.lock
+	images/playwright/debian-packages.arm64.lock
 	images/postgres/Dockerfile
+	images/postgres/debian-packages.amd64.lock
+	images/postgres/debian-packages.arm64.lock
 	images/utils/Dockerfile
 	manifests/versions.json
 	tests/docker-integration.sh
@@ -150,7 +156,7 @@ done < <(
   ' "$manifest"
 )
 
-for image in base net; do
+for image in base net playwright postgres; do
 	debian_package_lock_amd64=$(
 		jq -r --arg image "$image" '.tools[$image].debian_packages.lockfiles.amd64.lockfile' "$manifest"
 	)
@@ -166,10 +172,16 @@ for image in base net; do
 		grep --fixed-strings --line-regexp "$row" "$versions_doc" >/dev/null ||
 			fail "missing Debian package inventory row: ${package}"
 	done < <(
-		join \
+		LC_ALL=C join \
 			-t '=' \
-			"${repository_root}/${debian_package_lock_amd64}" \
-			"${repository_root}/${debian_package_lock_arm64}"
+			<(
+				LC_ALL=C sort -t '=' -k1,1 \
+					"${repository_root}/${debian_package_lock_amd64}"
+			) \
+			<(
+				LC_ALL=C sort -t '=' -k1,1 \
+					"${repository_root}/${debian_package_lock_arm64}"
+			)
 	)
 done
 
@@ -180,6 +192,7 @@ jq --exit-status '
   .ci_user.uid == 1001 and
   .ci_user.gid == 2001 and
   (.debian_snapshot | test("^[0-9]{8}T[0-9]{6}Z$")) and
+  (.debian_updates_snapshot | test("^[0-9]{8}T[0-9]{6}Z$")) and
   (.upstream_images.debian.reference |
     endswith("debian:trixie-slim")) and
   (.tools.node as $node |

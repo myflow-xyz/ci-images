@@ -8,11 +8,24 @@ ARG BUILD_CREATED=unknown
 ARG BUILD_REVISION=unknown
 ARG MANIFEST_SHA=unknown
 ARG PLAYWRIGHT_VERSION
+ARG TARGETARCH
 
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
     PLAYWRIGHT_VERSION=${PLAYWRIGHT_VERSION}
 
 USER root
+
+COPY images/playwright/debian-packages.*.lock /var/tmp/ci-playwright/
+
+RUN set -eu; \
+    case "${TARGETARCH}" in amd64|arm64) ;; *) exit 1 ;; esac; \
+    install -m 0644 \
+      "/var/tmp/ci-playwright/debian-packages.${TARGETARCH}.lock" \
+      /usr/local/share/ci/playwright-debian-packages.lock; \
+    apt-get update; \
+    xargs -r apt-get install --yes --no-install-recommends \
+      < /usr/local/share/ci/playwright-debian-packages.lock; \
+    rm -rf /var/tmp/ci-playwright /var/lib/apt/lists/*
 
 COPY \
   images/playwright/npm/package.json \

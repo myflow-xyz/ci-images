@@ -10,6 +10,7 @@
     "gid": 2001
   },
   "debian_snapshot": "20261109T210000Z",
+  "debian_updates_snapshot": "20261113T210000Z",
   "upstream_images": {
     "dockerfile_frontend": {
       "reference": "docker.io/docker/dockerfile:1.28.0",
@@ -87,16 +88,16 @@
         "lockfiles": {
           "amd64": {
             "lockfile": "images/base/debian-packages.amd64.lock",
-            "lockfile_sha256": "5e51d10028403e6f3346b7f05add556fb61fa8e656aec0d3c17e92a13ec0f401"
+            "lockfile_sha256": "b46694e15fa03acf7c74b7976ede1d6088ace0e1f3592cfaf11edec8faf9bf76"
           },
           "arm64": {
             "lockfile": "images/base/debian-packages.arm64.lock",
-            "lockfile_sha256": "684ebfacd9cd25d7773bd8137dec16d43de84e13ea9a7776160de742c2be6f27"
+            "lockfile_sha256": "00c8de1c6b147209871017b2cefa33c9393ade9d1e36736029b7422fc282362f"
           }
         }
       },
       "gh": {
-        "version": "2.103.3",
+        "version": "2.104.0",
         "source": "https://github.com/cli/cli",
         "module": "github.com/cli/cli/v2/cmd/gh",
         "dependency_overrides": {
@@ -239,7 +240,7 @@
         }
       },
       "compose": {
-        "version": "5.7.0",
+        "version": "5.7.1",
         "source": "https://github.com/docker/compose",
         "module": "github.com/docker/compose/v5",
         "dependency_overrides": {
@@ -283,7 +284,7 @@
       },
       "goose": {
         "module": "github.com/pressly/goose/v3/cmd/goose",
-        "version": "v3.30.0",
+        "version": "v3.30.1",
         "dependency_overrides": {
           "golang.org/x/crypto": "v0.58.0",
           "golang.org/x/net": "v0.62.0",
@@ -313,16 +314,15 @@
         "version": "v1.9.0"
       },
       "linux_libc_dev": {
-        "version": "6.12.116-1",
+        "version": "7.3.4-1",
         "asset": {
-          "url": "https://security.debian.org/debian-security/pool/updates/main/l/linux/linux-libc-dev_6.12.116-1_all.deb",
-          "sha256": "c43f5c6dc104f2a2ce985d6d68d3575a7be6fe904313efa7b10edfa0170f9dce"
-        },
-        "source": "https://security-tracker.debian.org/tracker/CVE-2026-99083"
+          "url": "https://snapshot.debian.org/archive/debian/20261113T210000Z/pool/main/l/linux/linux-libc-dev_7.3.4-1_all.deb",
+          "sha256": "d9f7b5ef29697cfa428c52be151dfc18645c8573c7707515fb98aed80851c78d"
+        }
       }
     },
     "node": {
-      "runtime": "26.13.0",
+      "runtime": "26.13.1",
       "npm": {
         "version": "12.2.2",
         "asset": {
@@ -330,7 +330,7 @@
           "sha256": "07fecbf753e2c3bc10ebeb3e9ed8738f6a0cc1292998b79e2e9f1dd2a5525e0c"
         },
         "lockfile": "images/node/npm-runtime/package-lock.json",
-        "lockfile_sha256": "cca8d406668518409a43997aba08d7bc4324d722e9c4cbdc1e6a0ac2f9eb13a2",
+        "lockfile_sha256": "c0cbbe7de4c37578dc79e64227ac01baa6ab221a93b72b90f5c59c18e962a57c",
         "dependency_replacements": {
           "brace-expansion": "5.0.12",
           "http-cache-semantics": "4.3.0",
@@ -339,7 +339,7 @@
           "tar": "7.5.22",
           "undici": "6.29.1",
           "glob": "14.0.4",
-          "minimatch": "11.0.7",
+          "minimatch": "11.0.8",
           "path-scurry": "3.0.0",
           "@isaacs/nonrecursive-glob-match": "1.1.0",
           "lru-cache": "11.5.3"
@@ -364,21 +364,21 @@
           }
         }
       },
-      "bundle_version": "19",
+      "bundle_version": "20",
       "lockfile": "images/node/npm/package-lock.json",
       "lockfile_sha256": "30255486f5c04c5f787799e8ff5fdb18d273197f4a202fc833e4da79e8e83297",
       "pnpm": {
-        "version": "12.19.0",
+        "version": "12.20.0",
         "store_version": "11",
         "source": "https://github.com/pnpm/pnpm",
         "assets": {
           "amd64": {
-            "url": "https://github.com/pnpm/pnpm/releases/download/v12.19.0/pnpm-linux-x64.tar.gz",
-            "sha256": "bf37edf4e26c3b31c1cac42c769ffabcb9231e9bc728762aeb1ee86bc711684a"
+            "url": "https://github.com/pnpm/pnpm/releases/download/v12.20.0/pnpm-linux-x64.tar.gz",
+            "sha256": "568fd50dd174a57e80efacc04be1d6a228bb41fbebe557f2ef63a1c3a721a5f4"
           },
           "arm64": {
-            "url": "https://github.com/pnpm/pnpm/releases/download/v12.19.0/pnpm-linux-arm64.tar.gz",
-            "sha256": "c30fc6f9619fe190f491d844f8bb11c6a52dd2d932337d05edf2029a1988ac32"
+            "url": "https://github.com/pnpm/pnpm/releases/download/v12.20.0/pnpm-linux-arm64.tar.gz",
+            "sha256": "e6edbf380ee2299be4cde0f5b8f7183529a8963916637896dd6b3ac71a216ae0"
           }
         }
       },
@@ -386,19 +386,19 @@
       "source": "https://nodejs.org/dist/",
       "assets": {
         "amd64": {
-          "url": "https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-x64.tar.xz",
-          "sha256": "d28a96af6c38596f6d9d97c0ee531c13d238d757742387d1928de822d959e997"
+          "url": "https://nodejs.org/dist/v26.13.1/node-v26.13.1-linux-x64.tar.xz",
+          "sha256": "5c063e46bab0fbc1c17cc445d7ff129cbdcd0471be6ed83b6ab864f8143bc864"
         },
         "arm64": {
-          "url": "https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-arm64.tar.xz",
-          "sha256": "406fe3fbde1c054adff8b297c16fdb5af6659db327c1ac8acd46b56ef1af9a92"
+          "url": "https://nodejs.org/dist/v26.13.1/node-v26.13.1-linux-arm64.tar.xz",
+          "sha256": "89e1853138db51e8b82d3e98ba9c0d3f2956a28e5e55ea1b7e12d25aae92d5dd"
         }
       }
     },
     "vite": {
-      "bundle_version": "23",
+      "bundle_version": "24",
       "lockfile": "images/vite/npm/package-lock.json",
-      "lockfile_sha256": "3e39be42ef4bd1a15a65cb684935e5eda9b0e4c5769a5fc5cd5bfee63b1dbcf0",
+      "lockfile_sha256": "0d7ea9cdce40e05ef7736277b268dde4d3b143551c327b13e14d5a7eb4bb260a",
       "typescript": "7.0.2",
       "typescript_source": {
         "repository": "https://github.com/microsoft/typescript-go",
@@ -411,7 +411,7 @@
         "compat_package": "6.0.2",
         "compiler": "6.0.3"
       },
-      "vite": "8.3.7",
+      "vite": "8.3.8",
       "vitest": "5.1.0",
       "coverage_v8": "5.1.0",
       "oxlint": "1.93.0",
@@ -428,7 +428,19 @@
     "playwright": {
       "version": "1.65.0",
       "lockfile": "images/playwright/npm/package-lock.json",
-      "lockfile_sha256": "e73c813e92f6d0acb8d5626289f75c362e6efd8e3f5540a9a2c3d169d9434c0a"
+      "lockfile_sha256": "e73c813e92f6d0acb8d5626289f75c362e6efd8e3f5540a9a2c3d169d9434c0a",
+      "debian_packages": {
+        "lockfiles": {
+          "amd64": {
+            "lockfile": "images/playwright/debian-packages.amd64.lock",
+            "lockfile_sha256": "33ce3c5f5d208dd623b7afb00a50c1466700a8fd5cf5ada8a6a086a8ad695c47"
+          },
+          "arm64": {
+            "lockfile": "images/playwright/debian-packages.arm64.lock",
+            "lockfile_sha256": "33ce3c5f5d208dd623b7afb00a50c1466700a8fd5cf5ada8a6a086a8ad695c47"
+          }
+        }
+      }
     },
     "postgres": {
       "postgres": "18",
@@ -440,6 +452,18 @@
         "dependency_overrides": {
           "github.com/moby/sys/user": "v0.5.0",
           "golang.org/x/sys": "v0.50.0"
+        }
+      },
+      "debian_packages": {
+        "lockfiles": {
+          "amd64": {
+            "lockfile": "images/postgres/debian-packages.amd64.lock",
+            "lockfile_sha256": "d3c9f25b549a5c79cb6d3cccd67bb9f8608bdbb5da34120deb23dff72abde7e0"
+          },
+          "arm64": {
+            "lockfile": "images/postgres/debian-packages.arm64.lock",
+            "lockfile_sha256": "d3c9f25b549a5c79cb6d3cccd67bb9f8608bdbb5da34120deb23dff72abde7e0"
+          }
         }
       }
     },
@@ -460,11 +484,11 @@
         "lockfiles": {
           "amd64": {
             "lockfile": "images/net/debian-packages.amd64.lock",
-            "lockfile_sha256": "15f7cb20e3b6f99d7e904eedd0dfb031c8ff39c04d8d6fea15d65827cb5a3f4b"
+            "lockfile_sha256": "970f2f88b702be020eb406c2f535342307fe972dbe31c847dc1b5e1cb54fe78d"
           },
           "arm64": {
             "lockfile": "images/net/debian-packages.arm64.lock",
-            "lockfile_sha256": "15f7cb20e3b6f99d7e904eedd0dfb031c8ff39c04d8d6fea15d65827cb5a3f4b"
+            "lockfile_sha256": "970f2f88b702be020eb406c2f535342307fe972dbe31c847dc1b5e1cb54fe78d"
           }
         }
       }

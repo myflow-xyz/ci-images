@@ -83,10 +83,12 @@ FROM ${PGVECTOR_IMAGE}
 ARG BUILD_CREATED=unknown
 ARG BUILD_REVISION=unknown
 ARG DEBIAN_SNAPSHOT
+ARG DEBIAN_UPDATES_SNAPSHOT
 ARG GOSU_VERSION
 ARG MANIFEST_SHA=unknown
 ARG PGVECTOR_VERSION
 ARG POSTGRES_VERSION
+ARG TARGETARCH
 
 ENV LANG=en_US.utf8 \
     LC_ALL=en_US.utf8 \
@@ -94,7 +96,16 @@ ENV LANG=en_US.utf8 \
     PG_MAJOR=${POSTGRES_VERSION} \
     PGVECTOR_VERSION=${PGVECTOR_VERSION}
 
+COPY images/common/debian-updates.sources \
+  /etc/apt/sources.list.d/ci-updates.sources
+COPY images/common/debian-updates.pref /etc/apt/preferences.d/ci-updates
+COPY images/postgres/debian-packages.*.lock /var/tmp/ci-postgres/
+
 RUN test -n "${DEBIAN_SNAPSHOT}" \
+    && test -n "${DEBIAN_UPDATES_SNAPSHOT}" \
+    && sed -i \
+      "s/@DEBIAN_UPDATES_SNAPSHOT@/${DEBIAN_UPDATES_SNAPSHOT}/g" \
+      /etc/apt/sources.list.d/ci-updates.sources \
     && sed -ri \
       "s|URIs: http://deb.debian.org/debian$|URIs: http://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}/|" \
       /etc/apt/sources.list.d/debian.sources \
@@ -111,6 +122,15 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
       > /etc/dpkg/dpkg.cfg.d/zz-ci-bash-builtins \
     && apt-get update \
     && apt-get upgrade --yes --no-install-recommends \
+    && case "${TARGETARCH}" in amd64|arm64) ;; *) exit 1 ;; esac \
+    && install -D -m 0644 \
+      "/var/tmp/ci-postgres/debian-packages.${TARGETARCH}.lock" \
+      /usr/local/share/ci/postgres-debian-packages.lock \
+    && xargs -r apt-get install --yes --no-install-recommends \
+      < /usr/local/share/ci/postgres-debian-packages.lock \
+    && apt-get purge --yes --no-install-recommends \
+      libperl5.40 perl-modules-5.40 \
+    && rm -rf /var/tmp/ci-postgres \
     && rm -rf /var/lib/apt/lists/* \
     && sed -ri 's|^# deb |deb |' /etc/apt/sources.list.d/pgdg.list
 
