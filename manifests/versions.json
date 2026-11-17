@@ -22,7 +22,7 @@
     },
     "pgvector": {
       "reference": "docker.io/pgvector/pgvector:0.8.7-pg18-trixie",
-      "digest": "sha256:5895949dfcdf308eb0cd31c950c93c14895c77f33fbedfecf1fa511ab1d4bcd2"
+      "digest": "sha256:ab49524d18df7200b74ac9a475e1db6297fc1eb57da4c214c63d10ecc4b754fa"
     }
   },
   "images": {
@@ -105,11 +105,11 @@
         }
       },
       "git": {
-        "version": "2.56.0",
+        "version": "2.56.1",
         "source": "https://git-scm.com",
         "asset": {
-          "url": "https://www.kernel.org/pub/software/scm/git/git-2.56.0.tar.xz",
-          "sha256": "26c56c296b38c0695b26fa95f475f1d01704d2d38e73465ca30b0b2f5dc789d3"
+          "url": "https://www.kernel.org/pub/software/scm/git/git-2.56.1.tar.xz",
+          "sha256": "f0b0bf89264b9bd2e1c640363e7529643989da76281600473c50745cd34a607f"
         }
       },
       "git_lfs": {
@@ -155,7 +155,7 @@
         "dependency_overrides": {
           "golang.org/x/net": "v0.62.0",
           "modernc.org/sqlite": "v1.62.0",
-          "modernc.org/libc": "v1.81.0"
+          "modernc.org/libc": "v1.81.2"
         }
       },
       "trivy": {
@@ -167,7 +167,7 @@
           "google.golang.org/grpc": "v1.85.0",
           "github.com/go-jose/go-jose/v4": "v4.1.9",
           "modernc.org/sqlite": "v1.62.0",
-          "modernc.org/libc": "v1.81.0",
+          "modernc.org/libc": "v1.81.2",
           "github.com/klauspost/compress": "v1.20.4"
         }
       },
@@ -230,17 +230,17 @@
         }
       },
       "docker": {
-        "version": "29.9.3",
+        "version": "29.10.0",
         "source": "https://github.com/docker/cli",
         "module": "github.com/docker/cli",
-        "commit": "5457199aa57c45e990c59c89cab5f02b817238d7",
+        "commit": "fdd4b8e5da335e1d0d83d29af5045f57280cd694",
         "dependency_overrides": {
           "golang.org/x/net": "v0.62.0",
           "github.com/go-jose/go-jose/v4": "v4.1.9"
         }
       },
       "compose": {
-        "version": "5.7.1",
+        "version": "5.8.0",
         "source": "https://github.com/docker/compose",
         "module": "github.com/docker/compose/v5",
         "dependency_overrides": {
@@ -271,7 +271,7 @@
           "commit": "2641800501e077c835cc4059e39e5a251e8b1ccb"
         },
         "lockfile": "images/go/hurl/Cargo.lock",
-        "lockfile_sha256": "cbb48b6d6a6ba8b17d5ead2fda5cd6f7dcfd52ea7bb3281910d4036c5abcb1c0"
+        "lockfile_sha256": "8c9644fbac0aa564b5a688ed2d72a6f51df16ad2674d9773e422a4e4747df98f"
       },
       "sqlc": {
         "module": "github.com/sqlc-dev/sqlc/cmd/sqlc",
@@ -289,7 +289,7 @@
           "golang.org/x/crypto": "v0.58.0",
           "golang.org/x/net": "v0.62.0",
           "google.golang.org/grpc": "v1.85.0",
-          "modernc.org/libc": "v1.81.0",
+          "modernc.org/libc": "v1.81.2",
           "modernc.org/sqlite": "v1.62.0",
           "github.com/andybalholm/brotli": "v1.3.0",
           "github.com/klauspost/compress": "v1.20.4"
@@ -304,14 +304,14 @@
       },
       "goimports": {
         "module": "golang.org/x/tools/cmd/goimports",
-        "version": "v0.52.0",
+        "version": "v0.53.0",
         "dependency_overrides": {
-          "golang.org/x/net": "v0.62.0"
+          "golang.org/x/net": "v0.63.0"
         }
       },
       "govulncheck": {
         "module": "golang.org/x/vuln/cmd/govulncheck",
-        "version": "v1.9.0"
+        "version": "v1.10.0"
       },
       "linux_libc_dev": {
         "version": "7.3.4-1",
@@ -330,25 +330,25 @@
           "sha256": "07fecbf753e2c3bc10ebeb3e9ed8738f6a0cc1292998b79e2e9f1dd2a5525e0c"
         },
         "lockfile": "images/node/npm-runtime/package-lock.json",
-        "lockfile_sha256": "c0cbbe7de4c37578dc79e64227ac01baa6ab221a93b72b90f5c59c18e962a57c",
+        "lockfile_sha256": "1e5571681857d53d3848165d9c58c4562788bc97a71e7d8318545af0318db529",
         "dependency_replacements": {
-          "brace-expansion": "5.0.12",
+          "brace-expansion": "5.0.13",
           "http-cache-semantics": "4.3.0",
           "ip-address": "10.7.6",
-          "postcss-selector-parser": "7.2.0",
-          "tar": "7.5.22",
+          "postcss-selector-parser": "7.2.1",
+          "tar": "7.5.23",
           "undici": "6.29.1",
-          "glob": "14.0.4",
-          "minimatch": "11.0.8",
+          "glob": "14.0.6",
+          "minimatch": "11.0.9",
           "path-scurry": "3.0.0",
           "@isaacs/nonrecursive-glob-match": "1.1.0",
           "lru-cache": "11.5.3"
         }
       },
       "markdownlint_cli2": {
-        "version": "0.24.0",
+        "version": "0.24.1",
         "lockfile": "images/node/markdownlint/package-lock.json",
-        "lockfile_sha256": "70c0bf553cf15e1100c21d8f13862573e962e7960946062023fc8c95c6d48146",
+        "lockfile_sha256": "82987a758890f17724eccbc8d3add62c467461b2397daa682ed32d676e756d21",
         "dependency_overrides": {
           "smol-toml": "1.9.1",
           "katex": "0.19.1",
@@ -364,25 +364,25 @@
           }
         }
       },
-      "bundle_version": "20",
+      "bundle_version": "21",
       "lockfile": "images/node/npm/package-lock.json",
-      "lockfile_sha256": "30255486f5c04c5f787799e8ff5fdb18d273197f4a202fc833e4da79e8e83297",
+      "lockfile_sha256": "ac2517dacc11c042a46c66e00681b5a4c874bd7ffe82cd9cc4166c6756007168",
       "pnpm": {
-        "version": "12.20.0",
+        "version": "12.21.0",
         "store_version": "11",
         "source": "https://github.com/pnpm/pnpm",
         "assets": {
           "amd64": {
-            "url": "https://github.com/pnpm/pnpm/releases/download/v12.20.0/pnpm-linux-x64.tar.gz",
-            "sha256": "568fd50dd174a57e80efacc04be1d6a228bb41fbebe557f2ef63a1c3a721a5f4"
+            "url": "https://github.com/pnpm/pnpm/releases/download/v12.21.0/pnpm-linux-x64.tar.gz",
+            "sha256": "84c4773bcf4a217f4083cd7b2a91e4cee6103cf42426c1282ef37d308f55a410"
           },
           "arm64": {
-            "url": "https://github.com/pnpm/pnpm/releases/download/v12.20.0/pnpm-linux-arm64.tar.gz",
-            "sha256": "e6edbf380ee2299be4cde0f5b8f7183529a8963916637896dd6b3ac71a216ae0"
+            "url": "https://github.com/pnpm/pnpm/releases/download/v12.21.0/pnpm-linux-arm64.tar.gz",
+            "sha256": "6c5913a48c93b3a556b71c3bd9bf12c6bf9fbfbbbd2dcbd1d52a85c539751b9e"
           }
         }
       },
-      "redocly": "2.77.0",
+      "redocly": "2.79.0",
       "source": "https://nodejs.org/dist/",
       "assets": {
         "amd64": {
@@ -396,9 +396,9 @@
       }
     },
     "vite": {
-      "bundle_version": "24",
+      "bundle_version": "25",
       "lockfile": "images/vite/npm/package-lock.json",
-      "lockfile_sha256": "0d7ea9cdce40e05ef7736277b268dde4d3b143551c327b13e14d5a7eb4bb260a",
+      "lockfile_sha256": "e8a87280372ddb692db363fabbc1e7ad7f75c9f01aad3ac912706fd1f845dced",
       "typescript": "7.0.2",
       "typescript_source": {
         "repository": "https://github.com/microsoft/typescript-go",
@@ -414,21 +414,21 @@
       "vite": "8.3.8",
       "vitest": "5.1.0",
       "coverage_v8": "5.1.0",
-      "oxlint": "1.93.0",
-      "oxlint_tsgolint": "7.0.2006",
+      "oxlint": "1.94.0",
+      "oxlint_tsgolint": "7.0.2007",
       "oxlint_tsgolint_source": {
         "repository": "https://github.com/oxc-project/tsgolint",
-        "commit": "420f4f134c4802af98780e3dc413f3452d53fe45",
+        "commit": "1ae4bbd516db0a7a5390e86c90623dc343dea1e6",
         "dependency_overrides": {
           "golang.org/x/text": "v0.44.0"
         }
       },
-      "oxfmt": "0.78.0"
+      "oxfmt": "0.79.0"
     },
     "playwright": {
-      "version": "1.65.0",
+      "version": "1.65.1",
       "lockfile": "images/playwright/npm/package-lock.json",
-      "lockfile_sha256": "e73c813e92f6d0acb8d5626289f75c362e6efd8e3f5540a9a2c3d169d9434c0a",
+      "lockfile_sha256": "b2ac92eae6f9bbc8992d9e02fe5db6d381783ebb46563bdbe4e9e49b872d4642",
       "debian_packages": {
         "lockfiles": {
           "amd64": {
@@ -517,15 +517,15 @@
       }
     },
     "rust": {
-      "version": "1.99.1",
+      "version": "1.100.0",
       "assets": {
         "amd64": {
-          "url": "https://static.rust-lang.org/dist/2026-10-15/rust-1.99.1-x86_64-unknown-linux-gnu.tar.xz",
-          "sha256": "231fcae47ee950621374725b5fc3b5441d2fbda2955ac45dd7dc816d8876cfe7"
+          "url": "https://static.rust-lang.org/dist/2026-11-12/rust-1.100.0-x86_64-unknown-linux-gnu.tar.xz",
+          "sha256": "98ee6bec240e1cfe944f17e7092412dc5ef6e008484bb668c6936d35a7d15acd"
         },
         "arm64": {
-          "url": "https://static.rust-lang.org/dist/2026-10-15/rust-1.99.1-aarch64-unknown-linux-gnu.tar.xz",
-          "sha256": "a48fb1e853be56ce9b8e2751f5464dbd5e16440cd81e237920f3a5e7e806333e"
+          "url": "https://static.rust-lang.org/dist/2026-11-12/rust-1.100.0-aarch64-unknown-linux-gnu.tar.xz",
+          "sha256": "a21f6a21818df07c1e2e7addb570af5444b3fa9dd61e3a207f4fb1c5a5e665c9"
         }
       }
     },

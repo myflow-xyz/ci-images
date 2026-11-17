@@ -13,7 +13,7 @@ The initial image contract includes:
 - sqlc 1.31.1;
 - Goose 3.30.1;
 - golangci-lint 2.15.0;
-- `goimports` 0.52.0 and `govulncheck` 1.9.0.
+- `goimports` 0.53.0 and `govulncheck` 1.10.0.
 
 External Go executables are built from exact module versions into immutable versioned directories. Stable links are exposed through `/opt/ci-tools/bin`.
 
