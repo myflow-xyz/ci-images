@@ -314,7 +314,10 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 		cp "$output_file" "${temporary_directory}/base-${architecture}.json"
 		for build_arg in \
 			"COMPOSE_X_NET_VERSION=$(jq -r '.tools.base.compose.dependency_overrides["golang.org/x/net"]' "$manifest")" \
-			"GH_X_NET_VERSION=$(jq -r '.tools.base.gh.dependency_overrides["golang.org/x/net"]' "$manifest")" \
+			"GH_ASSET_URL_AMD64=$(jq -r '.tools.base.gh.assets.amd64.url' "$manifest")" \
+			"GH_ASSET_URL_ARM64=$(jq -r '.tools.base.gh.assets.arm64.url' "$manifest")" \
+			"GH_SHA256_AMD64=$(jq -r '.tools.base.gh.assets.amd64.sha256' "$manifest")" \
+			"GH_SHA256_ARM64=$(jq -r '.tools.base.gh.assets.arm64.sha256' "$manifest")" \
 			"GIT_LFS_X_NET_VERSION=$(jq -r '.tools.base.git_lfs.dependency_overrides["golang.org/x/net"]' "$manifest")" \
 			"OSV_SCANNER_X_NET_VERSION=$(jq -r '.tools.base.osv_scanner.dependency_overrides["golang.org/x/net"]' "$manifest")" \
 			"TRIVY_X_NET_VERSION=$(jq -r '.tools.base.trivy.dependency_overrides["golang.org/x/net"]' "$manifest")" \
@@ -339,6 +342,7 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 	fi
 	if [[ $name == go ]]; then
 		for build_arg in \
+			"LINUX_LIBC_DEV_VERSION=$(jq -r '.tools.go.linux_libc_dev.version' "$manifest")" \
 			"SQLC_CEL_GO_VERSION=$(jq -r '.tools.go.sqlc.dependency_overrides["github.com/google/cel-go"]' "$manifest")" \
 			"GOOSE_MODERNC_LIBC_VERSION=$(jq -r '.tools.go.goose.dependency_overrides["modernc.org/libc"]' "$manifest")" \
 			"GOIMPORTS_VERSION=$(jq -r '.tools.go.goimports.version' "$manifest")" \

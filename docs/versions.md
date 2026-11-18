@@ -17,12 +17,12 @@ Cleanup and its internal capability helper are repository-owned commands tied to
 | Component | Version |
 | --- | --- |
 | `Bash` | `5.3.20` |
-| `Git` | `2.56.0` |
+| `Git` | `2.56.1` |
 | `Git LFS` | `3.8.1` |
-| `GitHub CLI` | `2.104.0` |
+| `GitHub CLI` | `2.105.0` |
 | `CPython` | `3.15.2` |
-| `Docker CLI` | `29.9.3` |
-| `Docker Compose` | `5.7.1` |
+| `Docker CLI` | `29.10.0` |
+| `Docker Compose` | `5.8.0` |
 | `actionlint` | `1.7.12` |
 | `gitleaks` | `8.30.1` |
 | `jq` | `1.8.2` |
@@ -126,18 +126,18 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | `sqlc` | `1.31.1` |
 | `goose` | `3.30.1` |
 | `golangci-lint` | `2.15.0` |
-| `goimports` | `0.52.0` |
-| `govulncheck` | `1.9.0` |
+| `goimports` | `0.53.0` |
+| `govulncheck` | `1.10.0` |
 
 ## `ci-node`
 
 | Component | Version |
 | --- | --- |
 | `Node.js` | `26.13.1` |
-| `npm` | `12.2.2` |
-| `pnpm` | `12.20.0` |
-| `markdownlint-cli2` | `0.24.0` |
-| `@redocly/cli` | `2.77.0` |
+| `npm` | `12.2.3` |
+| `pnpm` | `12.22.0` |
+| `markdownlint-cli2` | `0.24.1` |
+| `@redocly/cli` | `2.80.0` |
 
 ## `ci-vite`
 
@@ -147,17 +147,17 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | `TypeScript compatibility package` | `6.0.2` |
 | `TypeScript legacy compiler` | `6.0.3` |
 | `vite` | `8.3.8` |
-| `vitest` | `5.1.0` |
-| `@vitest/coverage-v8` | `5.1.0` |
-| `oxlint` | `1.93.0` |
-| `oxlint-tsgolint` | `7.0.2006` |
-| `oxfmt` | `0.78.0` |
+| `vitest` | `5.1.1` |
+| `@vitest/coverage-v8` | `5.1.1` |
+| `oxlint` | `1.94.0` |
+| `oxlint-tsgolint` | `7.0.2007` |
+| `oxfmt` | `0.79.0` |
 
 ## `ci-playwright`
 
 | Component | Version |
 | --- | --- |
-| `@playwright/test` | `1.65.0` |
+| `@playwright/test` | `1.65.1` |
 
 | Package | Version |
 | --- | --- |
@@ -168,6 +168,8 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | `xvfb` | `2:21.1.26-1` |
 
 ## `ci-postgres`
+
+The pinned pgvector image supplies PostgreSQL `18.7`.
 
 | Component | Version |
 | --- | --- |

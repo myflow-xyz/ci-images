@@ -6,12 +6,12 @@
   "license": "AGPL-3.0-only",
   "dependencies": {
     "@typescript/native": "npm:typescript@7.0.2",
-    "@vitest/coverage-v8": "5.1.0",
-    "oxfmt": "0.78.0",
-    "oxlint": "1.93.0",
-    "oxlint-tsgolint": "7.0.2006",
+    "@vitest/coverage-v8": "5.1.1",
+    "oxfmt": "0.79.0",
+    "oxlint": "1.94.0",
+    "oxlint-tsgolint": "7.0.2007",
     "typescript": "npm:@typescript/typescript6@6.0.2",
     "vite": "8.3.8",
-    "vitest": "5.1.0"
+    "vitest": "5.1.1"
   }
 }
