@@ -7,8 +7,8 @@ CATALOG = """Supported maintenance commands:
   ci-utils-list          List supported ci-utils commands.
   ci-docker-cleanup      Inspect or clean owned Docker resources.
     check|plan|apply|version (default: plan; apply requires the host adapter)
-  ci-remove-images       Preview or remove selected local CI image versions.
-    --versions X.Y.Z[,X.Y.Z] [--apply] (default: dry-run)
+  ci-remove-images       Preview or remove old local CI image versions.
+    [--versions X.Y.Z[,X.Y.Z]] [--apply] (default: dry-run, keep latest)
   ci-go-cleanup          Preview or reset Go build and module caches.
     [--build-cache [PATH]] [--mod-cache [PATH]] [--apply]
     Default: preview both mfci Go caches; cache flags select individual caches.

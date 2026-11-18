@@ -62,9 +62,11 @@ After all consumers have stopped, remove `,readonly` from the selected cache mou
 
 JSON Lines report each selected path, entry counts, logical file bytes, and final success or failure. Logical bytes include hard-linked files and are not a physical-space reclamation estimate. Preview makes no changes. Missing or unreadable paths fail before deletion, and all selected caches are inspected before any reset. Exit codes are `0` success, `2` invalid selection or failed preflight, `4` another cleanup holds a lock, and `5` failed or interrupted reset, which may be partial.
 
-## Remove explicit suite versions
+## Remove local suite versions
 
-`ci-remove-images --versions 0.0.1,0.0.2` previews removal from the explicit local daemon in the cleanup policy. It accepts one or multiple numeric `X.Y.Z` values, trims whitespace, and removes duplicates. It matches exact `:X.Y.Z` and historical `:vX.Y.Z` tags for `ghcr.io/myflow-xyz/ci-{base,go,node,vite,playwright,postgres,utils,net}`. Ranges, wildcards, moving tags, and repository arguments are rejected. No registry is contacted.
+`ci-remove-images` previews removal of older local suite versions. For each repository it retains the image tagged `:latest` and its version aliases. When the repository has no local `:latest` tag, it retains the highest numeric version and its image aliases. It uses local state from the daemon in the cleanup policy.
+
+Use `--versions 0.0.1,0.0.2` to select exact numeric versions instead. The command matches `:X.Y.Z` and historical `:vX.Y.Z` tags for `ghcr.io/myflow-xyz/ci-{base,go,node,vite,playwright,postgres,utils,net}`. It trims whitespace and removes duplicate version requests. Ranges, wildcards, moving tags, and repository arguments are rejected.
 
 The default dry-run makes no changes. `--apply` requires the [guarded host invocation](../maintenance.md#remove-local-suite-versions). Every container state reserves its image. Protection labels, configured image IDs, and protection through any tag, digest alias, or repository preserve the entire image. Apply rechecks identity, references, and protection before each non-forced tag removal. Unselected tags remain. Explicit retirement does not use routine cleanup's age, pressure, or image allowlist settings and does not remove containers, networks, volumes, or build cache.
 

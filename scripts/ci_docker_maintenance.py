@@ -288,8 +288,10 @@ def launch_args(
     ]
     if lease_path:
         args += mount(lease_path, "/run/ci-utils/lease.sock")
-    if selected:
-        command = ["ci-remove-images", "--versions", ",".join(selected)]
+    if profile == PROFILE:
+        command = ["ci-remove-images"]
+        if selected is not None:
+            command += ["--versions", ",".join(selected)]
         if operation == "apply":
             command.append("--apply")
     else:
@@ -374,7 +376,7 @@ def maintain(settings, policy, operation, profile, wait_seconds, selected=None):
     policy_hash = hashlib.sha256(
         json.dumps(policy, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
-    if selected:
+    if profile == PROFILE:
         policy_hash = scope_hash(policy, selected)
     context = (
         gate.maintenance(info["ID"], policy_hash, wait_seconds)
@@ -540,7 +542,7 @@ def arguments(argv):
         command.add_argument("--profile", choices=("daily", "weekly"), default="daily")
         command.add_argument("--wait", default="15m")
     retirement = sub.add_parser("remove-images")
-    retirement.add_argument("--versions", required=True)
+    retirement.add_argument("--versions", help="omit to keep the latest local versions")
     retirement.add_argument("--apply", action="store_true")
     retirement.add_argument("--wait", default="15m")
     return parser.parse_args(argv)
@@ -556,7 +558,9 @@ def main(argv=None):
     old_signals = {}
     try:
         args = arguments(argv)
-        selected = versions(args.versions) if args.operation == PROFILE else None
+        selected = None
+        if args.operation == PROFILE and args.versions is not None:
+            selected = versions(args.versions)
         if sys.platform != "linux":
             raise GateError(
                 2,
@@ -583,7 +587,7 @@ def main(argv=None):
             return reconcile(
                 settings, policy, args.record_id, trusted_json(args.evidence), emit
             )
-        if selected:
+        if args.operation == PROFILE:
             return maintain(
                 settings, policy, "apply" if args.apply else "plan", PROFILE,
                 duration(args.wait), selected,

@@ -127,10 +127,10 @@ class HostCLITests(unittest.TestCase):
         self.assertIsNone(Gate(self.root / "gate").status()["maintenance"])
         self.assertFalse(any(method == "DELETE" for method, _ in self.api.requests))
 
-    def version_fixture(self):
+    def version_fixture(self, **images):
         from test_remove_images import VersionAPI
 
-        self.api = self.enterContext(VersionAPI())
+        self.api = self.enterContext(VersionAPI(**images))
         self.docker.endpoint = self.api.endpoint
         self.policy["endpoint"] = self.api.endpoint
         self.save()
@@ -151,6 +151,18 @@ class HostCLITests(unittest.TestCase):
         self.assertEqual(self.docker.entrypoint, "ci-remove-images")
         self.assertIn("--network=none", self.docker.create)
         self.assertIn("--user=1001:2001", self.docker.create)
+        self.assertIsNone(Gate(self.root / "gate").status()["maintenance"])
+
+    def test_omitted_versions_use_the_guarded_retirement_command(self):
+        from test_remove_images import ALIAS, IID, PREFIX
+
+        self.version_fixture(extra_tags={"sha256:" + "4" * 64: [PREFIX + "go:latest"]})
+        result, events = self.invoke("remove-images", "--apply")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.api.objects["images"][IID]["RepoTags"], [ALIAS])
+        self.assertEqual(self.docker.entrypoint, "ci-remove-images")
+        self.assertNotIn("--versions", self.docker.application_args)
+        self.assertTrue(any(e["event"] == "removed" for e in events))
         self.assertIsNone(Gate(self.root / "gate").status()["maintenance"])
 
     def test_version_lease_rejects_changed_selection(self):
