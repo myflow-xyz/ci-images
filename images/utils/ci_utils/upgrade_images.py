@@ -1,25 +1,24 @@
 """Refresh cached CI repositories and optionally retire old release tags."""
 
-import argparse
 import json
 import os
-import re
 import signal
 import subprocess
 import sys
 import time
+from functools import partial
 
-from .cleanup import Inventory, Parser, Report, interrupted, load_policy, strict_object
+from .cleanup import Inventory, Parser, Report, load_policy
 from .engine import Engine, Failure
-from .guard import LeaseGuard
-from .policy import IMAGE_ID, InvalidPolicy, duration
-from .remove_images import CI_REPOSITORY, remove_versions, scope_hash
+from .policy import IMAGE_ID, InvalidPolicy, configuration, duration
+from .remove_images import CI_REPOSITORY, remove_versions
 
 PROFILE = "upgrade-images"
+DEFAULT_ENDPOINT = "unix:///var/run/docker.sock"
 
 
-def pull_image(engine, reference, docker_cli="docker", environment=None):
-    env = dict(os.environ if environment is None else environment)
+def pull_image(engine, reference):
+    env = dict(os.environ)
     for key in (
         "DOCKER_HOST",
         "DOCKER_CONTEXT",
@@ -36,7 +35,7 @@ def pull_image(engine, reference, docker_cli="docker", environment=None):
     try:
         result = subprocess.run(
             [
-                docker_cli,
+                "docker",
                 "--config",
                 config,
                 "--host",
@@ -67,9 +66,7 @@ def pull_image(engine, reference, docker_cli="docker", environment=None):
         )
 
 
-def refresh_images(
-    inventory, report, *, docker_cli="docker", environment=None, guard=None
-):
+def refresh_images(inventory, report):
     engine = inventory.engine
     inventory.refresh("images")
     repositories = set()
@@ -89,14 +86,12 @@ def refresh_images(
     report.counts["repositories.matched"] = len(repositories)
 
     refreshed = {}
-    daemon_id = report.context["daemon_id"]
+    daemon_id = inventory.policy["expected_daemon_id"]
     for repository in sorted(repositories):
         reference = f"{repository}:latest"
         engine.preflight(daemon_id)
-        if guard is not None:
-            guard.check()
         engine.mutation_started = True
-        pull_image(engine, reference, docker_cli, environment)
+        pull_image(engine, reference)
         engine.preflight(daemon_id)
         item = engine.inspect("images", reference)
         identifier = item.get("Id") if isinstance(item, dict) else None
@@ -113,25 +108,6 @@ def refresh_images(
     return refreshed
 
 
-def refreshed_images(path):
-    try:
-        with open(path, "rb") as handle:
-            data = handle.read(65537)
-        if len(data) > 65536:
-            raise ValueError("snapshot size")
-        images = json.loads(data, object_pairs_hook=strict_object)
-        if not isinstance(images, dict) or any(
-            not CI_REPOSITORY.fullmatch(repo)
-            or not isinstance(identifier, str)
-            or not IMAGE_ID.fullmatch(identifier)
-            for repo, identifier in images.items()
-        ):
-            raise ValueError("snapshot shape")
-        return images
-    except (OSError, ValueError) as error:
-        raise InvalidPolicy("cannot read a valid refreshed image snapshot") from error
-
-
 def arguments(argv):
     parser = Parser(
         prog="ci-upgrade-images",
@@ -140,15 +116,20 @@ def arguments(argv):
     parser.add_argument(
         "--prune-old-versions",
         action="store_true",
-        help="retire eligible old versions after a successful pull using the host adapter",
+        help="Retire eligible old versions after all :latest pulls succeed. Drain runner jobs first.",
     )
-    parser.add_argument("--config", default="/etc/ci-utils/cleanup.json")
-    parser.add_argument("--endpoint")
+    parser.add_argument("--config", help="optional JSON policy with image protections")
+    parser.add_argument(
+        "--endpoint", help=f"Docker socket (default: {DEFAULT_ENDPOINT})"
+    )
     parser.add_argument("--expected-daemon-id")
-    parser.add_argument("--run-id")
-    parser.add_argument("--lease-socket")
-    parser.add_argument("--refreshed-images", help=argparse.SUPPRESS)
     return parser.parse_args(argv)
+
+
+def interrupted(signum, frame):
+    raise Failure(
+        6, "Image maintenance interrupted. Check runner images before retrying."
+    )
 
 
 def main(argv=None):
@@ -156,35 +137,21 @@ def main(argv=None):
     code, engine, old_signals = 0, None, {}
     try:
         args = arguments(argv)
-        if args.run_id is not None:
-            if not re.fullmatch(r"[a-f0-9]{32}", args.run_id):
-                raise InvalidPolicy("run-id must be the host lease identifier")
-            report.run_id = args.run_id
         report.context = {
             "mode": "apply",
             "profile": PROFILE,
-            "image_digest": os.environ.get("CI_UTILS_IMAGE_DIGEST"),
         }
-        if args.refreshed_images and not args.prune_old_versions:
-            raise InvalidPolicy(
-                "a refreshed image snapshot requires --prune-old-versions"
+        overrides = {
+            key: value
+            for key in ("endpoint", "expected_daemon_id")
+            if (value := getattr(args, key)) is not None
+        }
+        if args.config is None:
+            policy = configuration(
+                {"endpoint": DEFAULT_ENDPOINT}, os.environ, overrides
             )
-        refreshed = (
-            refreshed_images(args.refreshed_images) if args.refreshed_images else None
-        )
-        policy = load_policy(
-            args.config,
-            os.environ,
-            {
-                key: value
-                for key in ("endpoint", "expected_daemon_id")
-                if (value := getattr(args, key)) is not None
-            },
-        )
-        if args.prune_old_versions and not policy["expected_daemon_id"]:
-            raise InvalidPolicy("retirement requires expected_daemon_id")
-        policy_hash = scope_hash(policy, refreshed, profile=PROFILE)
-        report.context["policy_hash"] = policy_hash
+        else:
+            policy = load_policy(args.config, os.environ, overrides)
         for signum in (signal.SIGTERM, signal.SIGINT):
             old_signals[signum] = signal.signal(signum, interrupted)
         engine = Engine(
@@ -194,24 +161,18 @@ def main(argv=None):
         )
         info = engine.preflight(policy["expected_daemon_id"])
         report.context["daemon_id"] = info["ID"]
+        policy["expected_daemon_id"] = info["ID"]
         inventory = Inventory(engine, policy, report)
-        guard = None
-        if args.prune_old_versions:
-            guard = LeaseGuard(
-                engine,
-                args.lease_socket,
-                args.run_id,
-                info["ID"],
-                policy_hash,
-                PROFILE,
-                report.context["image_digest"],
+        refreshed = refresh_images(inventory, report)
+        if args.prune_old_versions and refreshed:
+            remove_versions(
+                inventory,
+                None,
+                True,
+                partial(engine.preflight, info["ID"]),
+                report,
+                refreshed=refreshed,
             )
-            guard.check()
-        if refreshed is None:
-            refreshed = refresh_images(inventory, report, guard=guard)
-        if args.prune_old_versions:
-            remove_versions(inventory, None, True, guard, report, refreshed=refreshed)
-            guard.check()
     except (InvalidPolicy, Failure) as error:
         code = error.code if isinstance(error, Failure) else 2
         report.emit("error", message=str(error), exit_code=code)

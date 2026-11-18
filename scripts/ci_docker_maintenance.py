@@ -7,7 +7,6 @@ import hashlib
 import json
 import os
 import pathlib
-import pwd
 import re
 import signal
 import stat
@@ -21,11 +20,10 @@ import ci_docker_job
 from ci_docker_gate import Gate, GateError, LeaseServer
 from ci_docker_reconcile import reconcile
 from ci_docker_storage import measure
-from ci_utils.cleanup import Inventory, Report, reject_constant, strict_object
+from ci_utils.cleanup import reject_constant, strict_object
 from ci_utils.engine import Engine, Failure
 from ci_utils.policy import InvalidPolicy, configuration, duration, reference_name
 from ci_utils.remove_images import PROFILE, scope_hash, versions
-from ci_utils.upgrade_images import PROFILE as UPGRADE_PROFILE, refresh_images
 
 
 def emit(event, **fields):
@@ -298,10 +296,6 @@ def launch_args(
             command += ["--versions", ",".join(selected)]
         if operation == "apply":
             command.append("--apply")
-    elif profile == UPGRADE_PROFILE:
-        target = "/run/ci-utils/refreshed-images.json"
-        args += mount(root / "refreshed-images.json", target)
-        command = ["ci-upgrade-images", "--prune-old-versions", "--refreshed-images", target]
     else:
         command = [
             "ci-docker-cleanup", operation, "--profile", profile,
@@ -369,7 +363,7 @@ def snapshot(path, value):
     path.chmod(0o444)
 
 
-def maintenance_daemon(settings, policy):
+def maintain(settings, policy, operation, profile, wait_seconds, selected=None):
     if os.geteuid() != 0:
         raise GateError(2, "maintenance requires the native host administrator")
     gate = Gate(settings["gate_directory"])
@@ -381,14 +375,7 @@ def maintenance_daemon(settings, policy):
         raise GateError(
             3, "rootful Docker socket is not owned by the host administrator"
         )
-    return gate, info, metadata
-
-
-def maintain(settings, policy, operation, profile, wait_seconds, selected=None):
-    gate, info, metadata = maintenance_daemon(settings, policy)
-    if profile == UPGRADE_PROFILE:
-        policy_hash = scope_hash(policy, selected, profile=profile)
-    elif profile == PROFILE:
+    if profile == PROFILE:
         policy_hash = scope_hash(policy, selected)
     else:
         policy_hash = hashlib.sha256(
@@ -415,9 +402,7 @@ def maintain(settings, policy, operation, profile, wait_seconds, selected=None):
                 docker = Docker(settings, policy, root)
                 verify_image(
                     docker, settings["image"],
-                    image_maintenance=profile == UPGRADE_PROFILE or (
-                        profile == PROFILE and selected is None
-                    ),
+                    image_maintenance=profile == PROFILE and selected is None,
                 )
                 info = engine.preflight(policy["expected_daemon_id"])
                 try:
@@ -426,8 +411,6 @@ def maintain(settings, policy, operation, profile, wait_seconds, selected=None):
                     storage = None
                 snapshot(root / "policy.json", policy)
                 snapshot(root / "storage.json", storage)
-                if profile == UPGRADE_PROFILE:
-                    snapshot(root / "refreshed-images.json", selected)
                 host_context = {
                     "run_id": run_id,
                     "daemon_id": info["ID"],
@@ -545,43 +528,6 @@ def maintain(settings, policy, operation, profile, wait_seconds, selected=None):
             raise
 
 
-def upgrade(settings, policy, wait_seconds, prune):
-    gate, info, _ = maintenance_daemon(settings, policy)
-    policy_hash = scope_hash(policy, None, profile=UPGRADE_PROFILE)
-    report = Report()
-    environment = {
-        "PATH": "/usr/local/bin:/usr/bin:/bin",
-        "HOME": pwd.getpwuid(0).pw_dir,
-        "LANG": "C.UTF-8",
-    }
-    with gate.maintenance(info["ID"], policy_hash, wait_seconds) as lease:
-        report.run_id = lease.id
-        report.context = {"mode": "pull", "profile": UPGRADE_PROFILE, "daemon_id": info["ID"]}
-        engine = Engine(
-            policy["endpoint"],
-            duration(policy["timeouts"]["operation"]),
-            duration(policy["timeouts"]["run"]),
-        )
-        try:
-            engine.preflight(info["ID"])
-            refreshed = refresh_images(
-                Inventory(engine, policy, report), report,
-                docker_cli=settings["docker_cli"], environment=environment,
-            )
-        except Failure as error:
-            if error.code != 6:
-                lease.complete()
-            raise
-        finally:
-            if not engine.mutation_started:
-                lease.complete()
-        lease.complete()
-    report.finish(0, engine.mutation_started)
-    if prune and refreshed:
-        return maintain(settings, policy, "apply", UPGRADE_PROFILE, wait_seconds, refreshed)
-    return 0
-
-
 def arguments(argv):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="/etc/ci-utils/host.json")
@@ -605,9 +551,6 @@ def arguments(argv):
     retirement.add_argument("--versions", help="omit to keep the latest local versions")
     retirement.add_argument("--apply", action="store_true")
     retirement.add_argument("--wait", default="15m")
-    refresh = sub.add_parser(UPGRADE_PROFILE)
-    refresh.add_argument("--prune-old-versions", action="store_true")
-    refresh.add_argument("--wait", default="15m")
     return parser.parse_args(argv)
 
 
@@ -655,8 +598,6 @@ def main(argv=None):
                 settings, policy, "apply" if args.apply else "plan", PROFILE,
                 duration(args.wait), selected,
             )
-        if args.operation == UPGRADE_PROFILE:
-            return upgrade(settings, policy, duration(args.wait), args.prune_old_versions)
         return maintain(
             settings, policy, args.operation, args.profile, duration(args.wait)
         )

@@ -49,9 +49,9 @@ def versions(value):
     return sorted(set(selected))
 
 
-def scope_hash(policy, selected, *, profile=PROFILE):
+def scope_hash(policy, selected):
     # A lease for routine cleanup or different versions cannot authorize this run.
-    scope = {"operation": profile, "versions": selected, "policy": policy}
+    scope = {"operation": PROFILE, "versions": selected, "policy": policy}
     return hashlib.sha256(
         json.dumps(scope, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
@@ -120,7 +120,7 @@ def matching_tags(images, selected, refreshed):
     return result, unverified
 
 
-def remove_versions(inventory, selected, apply, guard, report, *, refreshed=None):
+def remove_versions(inventory, selected, apply, before_delete, report, *, refreshed=None):
     engine = inventory.engine
     inventory.refresh("images")
     referenced = container_images(inventory)
@@ -143,7 +143,6 @@ def remove_versions(inventory, selected, apply, guard, report, *, refreshed=None
     for reference, initial in sorted(matches.items()):
         item = initial
         if apply:
-            guard.check()
             engine.preflight(inventory.policy["expected_daemon_id"])
             referenced = container_images(inventory)
             inventory.resolve_protections()
@@ -189,7 +188,7 @@ def remove_versions(inventory, selected, apply, guard, report, *, refreshed=None
             )
             continue
         try:
-            reply = engine.remove("images", reference, guard.check)
+            reply = engine.remove("images", reference, before_delete)
             if (
                 not isinstance(reply, list)
                 or not reply
@@ -309,7 +308,7 @@ def main(argv=None):
             Inventory(engine, policy, report),
             selected,
             args.apply,
-            guard,
+            guard.check,
             report,
         )
         if args.apply:

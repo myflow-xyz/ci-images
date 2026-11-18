@@ -165,50 +165,6 @@ class HostCLITests(unittest.TestCase):
         self.assertTrue(any(e["event"] == "removed" for e in events))
         self.assertIsNone(Gate(self.root / "gate").status()["maintenance"])
 
-    def test_upgrade_uses_host_pull_then_guarded_retirement(self):
-        from test_remove_images import ALIAS, IID, PREFIX, REF
-
-        newer = "sha256:" + "4" * 64
-        latest = PREFIX + "go:latest"
-        self.version_fixture(extra_tags={newer: [PREFIX + "go:0.0.2"]})
-        self.api.add_reference(latest)
-
-        def pull(reference):
-            self.assertEqual(reference, latest)
-            gate = Gate(self.root / "gate").status()
-            self.assertEqual(gate["maintenance"]["phase"], "active")
-            tags = self.api.objects["images"][newer]["RepoTags"]
-            if latest not in tags:
-                tags.append(latest)
-            return 0
-
-        self.docker.on_pull = pull
-        result, events = self.invoke("upgrade-images")
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn(REF, self.api.objects["images"][IID]["RepoTags"])
-        self.assertEqual(self.docker.calls, [["image", "pull", latest]])
-        self.assertTrue(any(e["event"] == "pulled" for e in events))
-
-        result, events = self.invoke("upgrade-images", "--prune-old-versions")
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertEqual(self.api.objects["images"][IID]["RepoTags"], [ALIAS])
-        self.assertEqual(self.docker.entrypoint, "ci-upgrade-images")
-        self.assertIn("--network=none", self.docker.create)
-        self.assertIn("--prune-old-versions", self.docker.application_args)
-        self.assertTrue(any(e["event"] == "removed" for e in events))
-        self.assertIsNone(Gate(self.root / "gate").status()["maintenance"])
-
-    def test_failed_upgrade_preserves_versions_and_skips_guarded_removal(self):
-        from test_remove_images import IID, PREFIX, REF
-
-        self.version_fixture()
-        result, events = self.invoke("upgrade-images", "--prune-old-versions")
-        self.assertEqual(result.returncode, 5, result.stdout + result.stderr)
-        self.assertIn(REF, self.api.objects["images"][IID]["RepoTags"])
-        self.assertEqual(self.docker.calls, [["image", "pull", PREFIX + "go:latest"]])
-        self.assertFalse(any(method == "DELETE" for method, _ in self.api.requests))
-        self.assertIsNone(Gate(self.root / "gate").status()["maintenance"])
-
     def test_version_lease_rejects_changed_selection(self):
         self.version_fixture()
         self.docker.mode = "wrong-versions"

@@ -19,7 +19,6 @@ class HostDocker:
         self.endpoint = endpoint
         self.calls = []
         self.mode = "success"
-        self.on_pull = lambda reference: 1
         self.process = None
         self.files = contextlib.ExitStack()
         self.container_id = "f" * 64
@@ -94,9 +93,7 @@ sys.exit(response["status"])
                             "Volumes": None,
                             "Entrypoint": None,
                             "Labels": {
-                                "org.myflow.ci.utils-image-maintenance": "0"
-                                if self.mode == "old-image"
-                                else "1",
+                                "org.myflow.ci.utils-image-maintenance": "1",
                                 "org.myflow.ci.utils-host-protocol": "0"
                                 if self.mode == "wrong-image"
                                 else "1"
@@ -105,8 +102,6 @@ sys.exit(response["status"])
                     }
                 ]
             )
-        elif args[:2] == ["image", "pull"]:
-            return {"status": self.on_pull(args[2]), "stdout": "", "stderr": ""}
         elif command == "create":
             if self.mode == "create-error":
                 return {"status": 125, "stdout": ""}
