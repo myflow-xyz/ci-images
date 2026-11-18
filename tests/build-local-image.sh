@@ -95,8 +95,10 @@ build_base() {
 		--build-arg \
 		"COMPOSE_X_NET_VERSION=$(json '.tools.base.compose.dependency_overrides["golang.org/x/net"]')" \
 		--build-arg "GH_VERSION=$(json '.tools.base.gh.version')" \
-		--build-arg \
-		"GH_X_NET_VERSION=$(json '.tools.base.gh.dependency_overrides["golang.org/x/net"]')" \
+		--build-arg "GH_ASSET_URL_AMD64=$(json '.tools.base.gh.assets.amd64.url')" \
+		--build-arg "GH_ASSET_URL_ARM64=$(json '.tools.base.gh.assets.arm64.url')" \
+		--build-arg "GH_SHA256_AMD64=$(json '.tools.base.gh.assets.amd64.sha256')" \
+		--build-arg "GH_SHA256_ARM64=$(json '.tools.base.gh.assets.arm64.sha256')" \
 		--build-arg \
 		"GIT_VERSION=$(json '.tools.base.git.version')" \
 		--build-arg \
