@@ -314,11 +314,7 @@
         "version": "v1.10.0"
       },
       "linux_libc_dev": {
-        "version": "7.3.4-1",
-        "asset": {
-          "url": "https://snapshot.debian.org/archive/debian/20261113T210000Z/pool/main/l/linux/linux-libc-dev_7.3.4-1_all.deb",
-          "sha256": "d9f7b5ef29697cfa428c52be151dfc18645c8573c7707515fb98aed80851c78d"
-        }
+        "version": "7.3.4-1"
       }
     },
     "node": {

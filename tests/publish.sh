@@ -339,6 +339,7 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 	fi
 	if [[ $name == go ]]; then
 		for build_arg in \
+			"LINUX_LIBC_DEV_VERSION=$(jq -r '.tools.go.linux_libc_dev.version' "$manifest")" \
 			"SQLC_CEL_GO_VERSION=$(jq -r '.tools.go.sqlc.dependency_overrides["github.com/google/cel-go"]' "$manifest")" \
 			"GOOSE_MODERNC_LIBC_VERSION=$(jq -r '.tools.go.goose.dependency_overrides["modernc.org/libc"]' "$manifest")" \
 			"GOIMPORTS_VERSION=$(jq -r '.tools.go.goimports.version' "$manifest")" \

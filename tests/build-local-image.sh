@@ -232,8 +232,6 @@ build_go() {
 		"GO_SHA256_ARM64=$(json '.tools.go.assets.arm64.sha256')" \
 		--build-arg "HURL_VERSION=$(json '.tools.go.hurl.version')" \
 		--build-arg "LINUX_LIBC_DEV_VERSION=$(json '.tools.go.linux_libc_dev.version')" \
-		--build-arg "LINUX_LIBC_DEV_ASSET_URL=$(json '.tools.go.linux_libc_dev.asset.url')" \
-		--build-arg "LINUX_LIBC_DEV_SHA256=$(json '.tools.go.linux_libc_dev.asset.sha256')" \
 		--build-arg "BUILDER_IMAGE=$(json '.upstream_images.debian | "\(.reference)@\(.digest)"')" \
 		--build-arg "DEBIAN_SNAPSHOT=$(json '.debian_snapshot')" \
 		--build-arg "HURL_SOURCE_URL=$(json '.tools.go.hurl.source_archive.url')" \
