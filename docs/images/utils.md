@@ -74,11 +74,11 @@ JSON Lines report requested versions, matched references, would-remove/removed/s
 
 | Resource | Default selection |
 | --- | --- |
-| Containers | Explicitly owned, created or exited, creation age over `168h` |
-| Networks | Owned, local, supported, unused; creation age over `168h` |
+| Containers | Explicitly owned, created or exited, creation age over `24h` |
+| Networks | Owned, local, supported, unused, creation age over `24h` |
 | Dangling images | Explicit scope, unreferenced; creation age over `168h` |
 | Tagged images | Scoped, unused; creation age over `168h`; weekly pressure |
-| Build cache | Last use over `168h`, then a separate `20gb` backend target |
+| Build cache | Last use over `24h`, then a separate `20gb` backend target |
 | Volumes | Report only; never removed by host cleanup |
 
 Ownership requires `xyz.myflow.ci.ephemeral=true`. Protection uses `xyz.myflow.cleanup.protect=true` or configured IDs/references/repositories. Protection through any image alias protects the whole local image. For routine `ci-docker-cleanup`, an empty image allowlist selects no images and multi-tag image deletion is conservatively skipped. Container creation age is not stop age; image creation age is not time since last use.
