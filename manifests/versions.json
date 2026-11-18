@@ -97,10 +97,20 @@
         }
       },
       "gh": {
-        "version": "2.104.0",
+        "version": "2.105.0",
         "source": "https://github.com/cli/cli",
-        "module": "github.com/cli/cli/v2/cmd/gh",
-        "dependency_overrides": {
+        "assets": {
+          "amd64": {
+            "url": "https://github.com/cli/cli/releases/download/v2.105.0/gh_2.105.0_linux_amd64.tar.gz",
+            "sha256": "79e7ab5db738c48777b696e374f8b428f0647debfb424f44d2f426370407fe2f"
+          },
+          "arm64": {
+            "url": "https://github.com/cli/cli/releases/download/v2.105.0/gh_2.105.0_linux_arm64.tar.gz",
+            "sha256": "b1278c75107423d818f1937fd92cafc9e5e9b606631568f68d7fb816f5885a02"
+          }
+        },
+        "embedded_dependencies": {
+          "golang.org/x/crypto": "v0.59.0",
           "golang.org/x/net": "v0.62.0"
         }
       },
@@ -320,10 +330,10 @@
     "node": {
       "runtime": "26.13.1",
       "npm": {
-        "version": "12.2.2",
+        "version": "12.2.3",
         "asset": {
-          "url": "https://registry.npmjs.org/npm/-/npm-12.2.2.tgz",
-          "sha256": "07fecbf753e2c3bc10ebeb3e9ed8738f6a0cc1292998b79e2e9f1dd2a5525e0c"
+          "url": "https://registry.npmjs.org/npm/-/npm-12.2.3.tgz",
+          "sha256": "fa0711dd513fa1386bbad3962a292cb813461cb57dedf07d6eb7efe76dffe897"
         },
         "lockfile": "images/node/npm-runtime/package-lock.json",
         "lockfile_sha256": "1e5571681857d53d3848165d9c58c4562788bc97a71e7d8318545af0318db529",
@@ -360,25 +370,25 @@
           }
         }
       },
-      "bundle_version": "21",
+      "bundle_version": "22",
       "lockfile": "images/node/npm/package-lock.json",
-      "lockfile_sha256": "ac2517dacc11c042a46c66e00681b5a4c874bd7ffe82cd9cc4166c6756007168",
+      "lockfile_sha256": "a8cd4d94a0ad0940ff8cb5b099c5079bdd553ce84e5d516270ff500fc63d14c7",
       "pnpm": {
-        "version": "12.21.0",
+        "version": "12.22.0",
         "store_version": "11",
         "source": "https://github.com/pnpm/pnpm",
         "assets": {
           "amd64": {
-            "url": "https://github.com/pnpm/pnpm/releases/download/v12.21.0/pnpm-linux-x64.tar.gz",
-            "sha256": "84c4773bcf4a217f4083cd7b2a91e4cee6103cf42426c1282ef37d308f55a410"
+            "url": "https://github.com/pnpm/pnpm/releases/download/v12.22.0/pnpm-linux-x64.tar.gz",
+            "sha256": "07ee196f91af1e21edb0c794401f4152932c74b0dba5d415dc4dbd5783f3c7af"
           },
           "arm64": {
-            "url": "https://github.com/pnpm/pnpm/releases/download/v12.21.0/pnpm-linux-arm64.tar.gz",
-            "sha256": "6c5913a48c93b3a556b71c3bd9bf12c6bf9fbfbbbd2dcbd1d52a85c539751b9e"
+            "url": "https://github.com/pnpm/pnpm/releases/download/v12.22.0/pnpm-linux-arm64.tar.gz",
+            "sha256": "22b23da8b00d12c2fdfc41b5533b65b467c7b178d93fdfe9128c491585dff1a4"
           }
         }
       },
-      "redocly": "2.79.0",
+      "redocly": "2.80.0",
       "source": "https://nodejs.org/dist/",
       "assets": {
         "amd64": {
@@ -392,9 +402,9 @@
       }
     },
     "vite": {
-      "bundle_version": "25",
+      "bundle_version": "26",
       "lockfile": "images/vite/npm/package-lock.json",
-      "lockfile_sha256": "e8a87280372ddb692db363fabbc1e7ad7f75c9f01aad3ac912706fd1f845dced",
+      "lockfile_sha256": "8daed76e69b5eb7c5308bcfd240c91271597108d19406580def29ab3a2d3cb42",
       "typescript": "7.0.2",
       "typescript_source": {
         "repository": "https://github.com/microsoft/typescript-go",
@@ -408,8 +418,8 @@
         "compiler": "6.0.3"
       },
       "vite": "8.3.8",
-      "vitest": "5.1.0",
-      "coverage_v8": "5.1.0",
+      "vitest": "5.1.1",
+      "coverage_v8": "5.1.1",
       "oxlint": "1.94.0",
       "oxlint_tsgolint": "7.0.2007",
       "oxlint_tsgolint_source": {

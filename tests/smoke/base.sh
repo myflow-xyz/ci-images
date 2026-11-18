@@ -9,6 +9,7 @@ expected_python=${EXPECTED_PYTHON_VERSION:?EXPECTED_PYTHON_VERSION is not set}
 expected_bash=${EXPECTED_BASH_VERSION:?EXPECTED_BASH_VERSION is not set}
 : "${EXPECTED_ACTIONLINT_VERSION:?EXPECTED_ACTIONLINT_VERSION is not set}"
 : "${EXPECTED_COMPOSE_X_NET_VERSION:?EXPECTED_COMPOSE_X_NET_VERSION is not set}"
+: "${EXPECTED_GH_X_CRYPTO_VERSION:?EXPECTED_GH_X_CRYPTO_VERSION is not set}"
 : "${EXPECTED_GH_X_NET_VERSION:?EXPECTED_GH_X_NET_VERSION is not set}"
 : "${EXPECTED_GIT_LFS_X_NET_VERSION:?EXPECTED_GIT_LFS_X_NET_VERSION is not set}"
 : "${EXPECTED_OSV_SCANNER_X_NET_VERSION:?EXPECTED_OSV_SCANNER_X_NET_VERSION is not set}"
@@ -274,6 +275,10 @@ assert_dependency_version \
 	"$(command -v gh)" \
 	golang.org/x/net \
 	"$EXPECTED_GH_X_NET_VERSION"
+assert_dependency_version \
+	"$(command -v gh)" \
+	golang.org/x/crypto \
+	"$EXPECTED_GH_X_CRYPTO_VERSION"
 assert_dependency_version \
 	"$(command -v git-lfs)" \
 	golang.org/x/net \

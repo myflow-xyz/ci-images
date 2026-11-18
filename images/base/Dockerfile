@@ -213,8 +213,11 @@ ARG DOCKER_COMMIT
 ARG DOCKER_VERSION
 ARG DOCKER_X_NET_VERSION
 ARG DOCKER_GO_JOSE_VERSION
+ARG GH_ASSET_URL_AMD64
+ARG GH_ASSET_URL_ARM64
+ARG GH_SHA256_AMD64
+ARG GH_SHA256_ARM64
 ARG GH_VERSION
-ARG GH_X_NET_VERSION
 ARG GIT_LFS_VERSION
 ARG GIT_LFS_COMPRESS_VERSION
 ARG GIT_LFS_X_NET_VERSION
@@ -400,9 +403,6 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       else \
         ldflags='-s -w'; \
         case "${name}" in \
-          gh) \
-            ldflags="${ldflags} -X=github.com/cli/cli/v2/internal/build.Version=${GH_VERSION}" \
-            ;; \
           docker) \
             ldflags="${ldflags} -X=github.com/docker/cli/cli/version.Version=${DOCKER_VERSION}"; \
             ldflags="${ldflags} -X=github.com/docker/cli/cli/version.GitCommit=${DOCKER_COMMIT}" \
@@ -432,11 +432,6 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       "v${ACTIONLINT_VERSION}" \
       "golang.org/x/net@${ACTIONLINT_X_NET_VERSION}" \
       "golang.org/x/sys@${ACTIONLINT_X_SYS_VERSION}"; \
-    build_tool \
-      gh \
-      github.com/cli/cli/v2/cmd/gh \
-      "v${GH_VERSION}" \
-      "golang.org/x/net@${GH_X_NET_VERSION}"; \
     build_tool \
       docker \
       ./cmd/docker \
@@ -497,6 +492,8 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
 RUN set -eu; \
     case "${TARGETARCH}" in \
       amd64) \
+        gh_asset_url="${GH_ASSET_URL_AMD64}"; \
+        gh_sha256="${GH_SHA256_AMD64}"; \
         jq_asset_url="${JQ_ASSET_URL_AMD64}"; \
         jq_sha256="${JQ_SHA256_AMD64}"; \
         ripgrep_asset_url="${RIPGREP_ASSET_URL_AMD64}"; \
@@ -506,6 +503,8 @@ RUN set -eu; \
         shellcheck_sha256="${SHELLCHECK_SHA256_AMD64}" \
         ;; \
       arm64) \
+        gh_asset_url="${GH_ASSET_URL_ARM64}"; \
+        gh_sha256="${GH_SHA256_ARM64}"; \
         jq_asset_url="${JQ_ASSET_URL_ARM64}"; \
         jq_sha256="${JQ_SHA256_ARM64}"; \
         ripgrep_asset_url="${RIPGREP_ASSET_URL_ARM64}"; \
@@ -520,9 +519,24 @@ RUN set -eu; \
         ;; \
     esac; \
     install -d \
+      "/out/gh/${GH_VERSION}" \
       "/out/jq/${JQ_VERSION}" \
       "/out/ripgrep/${RIPGREP_VERSION}" \
       "/out/shellcheck/${SHELLCHECK_VERSION}"; \
+    /usr/local/libexec/ci/fetch-verified \
+      "${gh_asset_url}" \
+      "${gh_sha256}" \
+      /var/tmp/gh.tar.gz; \
+    tar -xzf /var/tmp/gh.tar.gz \
+      --strip-components=2 \
+      -C "/out/gh/${GH_VERSION}" \
+      "gh_${GH_VERSION}_linux_${TARGETARCH}/bin/gh"; \
+    test -x "/out/gh/${GH_VERSION}/gh"; \
+    if [ "${BUILDARCH}" = "${TARGETARCH}" ]; then \
+      "/out/gh/${GH_VERSION}/gh" --version \
+        | grep --fixed-strings "gh version ${GH_VERSION} " >/dev/null; \
+    fi; \
+    printf 'verified GitHub CLI %s for %s\n' "${GH_VERSION}" "${TARGETARCH}"; \
     /usr/local/libexec/ci/fetch-verified \
       "${jq_asset_url}" \
       "${jq_sha256}" \
@@ -565,6 +579,7 @@ RUN set -eu; \
       "${SHELLCHECK_VERSION}" \
       "${TARGETARCH}"; \
     rm -f \
+      /var/tmp/gh.tar.gz \
       /var/tmp/ripgrep.tar.gz \
       /var/tmp/shellcheck.tar.gz
 

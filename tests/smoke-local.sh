@@ -49,7 +49,9 @@ if [[ $target == all || $target == base ]]; then
 		"EXPECTED_ACTIONLINT_X_SYS_VERSION=$(json '.tools.base.actionlint.dependency_overrides["golang.org/x/sys"]')" \
 		--env "EXPECTED_GH_VERSION=$(json '.tools.base.gh.version')" \
 		--env \
-		"EXPECTED_GH_X_NET_VERSION=$(json '.tools.base.gh.dependency_overrides["golang.org/x/net"]')" \
+		"EXPECTED_GH_X_CRYPTO_VERSION=$(json '.tools.base.gh.embedded_dependencies["golang.org/x/crypto"]')" \
+		--env \
+		"EXPECTED_GH_X_NET_VERSION=$(json '.tools.base.gh.embedded_dependencies["golang.org/x/net"]')" \
 		--env \
 		"EXPECTED_GIT_VERSION=$(json '.tools.base.git.version')" \
 		--env \

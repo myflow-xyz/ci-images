@@ -248,7 +248,14 @@ jq --exit-status '
       ("https://ftp.gnu.org/gnu/bash/bash-" +
        $bash.release + ".tar.gz") and
     $bash.patches.lockfile == "images/base/bash-5.3-patches.sha256") and
-  .tools.base.gh.module == "github.com/cli/cli/v2/cmd/gh" and
+  (.tools.base.gh as $gh |
+    $gh.source == "https://github.com/cli/cli" and
+    $gh.assets.amd64.url ==
+      ($gh.source + "/releases/download/v" + $gh.version +
+       "/gh_" + $gh.version + "_linux_amd64.tar.gz") and
+    $gh.assets.arm64.url ==
+      ($gh.source + "/releases/download/v" + $gh.version +
+       "/gh_" + $gh.version + "_linux_arm64.tar.gz")) and
   .tools.base.git_lfs.module == "github.com/git-lfs/git-lfs/v3" and
   (.tools.base.jq as $jq |
     $jq.assets.amd64.url ==
@@ -311,7 +318,8 @@ jq --exit-status '
        $pnpm.version + "/pnpm-linux-arm64.tar.gz")) and
   ([.tools.base.actionlint.dependency_overrides[],
     .tools.base.compose.dependency_overrides[],
-    .tools.base.gh.dependency_overrides[],
+    .tools.base.gh.embedded_dependencies["golang.org/x/crypto"],
+    .tools.base.gh.embedded_dependencies["golang.org/x/net"],
     .tools.base.osv_scanner.dependency_overrides[],
     .tools.base.git_lfs.dependency_overrides[],
     .tools.base.gitleaks.dependency_overrides[],

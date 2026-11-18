@@ -19,7 +19,7 @@ Cleanup and its internal capability helper are repository-owned commands tied to
 | `Bash` | `5.3.20` |
 | `Git` | `2.56.1` |
 | `Git LFS` | `3.8.1` |
-| `GitHub CLI` | `2.104.0` |
+| `GitHub CLI` | `2.105.0` |
 | `CPython` | `3.15.2` |
 | `Docker CLI` | `29.10.0` |
 | `Docker Compose` | `5.8.0` |
@@ -134,10 +134,10 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | Component | Version |
 | --- | --- |
 | `Node.js` | `26.13.1` |
-| `npm` | `12.2.2` |
-| `pnpm` | `12.21.0` |
+| `npm` | `12.2.3` |
+| `pnpm` | `12.22.0` |
 | `markdownlint-cli2` | `0.24.1` |
-| `@redocly/cli` | `2.79.0` |
+| `@redocly/cli` | `2.80.0` |
 
 ## `ci-vite`
 
@@ -147,8 +147,8 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | `TypeScript compatibility package` | `6.0.2` |
 | `TypeScript legacy compiler` | `6.0.3` |
 | `vite` | `8.3.8` |
-| `vitest` | `5.1.0` |
-| `@vitest/coverage-v8` | `5.1.0` |
+| `vitest` | `5.1.1` |
+| `@vitest/coverage-v8` | `5.1.1` |
 | `oxlint` | `1.94.0` |
 | `oxlint-tsgolint` | `7.0.2007` |
 | `oxfmt` | `0.79.0` |
