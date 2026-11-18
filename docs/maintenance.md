@@ -22,7 +22,7 @@ sudo cp -R images/utils/ci_utils /usr/local/libexec/ci-utils/
 sudo chmod -R go-w /usr/local/libexec/ci-utils
 ```
 
-Install the reviewed `host.json` and `cleanup.json` into `/etc/ci-utils` as root-owned regular files, mode `0644` or stricter. The Docker CLI path must also be root-owned. The adapter rejects mutable configuration and symlinked trusted paths. Pull and verify the approved image digest separately, before maintenance; the launcher never pulls an image or reads registry credentials.
+Install the reviewed `host.json` and `cleanup.json` into `/etc/ci-utils` as root-owned regular files, mode `0644` or stricter. The Docker CLI path must also be root-owned. The adapter rejects mutable configuration and symlinked trusted paths. Pull and verify the approved utility image digest before guarded cleanup and retirement. Their utility container uses the pre-pulled digest and an offline configuration.
 
 Provision the gate once:
 
@@ -149,6 +149,17 @@ sudo /usr/local/libexec/ci-utils/ci-docker-maintenance apply --profile weekly
 ```
 
 The launcher passes a read-only policy snapshot and host observation, the selected socket, and a narrowly scoped lease socket. It uses a non-root identity, actual socket group, no network, read-only root, bounded scratch space, dropped capabilities, and no-new-privileges. It removes its stopped container after known completion without removing volumes. On uncertain completion it retains the container identity for investigation. It never changes socket permissions, relabels host paths, stops workloads, resets a builder, or restarts Docker.
+
+## Refresh cached CI images
+
+Use an installed host adapter and a pinned utility image from a release with `ci-upgrade-images`. Authenticate the host administrator's Docker client to `ghcr.io` for private packages. The adapter runs pulls through that client under the maintenance lease. The optional retirement runs in the pinned offline utility container with the verified latest image IDs and the existing removal protections.
+
+```sh
+sudo /usr/local/libexec/ci-utils/ci-docker-maintenance upgrade-images
+sudo /usr/local/libexec/ci-utils/ci-docker-maintenance upgrade-images --prune-old-versions
+```
+
+The first command keeps existing version tags. The second retires eligible older version tags once all selected pulls succeed. Pulls update the local `:latest` tags. Update version- or digest-pinned job references separately using the [release digests](usage.md#pulling-and-pinning).
 
 ## Remove local suite versions
 

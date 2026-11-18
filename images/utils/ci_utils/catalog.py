@@ -9,6 +9,8 @@ CATALOG = """Supported maintenance commands:
     check|plan|apply|version (default: plan; apply requires the host adapter)
   ci-remove-images       Preview or remove old local CI image versions.
     [--versions X.Y.Z[,X.Y.Z]] [--apply] (default: dry-run, keep latest)
+  ci-upgrade-images      Pull :latest for locally cached MyFlow CI repositories.
+    [--prune-old-versions] (default: keep old versions)
   ci-go-cleanup          Preview or reset Go build and module caches.
     [--build-cache [PATH]] [--mod-cache [PATH]] [--apply]
     Default: preview both mfci Go caches; cache flags select individual caches.
@@ -25,6 +27,7 @@ Examples:
   ci-pnpm-cleanup -h
   ci-docker-cleanup -h
   ci-remove-images -h
+  ci-upgrade-images -h
 
 Go and pnpm apply performs a full reset; stop all cache consumers first.
 The image also includes the tools inherited from ci-base.

@@ -1,6 +1,6 @@
 # CI utilities
 
-`ghcr.io/myflow-xyz/ci-utils` provides reusable CI maintenance commands. It derives from `ci-base` and adds Docker Buildx, `ci-utils-list`, `ci-docker-cleanup`, `ci-remove-images`, `ci-go-cleanup`, and `ci-pnpm-cleanup`. There is no separate cleanup image. It follows the suite's existing version and digest promotion rules.
+`ghcr.io/myflow-xyz/ci-utils` provides reusable CI maintenance commands. It derives from `ci-base` and adds Docker Buildx, `ci-utils-list`, `ci-docker-cleanup`, `ci-upgrade-images`, `ci-remove-images`, `ci-go-cleanup`, and `ci-pnpm-cleanup`. It follows the suite's version and digest promotion rules.
 
 The build reuses `ci-go` to compile Buildx and the internal capability checker. The final image copies those binaries into `ci-base`; it does not add the Go toolchain or the `ci-go` runtime environment. Buildx source and its required security fixes are pinned in `manifests/versions.json`. The upstream binary failed the image scan on fixed Go, `go-archive`, and `golang.org/x/net` vulnerabilities. The internal BuildKit probe checks the selected backend's advertised cache-space capability before cleanup. The cleanup policy and execution use Python's standard library.
 
@@ -11,6 +11,7 @@ docker run --rm ghcr.io/myflow-xyz/ci-utils:<suite-version>
 docker run --rm ghcr.io/myflow-xyz/ci-utils:<suite-version> ci-utils-list
 docker run --rm ghcr.io/myflow-xyz/ci-utils:<suite-version> ci-docker-cleanup --help
 docker run --rm ghcr.io/myflow-xyz/ci-utils:<suite-version> ci-docker-cleanup version
+docker run --rm ghcr.io/myflow-xyz/ci-utils:<suite-version> ci-upgrade-images --help
 docker run --rm ghcr.io/myflow-xyz/ci-utils:<suite-version> ci-remove-images --help
 docker run --rm ghcr.io/myflow-xyz/ci-utils:<suite-version> ci-go-cleanup --help
 docker run --rm ghcr.io/myflow-xyz/ci-utils:<suite-version> ci-pnpm-cleanup --help
@@ -61,6 +62,12 @@ docker run --rm --pull=never --network=none --read-only \
 After all consumers have stopped, remove `,readonly` from the selected cache mounts and append `--apply` to the same command. To retain downloaded Go modules, add `--build-cache` and omit the module-cache mount. For other container mount destinations, pass paths explicitly, such as `ci-go-cleanup --build-cache /var/cache/go/build` or `ci-pnpm-cleanup --store-dir /var/cache/pnpm/store`. Keep the container root read-only. Do not mount the shared cache's parent directory or a Docker socket.
 
 JSON Lines report each selected path, entry counts, logical file bytes, and final success or failure. Logical bytes include hard-linked files and are not a physical-space reclamation estimate. Preview makes no changes. Missing or unreadable paths fail before deletion, and all selected caches are inspected before any reset. Exit codes are `0` success, `2` invalid selection or failed preflight, `4` another cleanup holds a lock, and `5` failed or interrupted reset, which may be partial.
+
+## Refresh cached CI images
+
+`ci-upgrade-images` pulls `:latest` once per `ghcr.io/myflow-xyz/ci-*` repository already present on the selected daemon. Either a local tag or a local digest reference qualifies a repository. Existing version tags are kept by default. Moving a `:latest` tag can leave its previous image untagged if it had no other tags.
+
+Use `--prune-old-versions` through the [host adapter](../maintenance.md#refresh-cached-ci-images). Retirement starts after all selected pulls succeed. It considers only numeric version tags of the refreshed repositories, keeps aliases of the verified latest images, and preserves protected or in-use images. If a latest tag changes before retirement, that repository is skipped. A failed pull leaves all old version tags in place.
 
 ## Remove local suite versions
 

@@ -22,6 +22,9 @@ from .policy import IMAGE_ID, InvalidPolicy, duration, image_safety
 
 PROFILE = "remove-images"
 VERSION = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
+CI_REPOSITORY = re.compile(
+    r"ghcr\.io/myflow-xyz/ci-+[a-z0-9]+(?:(?:\.|__?|-+)[a-z0-9]+)*"
+)
 REPOSITORIES = tuple(
     "ghcr.io/myflow-xyz/ci-" + name
     for name in (
@@ -46,9 +49,9 @@ def versions(value):
     return sorted(set(selected))
 
 
-def scope_hash(policy, selected):
+def scope_hash(policy, selected, *, profile=PROFILE):
     # A lease for routine cleanup or different versions cannot authorize this run.
-    scope = {"operation": PROFILE, "versions": selected, "policy": policy}
+    scope = {"operation": profile, "versions": selected, "policy": policy}
     return hashlib.sha256(
         json.dumps(scope, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
@@ -67,7 +70,8 @@ def container_images(inventory):
     return result
 
 
-def matching_tags(images, selected):
+def matching_tags(images, selected, refreshed):
+    repositories = REPOSITORIES if refreshed is None else refreshed
     by_repository = {}
     for item in images:
         tags = item.get("RepoTags")
@@ -78,7 +82,7 @@ def matching_tags(images, selected):
             raise Failure(5, "cannot establish image tags")
         for reference in tags or []:
             repository, _, tag = reference.rpartition(":")
-            if repository not in REPOSITORIES:
+            if repository not in repositories:
                 continue
             version = tag.removeprefix("v")
             if selected is None:
@@ -92,9 +96,14 @@ def matching_tags(images, selected):
             matches[tag] = item
 
     result = {}
+    unverified = set(refreshed or ())
     for repository, tagged in by_repository.items():
         if selected is None:
             latest = tagged.pop("latest", None)
+            if refreshed is not None:
+                if latest is None or latest["Id"] != refreshed[repository]:
+                    continue
+                unverified.remove(repository)
             if latest is not None:
                 keep = {latest["Id"]}
             elif tagged:
@@ -108,15 +117,21 @@ def matching_tags(images, selected):
                 continue
             tagged = {tag: item for tag, item in tagged.items() if item["Id"] not in keep}
         result.update((f"{repository}:{tag}", item) for tag, item in tagged.items())
-    return result
+    return result, unverified
 
 
-def remove_versions(inventory, selected, apply, guard, report):
+def remove_versions(inventory, selected, apply, guard, report, *, refreshed=None):
     engine = inventory.engine
     inventory.refresh("images")
     referenced = container_images(inventory)
     inventory.resolve_protections()
-    matches = matching_tags(inventory.objects["images"], selected)
+    matches, unverified = matching_tags(
+        inventory.objects["images"], selected, refreshed
+    )
+    for repository in sorted(unverified):
+        report.action(
+            "skipped", "repositories", repository, reason="latest-changed-since-pull"
+        )
     report.counts["images.matched"] = len(matches)
     if selected is not None:
         found = {
@@ -148,7 +163,9 @@ def remove_versions(inventory, selected, apply, guard, report):
                 continue
             if selected is None:
                 inventory.refresh("images")
-                current = matching_tags(inventory.objects["images"], selected)
+                current, _ = matching_tags(
+                    inventory.objects["images"], selected, refreshed
+                )
                 if reference not in current or current[reference]["Id"] != item["Id"]:
                     report.action(
                         "skipped", "images", reference, reason="latest-selection-changed"
