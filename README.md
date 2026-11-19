@@ -55,36 +55,43 @@ Browse [the documentation index](docs/index.md) for detailed image contracts. Us
 
 ## Upgrade runner images
 
-On the Linux runner, pause new Docker jobs and let active jobs finish. Set `CI_IMG_VERSION` to the tag of your locally cached `ci-utils` image that includes the upgrade helper. Set `GHCR_USER` to your GitHub username and `GHCR_TOKEN` to a classic token with `read:packages` access.
+On the Linux runner, set `CI_UTILS_IMAGE` to a locally cached utility image that includes the version-aware upgrade helper. Use its numeric tag or digest if available. Omit registry credentials for publicly readable images. For private packages, set `GHCR_USER` and a classic `GHCR_TOKEN` with `read:packages` access.
 
 ```bash
-CI_IMG_VERSION=x.y.z
-CI_UTILS_IMAGE=ghcr.io/myflow-xyz/ci-utils:$CI_IMG_VERSION
-GHCR_USER=
-GHCR_TOKEN=
+CI_UTILS_IMAGE=ghcr.io/myflow-xyz/ci-utils:latest
+docker run --rm --pull=never --network=none "$CI_UTILS_IMAGE" ci-utils-list
 
-printf '%s\n' "$GHCR_TOKEN" |
+printf '%s\n' "${GHCR_TOKEN:-}" |
   docker run \
     --rm \
     --interactive \
     --pull=never \
-    --network=none \
     --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock,readonly \
     --group-add "$(stat -c %g /var/run/docker.sock)" \
     --tmpfs /var/tmp:mode=1777 \
     --env DOCKER_CONFIG=/var/tmp/ghcr \
-    --env "GHCR_USER=$GHCR_USER" \
+    --env "GHCR_USER=${GHCR_USER:-}" \
     "$CI_UTILS_IMAGE" sh -ec '
-      docker --host unix:///var/run/docker.sock login ghcr.io \
-        --username "$GHCR_USER" \
-        --password-stdin
-      exec ci-upgrade-images --prune-old-versions
+      if [ -n "$GHCR_USER" ]; then
+        docker --host unix:///var/run/docker.sock login ghcr.io \
+          --username "$GHCR_USER" \
+          --password-stdin
+      fi
+      exec ci-upgrade-images
     '
 ```
 
-This pulls `:latest` for cached MyFlow CI repositories and prunes eligible older tags after all pulls succeed. [Image upgrade details](docs/images/utils.md#refresh-cached-ci-images)
+The refresh container needs HTTPS access to `api.github.com` and `ghcr.io` to verify release tags. With only the utility image cached, the command refreshes `ci-utils` itself. Pull each other suite image once to include it in future runs.
 
-[Other maintenance commands](docs/maintenance.md)
+The report names the exact version and the default keeps old tags. Copy the reported reference to confirm that it and the local `:latest` resolve to the same image ID.
+
+```bash
+docker image inspect --format '{{.Id}}' \
+  ghcr.io/myflow-xyz/ci-utils:0.0.26 \
+  ghcr.io/myflow-xyz/ci-utils:latest
+```
+
+Use the reported version in place of `0.0.26`. See [image upgrade details](docs/images/utils.md#refresh-cached-ci-images) and [scheduled maintenance](docs/maintenance.md#refresh-cached-ci-images).
 
 ## Local image verification
 

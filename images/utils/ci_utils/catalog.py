@@ -9,7 +9,7 @@ CATALOG = """Supported maintenance commands:
     check|plan|apply|version (default: plan; apply requires the host adapter)
   ci-remove-images       Preview or remove old local CI image versions.
     [--versions X.Y.Z[,X.Y.Z]] [--apply] (default: dry-run, keep latest)
-  ci-upgrade-images      Pull :latest for locally cached MyFlow CI repositories.
+  ci-upgrade-images      Refresh cached MyFlow CI images and report exact versions.
     [--prune-old-versions] (default: keep old versions)
   ci-go-cleanup          Preview or reset Go build and module caches.
     [--build-cache [PATH]] [--mod-cache [PATH]] [--apply]
