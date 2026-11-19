@@ -27,7 +27,7 @@ class Events:
 
 
 class CacheTests(unittest.TestCase):
-    def test_default_age_stage_preserves_cache_used_within_seven_days(self):
+    def test_default_age_stage_preserves_cache_used_within_one_day(self):
         now = dt.datetime.now(dt.timezone.utc)
         with (
             CacheTools() as tools,
@@ -42,7 +42,7 @@ class CacheTests(unittest.TestCase):
                     "Size": 100,
                     "LastUsedAt": (now - dt.timedelta(hours=hours)).isoformat(),
                 }
-                for hours in (167, 168, 169)
+                for hours in (23, 24, 25)
             ]
             tools.state["records"] = records
             tools.state["after_age"] = records[:2]
@@ -62,9 +62,9 @@ class CacheTests(unittest.TestCase):
             filters = json.loads(tools.prunes[0]["filters"][0])
             self.assertIn("until", filters)
             pattern = filters["id"][0]
-            self.assertRegex("age-169", pattern)
-            self.assertIsNone(re.search(pattern, "age-168"))
-            self.assertIsNone(re.search(pattern, "age-167"))
+            self.assertRegex("age-25", pattern)
+            self.assertIsNone(re.search(pattern, "age-24"))
+            self.assertIsNone(re.search(pattern, "age-23"))
 
     def test_each_stage_submits_the_complete_eligible_set(self):
         now = dt.datetime.now(dt.timezone.utc)

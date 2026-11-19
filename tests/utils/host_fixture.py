@@ -93,6 +93,7 @@ sys.exit(response["status"])
                             "Volumes": None,
                             "Entrypoint": None,
                             "Labels": {
+                                "org.myflow.ci.utils-image-maintenance": "1",
                                 "org.myflow.ci.utils-host-protocol": "0"
                                 if self.mode == "wrong-image"
                                 else "1"

@@ -2,8 +2,8 @@
   "schema_version": 1,
   "endpoint": "unix:///var/run/docker.sock",
   "expected_daemon_id": "REPLACE_WITH_DAEMON_ID",
-  "container_min_age": "168h",
-  "network_min_age": "168h",
+  "container_min_age": "24h",
+  "network_min_age": "24h",
   "dangling_image_min_age": "168h",
   "tagged_image_min_age": "168h",
   "image_scope": {
@@ -22,7 +22,7 @@
   "cache": {
     "mode": "scheduled",
     "builder": "default",
-    "max_unused_age": "168h",
+    "max_unused_age": "24h",
     "max_used_space": "20gb",
     "include_internal": false
   },

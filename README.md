@@ -22,7 +22,7 @@ pgvector/pgvector:0.8.7-pg18-trixie@<digest>
 
 - `ghcr.io/myflow-xyz/ci-base`: operating-system utilities, Python 3.15.2 standard-library scripting, OSV-Scanner, Trivy, and runtime-independent repository policy tools.
 - `ghcr.io/myflow-xyz/ci-go`: Go toolchain, native race-test prerequisites, and reusable Go CI executables.
-- `ghcr.io/myflow-xyz/ci-utils`: inherited base tools, pinned Buildx, guarded Docker cleanup, and explicit Go and pnpm cache resets. Its build reuses `ci-go`; its runtime inherits `ci-base`.
+- `ghcr.io/myflow-xyz/ci-utils`: inherited base tools, pinned Buildx, runner image refresh, guarded Docker cleanup, and explicit Go and pnpm cache resets. Its build reuses `ci-go`; its runtime inherits `ci-base`.
 - `ghcr.io/myflow-xyz/ci-net`: network diagnostics and isolated network tests, with explicit namespace and capability constraints in its [image contract](docs/images/net.md).
 - `ghcr.io/myflow-xyz/ci-node`: generic Node.js, Markdown, and OpenAPI jobs that do not require a frontend toolchain.
 - `ghcr.io/myflow-xyz/ci-vite`: TypeScript, Vite, Vitest, Oxlint, and Oxfmt quality and build jobs.
@@ -52,6 +52,39 @@ Repository-owned Bash scripts require Bash 5.0 or newer. `ci-base` and its job i
 ```
 
 Browse [the documentation index](docs/index.md) for detailed image contracts. Use [the usage guide](docs/usage.md) to select and pin an image, and follow [the release guide](docs/release.md) when publishing a stable suite version.
+
+## Upgrade runner images
+
+On the Linux runner, pause new Docker jobs and let active jobs finish. Set `CI_IMG_VERSION` to the tag of your locally cached `ci-utils` image that includes the upgrade helper. Set `GHCR_USER` to your GitHub username and `GHCR_TOKEN` to a classic token with `read:packages` access.
+
+```bash
+CI_IMG_VERSION=x.y.z
+CI_UTILS_IMAGE=ghcr.io/myflow-xyz/ci-utils:$CI_IMG_VERSION
+GHCR_USER=
+GHCR_TOKEN=
+
+printf '%s\n' "$GHCR_TOKEN" |
+  docker run \
+    --rm \
+    --interactive \
+    --pull=never \
+    --network=none \
+    --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock,readonly \
+    --group-add "$(stat -c %g /var/run/docker.sock)" \
+    --tmpfs /var/tmp:mode=1777 \
+    --env DOCKER_CONFIG=/var/tmp/ghcr \
+    --env "GHCR_USER=$GHCR_USER" \
+    "$CI_UTILS_IMAGE" sh -ec '
+      docker --host unix:///var/run/docker.sock login ghcr.io \
+        --username "$GHCR_USER" \
+        --password-stdin
+      exec ci-upgrade-images --prune-old-versions
+    '
+```
+
+This pulls `:latest` for cached MyFlow CI repositories and prunes eligible older tags after all pulls succeed. [Image upgrade details](docs/images/utils.md#refresh-cached-ci-images)
+
+[Other maintenance commands](docs/maintenance.md)
 
 ## Local image verification
 
