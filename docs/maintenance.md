@@ -152,14 +152,9 @@ The launcher passes a read-only policy snapshot and host observation, the select
 
 ## Refresh cached CI images
 
-Use an installed host adapter and a pinned utility image from a release with `ci-upgrade-images`. Authenticate the host administrator's Docker client to `ghcr.io` for private packages. The adapter runs pulls through that client under the maintenance lease. The optional retirement runs in the pinned offline utility container with the verified latest image IDs and the existing removal protections.
+The [one-shot runner command](../README.md#upgrade-runner-images) uses a locally cached `ci-utils` image, the Docker socket, and GHCR credentials. For scheduled runs, launch the same container from cron or a systemd timer during a window when new Docker jobs are paused and active jobs have finished. The host adapter coordinates job admission for lease-gated Docker cleanup and standalone version retirement.
 
-```sh
-sudo /usr/local/libexec/ci-utils/ci-docker-maintenance upgrade-images
-sudo /usr/local/libexec/ci-utils/ci-docker-maintenance upgrade-images --prune-old-versions
-```
-
-The first command keeps existing version tags. The second retires eligible older version tags once all selected pulls succeed. Pulls update the local `:latest` tags. Update version- or digest-pinned job references separately using the [release digests](usage.md#pulling-and-pinning).
+Omit `--prune-old-versions` to keep existing version tags. Pulls update the local `:latest` tags. Update version- or digest-pinned job references separately using the [release digests](usage.md#pulling-and-pinning).
 
 ## Remove local suite versions
 

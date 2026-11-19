@@ -67,7 +67,9 @@ JSON Lines report each selected path, entry counts, logical file bytes, and fina
 
 `ci-upgrade-images` pulls `:latest` once per `ghcr.io/myflow-xyz/ci-*` repository already present on the selected daemon. Either a local tag or a local digest reference qualifies a repository. Existing version tags are kept by default. Moving a `:latest` tag can leave its previous image untagged if it had no other tags.
 
-Use `--prune-old-versions` through the [host adapter](../maintenance.md#refresh-cached-ci-images). Retirement starts after all selected pulls succeed. It considers only numeric version tags of the refreshed repositories, keeps aliases of the verified latest images, and preserves protected or in-use images. If a latest tag changes before retirement, that repository is skipped. A failed pull leaves all old version tags in place.
+The command defaults to `unix:///var/run/docker.sock` and uses Docker CLI registry credentials. The [runner example](../../README.md#upgrade-runner-images) logs in and upgrades in one container with temporary credentials. Mount a policy file and pass `--config` if you need to protect additional images by ID, reference, or repository.
+
+Pause new jobs and let active jobs finish before using `--prune-old-versions`. Retirement starts after all selected pulls succeed. It considers only numeric version tags of the refreshed repositories, keeps aliases of the verified latest images, and preserves protected or in-use images. If a latest tag changes before retirement, that repository is skipped. A failed pull leaves all old version tags in place.
 
 ## Remove local suite versions
 
