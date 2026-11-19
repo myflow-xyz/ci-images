@@ -84,6 +84,41 @@ Require a successful final `result` before using the reported references for fut
 
 Pause new jobs and let active jobs finish before using `--prune-old-versions`. Retirement starts after all selected refreshes are verified. It considers only numeric version tags of the refreshed repositories, keeps aliases of the verified latest images, and preserves protected or in-use images. If a local latest tag changes before retirement, that repository is skipped. A failed refresh leaves old version tags in place.
 
+## Keep a utility container running
+
+On a Linux runner, use the utility image already pulled. Set `CI_UTILS_IMAGE` to its verified numeric tag or digest when available. The named container needs HTTPS access to `api.github.com` and `ghcr.io` for version lookup. Mounting the Docker socket grants access to the host daemon, including when the socket mount is marked read-only.
+
+```bash
+CI_UTILS_IMAGE=ghcr.io/myflow-xyz/ci-utils:latest
+docker run --detach --name ci-utils --init --restart unless-stopped \
+  --pull=never \
+  --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock,readonly \
+  --group-add "$(stat -c %g /var/run/docker.sock)" \
+  --tmpfs /var/tmp:mode=1777 \
+  --env DOCKER_CONFIG=/var/tmp/ghcr \
+  "$CI_UTILS_IMAGE" sleep infinity
+
+docker exec ci-utils ci-utils-list
+```
+
+If the repositories require authentication, set `GHCR_USER` and load `GHCR_TOKEN` from your runner's secret store. Log in before the refresh and again after a container restart, which clears the temporary credentials.
+
+```bash
+printf '%s\n' "$GHCR_TOKEN" |
+  docker exec -i ci-utils docker --host unix:///var/run/docker.sock \
+    login ghcr.io --username "$GHCR_USER" --password-stdin
+```
+
+Run `docker exec ci-utils ci-upgrade-images` for each refresh. Add an alias in your shell startup file to invoke it by its command name.
+
+```bash
+alias ci-upgrade-images='docker exec -i ci-utils ci-upgrade-images'
+```
+
+Reuse `docker exec` for catalog, help, and image retirement previews. Docker cleanup plans need the selected socket and a policy, and cleanup apply uses the [guarded host adapter](../maintenance.md). Go and pnpm commands use [selected cache mounts](#reset-shared-go-and-pnpm-caches). Add those mounts when creating the container for cache maintenance.
+
+Recreate the named container from the new utility tag or digest to use a newer helper version. Until the old container is removed, it keeps its original image in use.
+
 ## Remove local suite versions
 
 `ci-remove-images` previews removal of older local suite versions. For each repository it retains the image tagged `:latest` and its version aliases. When the repository has no local `:latest` tag, it retains the highest numeric version and its image aliases. It uses local state from the daemon in the cleanup policy.

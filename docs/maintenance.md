@@ -158,6 +158,8 @@ Keep the exact references in the JSON Lines log. Use the final result and exit s
 
 The default keeps old versions. To retire eligible tags after refresh, add `--prune-old-versions` after pausing job admission and waiting for active jobs to finish. The host adapter coordinates job admission for lease-gated Docker cleanup and standalone version retirement.
 
+For frequent interactive calls, use the [named utility container](images/utils.md#keep-a-utility-container-running). A scheduled run can invoke the same helper with `docker exec` when that container is already running and authenticated.
+
 ## Remove local suite versions
 
 Use the same installed adapter, trusted configuration, pre-pulled utility image, and participant integration for version retirement. Omit `--versions` to retain the local latest image in each suite repository. Preview before applying:
