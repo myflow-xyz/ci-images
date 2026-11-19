@@ -65,11 +65,59 @@ JSON Lines report each selected path, entry counts, logical file bytes, and fina
 
 ## Refresh cached CI images
 
-`ci-upgrade-images` pulls `:latest` once per `ghcr.io/myflow-xyz/ci-*` repository already present on the selected daemon. Either a local tag or a local digest reference qualifies a repository. Existing version tags are kept by default. Moving a `:latest` tag can leave its previous image untagged if it had no other tags.
+`ci-upgrade-images` refreshes each `ghcr.io/myflow-xyz/ci-*` repository already present on the selected daemon. A local tag or digest reference qualifies a repository. If only `ci-utils` is cached, it refreshes only that repository. Pull another suite image once to include it in later runs.
 
-The command defaults to `unix:///var/run/docker.sock` and uses Docker CLI registry credentials. The [runner example](../../README.md#upgrade-runner-images) logs in and upgrades in one container with temporary credentials. Mount a policy file and pass `--config` if you need to protect additional images by ID, reference, or repository.
+The helper matches the registry's `:latest` index digest to an exact version recorded in a published GitHub Release. It verifies the numeric tag against GHCR and pulls the immutable index. It then makes the verified `:X.Y.Z` and `:latest` available locally. Existing version tags are kept by default.
 
-Pause new jobs and let active jobs finish before using `--prune-old-versions`. Retirement starts after all selected pulls succeed. It considers only numeric version tags of the refreshed repositories, keeps aliases of the verified latest images, and preserves protected or in-use images. If a latest tag changes before retirement, that repository is skipped. A failed pull leaves all old version tags in place.
+The command defaults to `unix:///var/run/docker.sock` and uses Docker CLI registry credentials. The utility container needs HTTPS access to `api.github.com` and `ghcr.io` for verification. The [one-off runner command](../../README.md#upgrade-runner-images) uses the cached image and supports temporary credentials for private packages. Mount a policy file and pass `--config` to protect additional images by ID, reference, or repository.
+
+Each JSON Lines `pulled` event provides the following fields.
+
+| Field | Meaning |
+| --- | --- |
+| `id` | Exact local result, such as `ghcr.io/myflow-xyz/ci-utils:0.0.26` |
+| `source` | Moving registry alias used for discovery |
+| `digest` | Verified registry index digest for the suite image |
+| `image_id` | Docker image ID for the locally selected image |
+
+Require a successful final `result` before using the reported references for future runs. A missing release match, registry mismatch, or conflicting local version fails the run. If the registry's `:latest` moves during the pull, retry to resolve the new release.
+
+Pause new jobs and let active jobs finish before using `--prune-old-versions`. Retirement starts after all selected refreshes are verified. It considers only numeric version tags of the refreshed repositories, keeps aliases of the verified latest images, and preserves protected or in-use images. If a local latest tag changes before retirement, that repository is skipped. A failed refresh leaves old version tags in place.
+
+## Keep a utility container running
+
+On a Linux runner, use the utility image already pulled. Set `CI_UTILS_IMAGE` to its verified numeric tag or digest when available. The named container needs HTTPS access to `api.github.com` and `ghcr.io` for version lookup. Mounting the Docker socket grants access to the host daemon, including when the socket mount is marked read-only.
+
+```bash
+CI_UTILS_IMAGE=ghcr.io/myflow-xyz/ci-utils:latest
+docker run --detach --name ci-utils --init --restart unless-stopped \
+  --pull=never \
+  --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock,readonly \
+  --group-add "$(stat -c %g /var/run/docker.sock)" \
+  --tmpfs /var/tmp:mode=1777 \
+  --env DOCKER_CONFIG=/var/tmp/ghcr \
+  "$CI_UTILS_IMAGE" sleep infinity
+
+docker exec ci-utils ci-utils-list
+```
+
+If the repositories require authentication, set `GHCR_USER` and load `GHCR_TOKEN` from your runner's secret store. Log in before the refresh and again after a container restart, which clears the temporary credentials.
+
+```bash
+printf '%s\n' "$GHCR_TOKEN" |
+  docker exec -i ci-utils docker --host unix:///var/run/docker.sock \
+    login ghcr.io --username "$GHCR_USER" --password-stdin
+```
+
+Run `docker exec ci-utils ci-upgrade-images` for each refresh. Add an alias in your shell startup file to invoke it by its command name.
+
+```bash
+alias ci-upgrade-images='docker exec -i ci-utils ci-upgrade-images'
+```
+
+Reuse `docker exec` for catalog, help, and image retirement previews. Docker cleanup plans need the selected socket and a policy, and cleanup apply uses the [guarded host adapter](../maintenance.md). Go and pnpm commands use [selected cache mounts](#reset-shared-go-and-pnpm-caches). Add those mounts when creating the container for cache maintenance.
+
+Recreate the named container from the new utility tag or digest to use a newer helper version. Until the old container is removed, it keeps its original image in use.
 
 ## Remove local suite versions
 
