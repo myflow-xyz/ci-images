@@ -219,7 +219,7 @@ class Docker:
             raise GateError(7, "host Docker inspection is indeterminate") from error
 
 
-def verify_image(docker, reference):
+def verify_image(docker, reference, *, image_maintenance=False):
     item = docker.inspect("image", reference)
     if ("@" in reference and reference not in (item.get("RepoDigests") or [])) or (
         "@" not in reference and item.get("Id") != reference
@@ -237,6 +237,8 @@ def verify_image(docker, reference):
         raise GateError(
             2, "local image does not implement the reviewed ci-utils runtime contract"
         )
+    if image_maintenance and config["Labels"].get("org.myflow.ci.utils-image-maintenance") != "1":
+        raise GateError(2, "the pinned ci-utils image must support automatic image maintenance")
 
 
 def launch_args(
@@ -288,8 +290,10 @@ def launch_args(
     ]
     if lease_path:
         args += mount(lease_path, "/run/ci-utils/lease.sock")
-    if selected:
-        command = ["ci-remove-images", "--versions", ",".join(selected)]
+    if profile == PROFILE:
+        command = ["ci-remove-images"]
+        if selected is not None:
+            command += ["--versions", ",".join(selected)]
         if operation == "apply":
             command.append("--apply")
     else:
@@ -371,11 +375,12 @@ def maintain(settings, policy, operation, profile, wait_seconds, selected=None):
         raise GateError(
             3, "rootful Docker socket is not owned by the host administrator"
         )
-    policy_hash = hashlib.sha256(
-        json.dumps(policy, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
-    if selected:
+    if profile == PROFILE:
         policy_hash = scope_hash(policy, selected)
+    else:
+        policy_hash = hashlib.sha256(
+            json.dumps(policy, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
     context = (
         gate.maintenance(info["ID"], policy_hash, wait_seconds)
         if operation == "apply"
@@ -395,7 +400,10 @@ def maintain(settings, policy, operation, profile, wait_seconds, selected=None):
             ) as directory:
                 root = pathlib.Path(directory)
                 docker = Docker(settings, policy, root)
-                verify_image(docker, settings["image"])
+                verify_image(
+                    docker, settings["image"],
+                    image_maintenance=profile == PROFILE and selected is None,
+                )
                 info = engine.preflight(policy["expected_daemon_id"])
                 try:
                     storage = measure(info, settings["storage"], run_id)
@@ -540,7 +548,7 @@ def arguments(argv):
         command.add_argument("--profile", choices=("daily", "weekly"), default="daily")
         command.add_argument("--wait", default="15m")
     retirement = sub.add_parser("remove-images")
-    retirement.add_argument("--versions", required=True)
+    retirement.add_argument("--versions", help="omit to keep the latest local versions")
     retirement.add_argument("--apply", action="store_true")
     retirement.add_argument("--wait", default="15m")
     return parser.parse_args(argv)
@@ -556,7 +564,9 @@ def main(argv=None):
     old_signals = {}
     try:
         args = arguments(argv)
-        selected = versions(args.versions) if args.operation == PROFILE else None
+        selected = None
+        if args.operation == PROFILE and args.versions is not None:
+            selected = versions(args.versions)
         if sys.platform != "linux":
             raise GateError(
                 2,
@@ -583,7 +593,7 @@ def main(argv=None):
             return reconcile(
                 settings, policy, args.record_id, trusted_json(args.evidence), emit
             )
-        if selected:
+        if args.operation == PROFILE:
             return maintain(
                 settings, policy, "apply" if args.apply else "plan", PROFILE,
                 duration(args.wait), selected,

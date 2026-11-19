@@ -22,16 +22,23 @@ ALIAS = "example.test/retained:latest"
 
 
 class VersionAPI(StatefulAPI):
-    def __init__(self, tags=None):
+    def __init__(self, tags=None, extra_tags=None):
         super().__init__(
             {
                 "containers": {},
                 "networks": {},
-                "images": {IID: {**image(), "RepoTags": tags or [REF, ALIAS]}},
+                "images": {
+                    IID: {**image(), "RepoTags": tags or [REF, ALIAS]},
+                    **{
+                        identifier: {**image(), "Id": identifier, "RepoTags": refs}
+                        for identifier, refs in (extra_tags or {}).items()
+                    },
+                },
             }
         )
-        for reference in self.objects["images"][IID]["RepoTags"]:
-            self.add_reference(reference)
+        for item in self.objects["images"].values():
+            for reference in item["RepoTags"]:
+                self.add_reference(reference)
 
     def add_reference(self, reference):
         path = "/v1.48/images/" + urllib.parse.quote(reference, safe="")
@@ -138,7 +145,6 @@ class RemoveImagesTests(unittest.TestCase):
 
     def test_invalid_versions_and_environment_fail_before_daemon_access(self):
         for value in (
-            None,
             "",
             "0.0.1,",
             ",0.0.1",
@@ -151,8 +157,7 @@ class RemoveImagesTests(unittest.TestCase):
             "1.2.3;true",
         ):
             with self.subTest(value=value), VersionAPI() as api:
-                args = [] if value is None else ["--versions", value]
-                code, _ = self.invoke(api, *args, "--apply")
+                code, _ = self.invoke(api, "--versions", value, "--apply")
                 self.assertEqual(code, 2)
                 self.assertEqual(api.requests, [])
         with VersionAPI() as api:
@@ -164,6 +169,48 @@ class RemoveImagesTests(unittest.TestCase):
             )
             self.assertEqual(code, 2)
             self.assertEqual(api.requests, [])
+
+    def test_omitted_versions_keep_latest_aliases_or_highest_numeric_version(self):
+        latest = PREFIX + "go:latest"
+        newer = "sha256:" + "4" * 64
+        older_vite = PREFIX + "vite:0.0.9"
+        newest_vite = "sha256:" + "5" * 64
+        excluded = [PREFIX + "other:0.0.1", "ghcr.io/another/ci-go:0.0.1"]
+        with VersionAPI(
+            [REF, older_vite, *excluded],
+            {
+                newer: [latest, PREFIX + "go:0.0.2", PREFIX + "go:v0.0.2"],
+                newest_vite: [PREFIX + "vite:v0.0.10"],
+            },
+        ) as api:
+            code, events = self.invoke(api)
+            self.assertEqual(code, 0, events)
+            self.assertEqual(
+                {e["id"] for e in events if e["event"] == "would-remove"},
+                {REF, older_vite},
+            )
+            self.assertTrue(all(method == "GET" for method, _ in api.requests))
+            code, events = self.invoke(api, "--apply", trusted=True)
+            self.assertEqual(code, 0, events)
+            self.assertEqual(api.objects["images"][IID]["RepoTags"], excluded)
+            self.assertIn(latest, api.objects["images"][newer]["RepoTags"])
+
+    def test_automatic_retirement_rechecks_latest_before_removal(self):
+        latest = PREFIX + "go:latest"
+        newer = "sha256:" + "4" * 64
+        with VersionAPI([REF], {newer: [latest, PREFIX + "go:0.0.2"]}) as api:
+            def move_latest(kind, identifier):
+                if (kind, identifier) == ("images", REF):
+                    api.objects["images"][newer]["RepoTags"].remove(latest)
+                    api.objects["images"][IID]["RepoTags"].append(latest)
+
+            api.before_inspect = move_latest
+            code, events = self.invoke(api, "--apply", trusted=True)
+            self.assertEqual(code, 0, events)
+            self.assertTrue(
+                any(e.get("reason") == "latest-selection-changed" for e in events)
+            )
+            self.assertTrue(all(method == "GET" for method, _ in api.requests))
 
     def test_apply_removes_only_selected_references_and_repeat_is_noop(self):
         legacy = PREFIX + "node:v0.0.2"
@@ -381,6 +428,9 @@ class HostRemoveImagesArgumentsTests(unittest.TestCase):
 
         args = arguments(["remove-images", "--versions", "0.0.1,0.0.2"])
         self.assertEqual(args.operation, "remove-images")
+        self.assertFalse(args.apply)
+        args = arguments(["remove-images"])
+        self.assertIsNone(args.versions)
         self.assertFalse(args.apply)
 
 

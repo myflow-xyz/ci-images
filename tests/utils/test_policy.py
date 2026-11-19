@@ -89,31 +89,29 @@ class ConfigurationTests(unittest.TestCase):
 
     def test_defaults_preserve_explicit_scope(self):
         policy = configured()
-        for key in (
-            "container_min_age",
-            "network_min_age",
-            "dangling_image_min_age",
-            "tagged_image_min_age",
-        ):
+        for key in ("container_min_age", "network_min_age"):
+            self.assertEqual(policy[key], "24h")
+        for key in ("dangling_image_min_age", "tagged_image_min_age"):
             self.assertEqual(policy[key], "168h")
-        self.assertEqual(policy["cache"]["max_unused_age"], "168h")
+        self.assertEqual(policy["cache"]["max_unused_age"], "24h")
         self.assertEqual(policy["cache"]["max_used_space"], "20gb")
         self.assertEqual(policy["image_scope"]["mode"], "allowlist")
         self.assertEqual(policy["image_scope"]["repositories"], [])
 
-    def test_default_resource_retention_preserves_the_last_seven_days(self):
+    def test_default_resource_retention_uses_each_age_boundary(self):
         policy = configured(
             image_scope={"mode": "daemon-wide", "daemon_wide_approved": True}
         )
         dangling = image()
         dangling["RepoTags"] = []
-        for obj, decide in (
-            (container(), container_decision),
-            (network(), network_decision),
-            (image(), image_decision),
-            (dangling, image_decision),
+        for obj, decide, limit in (
+            (container(), container_decision, 24),
+            (network(), network_decision, 24),
+            (image(), image_decision, 168),
+            (dangling, image_decision, 168),
         ):
-            for hours, eligible in ((167, False), (168, False), (169, True)):
+            for offset, eligible in ((-1, False), (0, False), (1, True)):
+                hours = limit + offset
                 with self.subTest(object=obj, hours=hours):
                     obj["Created"] = (NOW - dt.timedelta(hours=hours)).isoformat()
                     self.assertEqual(decide(obj, policy, NOW).eligible, eligible)
@@ -217,11 +215,11 @@ class ContainerTests(unittest.TestCase):
         obj["State"]["FinishedAt"] = NOW.isoformat()
         self.assertTrue(container_decision(obj, configured(), NOW).eligible)
         for created, eligible in [
-            ("2026-09-24T00:00:00Z", False),
-            ("2026-09-23T23:59:59Z", True),
-            ("2026-09-24T00:00:01Z", False),
-            ("2026-09-24T01:00:00+01:00", False),
-            ("2026-09-24T00:00:00", False),
+            ("2026-09-30T00:00:00Z", False),
+            ("2026-09-29T23:59:59Z", True),
+            ("2026-09-30T00:00:01Z", False),
+            ("2026-09-30T01:00:00+01:00", False),
+            ("2026-09-30T00:00:00", False),
             ("nonsense", False),
         ]:
             obj["Created"] = created

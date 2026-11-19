@@ -22,7 +22,7 @@ sudo cp -R images/utils/ci_utils /usr/local/libexec/ci-utils/
 sudo chmod -R go-w /usr/local/libexec/ci-utils
 ```
 
-Install the reviewed `host.json` and `cleanup.json` into `/etc/ci-utils` as root-owned regular files, mode `0644` or stricter. The Docker CLI path must also be root-owned. The adapter rejects mutable configuration and symlinked trusted paths. Pull and verify the approved image digest separately, before maintenance; the launcher never pulls an image or reads registry credentials.
+Install the reviewed `host.json` and `cleanup.json` into `/etc/ci-utils` as root-owned regular files, mode `0644` or stricter. The Docker CLI path must also be root-owned. The adapter rejects mutable configuration and symlinked trusted paths. Pull and verify the approved utility image digest before guarded cleanup and retirement. Their utility container uses the pre-pulled digest and an offline configuration.
 
 Provision the gate once:
 
@@ -150,20 +150,28 @@ sudo /usr/local/libexec/ci-utils/ci-docker-maintenance apply --profile weekly
 
 The launcher passes a read-only policy snapshot and host observation, the selected socket, and a narrowly scoped lease socket. It uses a non-root identity, actual socket group, no network, read-only root, bounded scratch space, dropped capabilities, and no-new-privileges. It removes its stopped container after known completion without removing volumes. On uncertain completion it retains the container identity for investigation. It never changes socket permissions, relabels host paths, stops workloads, resets a builder, or restarts Docker.
 
+## Refresh cached CI images
+
+The [one-shot runner command](../README.md#upgrade-runner-images) uses a locally cached `ci-utils` image, the Docker socket, and GHCR credentials. For scheduled runs, launch the same container from cron or a systemd timer during a window when new Docker jobs are paused and active jobs have finished. The host adapter coordinates job admission for lease-gated Docker cleanup and standalone version retirement.
+
+Omit `--prune-old-versions` to keep existing version tags. Pulls update the local `:latest` tags. Update version- or digest-pinned job references separately using the [release digests](usage.md#pulling-and-pinning).
+
 ## Remove local suite versions
 
-Use the same installed adapter, trusted configuration, pre-pulled utility image, and participant integration for explicit version retirement. Preview first, then apply the same version list:
+Use the same installed adapter, trusted configuration, pre-pulled utility image, and participant integration for version retirement. Omit `--versions` to retain the local latest image in each suite repository. Preview before applying:
 
 ```sh
 sudo /usr/local/libexec/ci-utils/ci-docker-maintenance \
-  --config /etc/ci-utils/host.json remove-images --versions 0.0.1
+  --config /etc/ci-utils/host.json remove-images
+sudo /usr/local/libexec/ci-utils/ci-docker-maintenance \
+  --config /etc/ci-utils/host.json remove-images --apply
 sudo /usr/local/libexec/ci-utils/ci-docker-maintenance \
   --config /etc/ci-utils/host.json remove-images --versions 0.0.1,0.0.2,0.0.3
 sudo /usr/local/libexec/ci-utils/ci-docker-maintenance \
   --config /etc/ci-utils/host.json remove-images --versions 0.0.1,0.0.2,0.0.3 --apply
 ```
 
-The adapter launches `ci-remove-images` in its protected utility container. Apply waits for the exclusive maintenance lease (`--wait 15m` by default), bound to the selected daemon, policy, image digest, and version list. It removes only eligible exact suite tags, preserves images referenced by any container or protected through any alias, and leaves unselected tags intact. Retention age and pressure do not apply to explicit retirement. See the [command contract](images/utils.md#remove-explicit-suite-versions). Unknown completion retains the admission block and requires the recovery below.
+The adapter launches `ci-remove-images` in its protected utility container. Apply waits for the exclusive maintenance lease (`--wait 15m` by default), bound to the selected daemon, policy, image digest, and retirement selection. It removes only eligible exact suite tags, preserves images referenced by any container or protected through any alias, and leaves unselected tags intact. Retirement selects versions independently of age and disk pressure. See the [command contract](images/utils.md#remove-local-suite-versions). Unknown completion retains the admission block and requires the recovery below.
 
 ## Reconcile uncertain completion
 

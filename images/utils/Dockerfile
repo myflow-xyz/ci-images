@@ -71,6 +71,7 @@ RUN set -eu; \
     ln -s ../ci-utils/bin/ci-utils-list /opt/ci-tools/bin/ci-utils-list; \
     ln -s ../ci-utils/bin/ci-docker-cleanup /opt/ci-tools/bin/ci-docker-cleanup; \
     ln -s ../ci-utils/bin/ci-remove-images /opt/ci-tools/bin/ci-remove-images; \
+    ln -s ../ci-utils/bin/ci-upgrade-images /opt/ci-tools/bin/ci-upgrade-images; \
     ln -s ../ci-utils/bin/ci-go-cleanup /opt/ci-tools/bin/ci-go-cleanup; \
     ln -s ../ci-utils/bin/ci-pnpm-cleanup /opt/ci-tools/bin/ci-pnpm-cleanup; \
     ln -s ../ci-utils/ci-buildkit-probe /opt/ci-tools/bin/ci-buildkit-probe; \
@@ -85,7 +86,8 @@ LABEL org.opencontainers.image.created="${BUILD_CREATED}" \
       org.opencontainers.image.source="https://github.com/myflow-xyz/ci-images" \
       org.opencontainers.image.title="MyFlow CI utilities" \
       org.myflow.ci.manifest-sha="${MANIFEST_SHA}" \
-      org.myflow.ci.utils-host-protocol="1"
+      org.myflow.ci.utils-host-protocol="1" \
+      org.myflow.ci.utils-image-maintenance="1"
 
 USER ci
 WORKDIR /workspace
