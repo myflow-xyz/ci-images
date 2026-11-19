@@ -152,9 +152,11 @@ The launcher passes a read-only policy snapshot and host observation, the select
 
 ## Refresh cached CI images
 
-The [one-shot runner command](../README.md#upgrade-runner-images) uses a locally cached `ci-utils` image, the Docker socket, and GHCR credentials. For scheduled runs, launch the same container from cron or a systemd timer during a window when new Docker jobs are paused and active jobs have finished. The host adapter coordinates job admission for lease-gated Docker cleanup and standalone version retirement.
+For a one-time refresh, use the [runner command](../README.md#upgrade-runner-images). For routine refreshes, schedule the same command from cron or a systemd timer during the runner's maintenance window. Set the utility image to a verified, cached numeric tag or digest. Supply credentials for private packages from the runner's secret store and allow the utility container to reach the release metadata and the registry over HTTPS.
 
-Omit `--prune-old-versions` to keep existing version tags. Pulls update the local `:latest` tags. Update version- or digest-pinned job references separately using the [release digests](usage.md#pulling-and-pinning).
+Keep the exact references in the JSON Lines log. Use the final result and exit status to detect failure. Investigate a failed refresh and keep existing job pins until a successful retry. Update version- or digest-pinned job references separately using the [release digests](usage.md#pulling-and-pinning).
+
+The default keeps old versions. To retire eligible tags after refresh, add `--prune-old-versions` after pausing job admission and waiting for active jobs to finish. The host adapter coordinates job admission for lease-gated Docker cleanup and standalone version retirement.
 
 ## Remove local suite versions
 
