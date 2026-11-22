@@ -1,4 +1,5 @@
-name: Isolated utility tests
+name: Test / Qualify CI Utilities [Manual]
+run-name: Qualify CI utilities on ${{ inputs.utils_runner }}
 
 on:
   workflow_dispatch:
@@ -22,7 +23,7 @@ concurrency:
 
 jobs:
   utils-runner:
-    name: Utility qualification (${{ inputs.utils_runner }})
+    name: test/ci-utils/integration-cleanup
     runs-on: [self-hosted, "${{ inputs.utils_runner }}"]
     timeout-minutes: 30
     permissions:

@@ -127,6 +127,6 @@ The integration test requires root and the same Linux ACL tools as the helper:
 sudo scripts/tests/setup-runner-permissions_integration.sh
 ```
 
-The independent `Runner helper / Contract` workflow runs both suites against disposable test directories. It does not inspect or change runner host paths.
+The `ci/runner-helpers/contract` job in **CI / Verify Runner Helpers [PR + Push + Manual]** runs both suites against disposable test directories. It does not inspect or change runner host paths.
 
 ShellSpec DSL indentation is retained in the specification file because shfmt does not model ShellSpec's block syntax.
