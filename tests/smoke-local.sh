@@ -41,6 +41,8 @@ if [[ $target == all || $target == base ]]; then
 		--env "EXPECTED_CI_GID=$(json '.ci_user.gid')" \
 		--env "EXPECTED_TOOLCHAIN_GO_VERSION=$(json '.tools.go.runtime')" \
 		--env \
+		"EXPECTED_COMPOSE_OTEL_SDK_VERSION=$(json '.tools.base.compose.dependency_overrides["go.opentelemetry.io/otel/sdk"]')" \
+		--env \
 		"EXPECTED_COMPOSE_X_NET_VERSION=$(json '.tools.base.compose.dependency_overrides["golang.org/x/net"]')" \
 		--env "EXPECTED_BASH_VERSION=$(json '.tools.base.bash.version')" \
 		--env \
@@ -74,6 +76,8 @@ if [[ $target == all || $target == base ]]; then
 		--env \
 		"EXPECTED_OSV_SCANNER_VERSION=$(json '.tools.base.osv_scanner.version')" \
 		--env \
+		"EXPECTED_OSV_SCANNER_OTEL_TRACE_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["go.opentelemetry.io/otel/trace"]')" \
+		--env \
 		"EXPECTED_OSV_SCANNER_X_NET_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["golang.org/x/net"]')" \
 		--env "EXPECTED_PYTHON_VERSION=$(json '.tools.base.python.version')" \
 		--env \
@@ -82,6 +86,8 @@ if [[ $target == all || $target == base ]]; then
 		"EXPECTED_SHELLCHECK_VERSION=$(json '.tools.base.shellcheck.version')" \
 		--env "EXPECTED_SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
 		--env "EXPECTED_TRIVY_VERSION=$(json '.tools.base.trivy.version')" \
+		--env \
+		"EXPECTED_TRIVY_OTEL_SDK_VERSION=$(json '.tools.base.trivy.dependency_overrides["go.opentelemetry.io/otel/sdk"]')" \
 		--env \
 		"EXPECTED_TRIVY_X_NET_VERSION=$(json '.tools.base.trivy.dependency_overrides["golang.org/x/net"]')" \
 		--env \
