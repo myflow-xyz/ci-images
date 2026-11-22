@@ -8,11 +8,14 @@ expected_go=${EXPECTED_TOOLCHAIN_GO_VERSION:?EXPECTED_TOOLCHAIN_GO_VERSION is no
 expected_python=${EXPECTED_PYTHON_VERSION:?EXPECTED_PYTHON_VERSION is not set}
 expected_bash=${EXPECTED_BASH_VERSION:?EXPECTED_BASH_VERSION is not set}
 : "${EXPECTED_ACTIONLINT_VERSION:?EXPECTED_ACTIONLINT_VERSION is not set}"
+: "${EXPECTED_COMPOSE_OTEL_SDK_VERSION:?EXPECTED_COMPOSE_OTEL_SDK_VERSION is not set}"
 : "${EXPECTED_COMPOSE_X_NET_VERSION:?EXPECTED_COMPOSE_X_NET_VERSION is not set}"
 : "${EXPECTED_GH_X_CRYPTO_VERSION:?EXPECTED_GH_X_CRYPTO_VERSION is not set}"
 : "${EXPECTED_GH_X_NET_VERSION:?EXPECTED_GH_X_NET_VERSION is not set}"
 : "${EXPECTED_GIT_LFS_X_NET_VERSION:?EXPECTED_GIT_LFS_X_NET_VERSION is not set}"
+: "${EXPECTED_OSV_SCANNER_OTEL_TRACE_VERSION:?EXPECTED_OSV_SCANNER_OTEL_TRACE_VERSION is not set}"
 : "${EXPECTED_OSV_SCANNER_X_NET_VERSION:?EXPECTED_OSV_SCANNER_X_NET_VERSION is not set}"
+: "${EXPECTED_TRIVY_OTEL_SDK_VERSION:?EXPECTED_TRIVY_OTEL_SDK_VERSION is not set}"
 : "${EXPECTED_TRIVY_X_NET_VERSION:?EXPECTED_TRIVY_X_NET_VERSION is not set}"
 : "${EXPECTED_GITLEAKS_COMPRESS_VERSION:?EXPECTED_GITLEAKS_COMPRESS_VERSION is not set}"
 : "${EXPECTED_YQ_X_NET_VERSION:?EXPECTED_YQ_X_NET_VERSION is not set}"
@@ -272,6 +275,10 @@ assert_dependency_version \
 	golang.org/x/net \
 	"$EXPECTED_COMPOSE_X_NET_VERSION"
 assert_dependency_version \
+	/usr/local/lib/docker/cli-plugins/docker-compose \
+	go.opentelemetry.io/otel/sdk \
+	"$EXPECTED_COMPOSE_OTEL_SDK_VERSION"
+assert_dependency_version \
 	"$(command -v gh)" \
 	golang.org/x/net \
 	"$EXPECTED_GH_X_NET_VERSION"
@@ -288,9 +295,17 @@ assert_dependency_version \
 	golang.org/x/net \
 	"$EXPECTED_OSV_SCANNER_X_NET_VERSION"
 assert_dependency_version \
+	"$(command -v osv-scanner)" \
+	go.opentelemetry.io/otel/trace \
+	"$EXPECTED_OSV_SCANNER_OTEL_TRACE_VERSION"
+assert_dependency_version \
 	"$(command -v trivy)" \
 	golang.org/x/net \
 	"$EXPECTED_TRIVY_X_NET_VERSION"
+assert_dependency_version \
+	"$(command -v trivy)" \
+	go.opentelemetry.io/otel/sdk \
+	"$EXPECTED_TRIVY_OTEL_SDK_VERSION"
 assert_dependency_version \
 	"$(command -v gitleaks)" \
 	github.com/klauspost/compress \

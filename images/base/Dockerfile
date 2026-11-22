@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.28.0@sha256:bb22d9815c728170f72750f4e5b0d672e06176142e1d602c7e66c050100b7e5b
+# syntax=docker/dockerfile:1.29.0@sha256:572cebbc2b15e6f84c077742952674889cb63cd5e9b80abdffcbe587b6f19183
 # check=skip=InvalidDefaultArgInFrom
 
 ARG BASE_IMAGE
@@ -207,6 +207,7 @@ ARG ACTIONLINT_X_SYS_VERSION
 ARG BUILDARCH
 ARG COMPOSE_VERSION
 ARG COMPOSE_COMPRESS_VERSION
+ARG COMPOSE_OTEL_SDK_VERSION
 ARG COMPOSE_X_NET_VERSION
 ARG DEBIAN_SNAPSHOT
 ARG DOCKER_COMMIT
@@ -240,6 +241,7 @@ ARG OSV_SCANNER_VERSION
 ARG OSV_SCANNER_X_NET_VERSION
 ARG OSV_SCANNER_MODERNC_LIBC_VERSION
 ARG OSV_SCANNER_MODERNC_SQLITE_VERSION
+ARG OSV_SCANNER_OTEL_TRACE_VERSION
 ARG RIPGREP_ASSET_URL_AMD64
 ARG RIPGREP_ASSET_URL_ARM64
 ARG RIPGREP_SHA256_AMD64
@@ -258,6 +260,7 @@ ARG TRIVY_COMPRESS_VERSION
 ARG TRIVY_X_NET_VERSION
 ARG TRIVY_MODERNC_LIBC_VERSION
 ARG TRIVY_MODERNC_SQLITE_VERSION
+ARG TRIVY_OTEL_SDK_VERSION
 ARG TRIVY_GO_JOSE_VERSION
 ARG YQ_VERSION
 ARG YQ_X_NET_VERSION
@@ -444,6 +447,7 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       ./cmd \
       "v${COMPOSE_VERSION}" \
       "golang.org/x/net@${COMPOSE_X_NET_VERSION}" \
+      "go.opentelemetry.io/otel/sdk@${COMPOSE_OTEL_SDK_VERSION}" \
       "github.com/klauspost/compress@${COMPOSE_COMPRESS_VERSION}"; \
     build_tool \
       git-lfs \
@@ -467,6 +471,7 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       "v${OSV_SCANNER_VERSION}" \
       "modernc.org/sqlite@${OSV_SCANNER_MODERNC_SQLITE_VERSION}" \
       "modernc.org/libc@${OSV_SCANNER_MODERNC_LIBC_VERSION}" \
+      "go.opentelemetry.io/otel/trace@${OSV_SCANNER_OTEL_TRACE_VERSION}" \
       "golang.org/x/net@${OSV_SCANNER_X_NET_VERSION}"; \
     build_tool \
       shfmt \
@@ -481,6 +486,7 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       "modernc.org/sqlite@${TRIVY_MODERNC_SQLITE_VERSION}" \
       "modernc.org/libc@${TRIVY_MODERNC_LIBC_VERSION}" \
       "golang.org/x/net@${TRIVY_X_NET_VERSION}" \
+      "go.opentelemetry.io/otel/sdk@${TRIVY_OTEL_SDK_VERSION}" \
       "github.com/klauspost/compress@${TRIVY_COMPRESS_VERSION}"; \
     build_tool \
       yq \

@@ -239,6 +239,8 @@ base)
 		--build-arg \
 		"COMPOSE_COMPRESS_VERSION=$(json '.tools.base.compose.dependency_overrides["github.com/klauspost/compress"]')" \
 		--build-arg \
+		"COMPOSE_OTEL_SDK_VERSION=$(json '.tools.base.compose.dependency_overrides["go.opentelemetry.io/otel/sdk"]')" \
+		--build-arg \
 		"COMPOSE_X_NET_VERSION=$(json '.tools.base.compose.dependency_overrides["golang.org/x/net"]')" \
 		--build-arg "GH_VERSION=$(json '.tools.base.gh.version')" \
 		--build-arg "GH_ASSET_URL_AMD64=$(json '.tools.base.gh.assets.amd64.url')" \
@@ -286,6 +288,8 @@ base)
 		"OSV_SCANNER_MODERNC_LIBC_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["modernc.org/libc"]')" \
 		--build-arg \
 		"OSV_SCANNER_MODERNC_SQLITE_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["modernc.org/sqlite"]')" \
+		--build-arg \
+		"OSV_SCANNER_OTEL_TRACE_VERSION=$(json '.tools.base.osv_scanner.dependency_overrides["go.opentelemetry.io/otel/trace"]')" \
 		--build-arg \
 		"PYTHON_VERSION=$(json '.tools.base.python.version')" \
 		--build-arg \
@@ -336,6 +340,8 @@ base)
 		"TRIVY_GO_JOSE_VERSION=$(json '.tools.base.trivy.dependency_overrides["github.com/go-jose/go-jose/v4"]')" \
 		--build-arg \
 		"TRIVY_GRPC_VERSION=$(json '.tools.base.trivy.dependency_overrides["google.golang.org/grpc"]')" \
+		--build-arg \
+		"TRIVY_OTEL_SDK_VERSION=$(json '.tools.base.trivy.dependency_overrides["go.opentelemetry.io/otel/sdk"]')" \
 		--build-arg "YQ_VERSION=$(json '.tools.base.yq.version')" \
 		--build-arg \
 		"YQ_X_NET_VERSION=$(json '.tools.base.yq.dependency_overrides["golang.org/x/net"]')" \
