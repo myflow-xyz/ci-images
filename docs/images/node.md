@@ -9,8 +9,8 @@ The initial image contract includes:
 - Node.js 26.13.1 from a checksum-pinned official Linux binary archive;
 - npm and npx 12.2.3 from a hash-verified release artifact;
 - pnpm 12.22.0 from a checksum-pinned official Linux binary archive;
-- `markdownlint-cli2` 0.24.1;
-- Redocly CLI 2.80.0 for OpenAPI validation;
+- `markdownlint-cli2` 0.24.2;
+- Redocly CLI 2.82.0 for OpenAPI validation;
 - explicit npm and pnpm cache paths.
 
 Node and pnpm use the official glibc binaries for the target architecture. Image builds verify their SHA-256 hashes and install them without compiling either tool. Node retains the upstream runtime features and bundled libraries, including full ICU and Temporal support.

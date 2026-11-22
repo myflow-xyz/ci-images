@@ -1,4 +1,4 @@
-name: Publish image
+name: Release / Publish CI Image Candidate [Called]
 
 on:
   workflow_call:
@@ -30,15 +30,15 @@ permissions:
   packages: write
 
 env:
-  BUILDX_VERSION: v0.38.2
+  BUILDX_VERSION: v0.39.1
   BUILDKIT_IMAGE: >-
-    docker.io/moby/buildkit@sha256:c5f8862f52499773af85bc07695b2379ef08e8002352b0df2c4864c91d78dabe
+    docker.io/moby/buildkit@sha256:baf6138eb8c37644800c7c913fba051e840ebb9ba13eaf92d92ef9a1712d0b4c
   CI_IMAGES_SBOM_GENERATOR: >-
     docker.io/docker/buildkit-syft-scanner@sha256:873a7458c3c8ac8e32c7b796c10e1600b07b963d2aa000a72a2d97aaaa2d6315
 
 jobs:
   build:
-    name: Build ${{ inputs.image }} (${{ matrix.architecture }})
+    name: Build platform candidate (architecture=${{ matrix.architecture }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 180
     strategy:
@@ -92,7 +92,7 @@ jobs:
           retention-days: 1
 
   publish:
-    name: Publish candidate (${{ inputs.image }})
+    name: Publish candidate index
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -124,7 +124,7 @@ jobs:
           pattern: candidate-${{ inputs.image }}-*
           path: ${{ runner.temp }}/platforms
 
-      - name: Assemble candidate index
+      - name: Publish candidate index
         id: publish
         env:
           IMAGE: ${{ inputs.image }}

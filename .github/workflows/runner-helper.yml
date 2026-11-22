@@ -1,4 +1,4 @@
-name: Runner helper
+name: CI / Verify Runner Helpers [PR + Push + Manual]
 
 on:
   pull_request:
@@ -22,7 +22,7 @@ env:
 
 jobs:
   contract:
-    name: Contract
+    name: ci/runner-helpers/contract
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:

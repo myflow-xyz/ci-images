@@ -1,4 +1,5 @@
-name: Release CI images
+name: Release
+run-name: Release CI images (${{ inputs.bump }} bump)
 
 on:
   workflow_dispatch:
@@ -21,11 +22,11 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  BUILDX_VERSION: v0.38.2
+  BUILDX_VERSION: v0.39.1
 
 jobs:
   release:
-    name: Release verified images
+    name: Promote final CI images
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -145,7 +146,7 @@ jobs:
           } >>"$GITHUB_STEP_SUMMARY"
 
   latest:
-    name: Update latest release tags
+    name: Promote released images to latest
     needs: release
     runs-on: ubuntu-24.04
     timeout-minutes: 10

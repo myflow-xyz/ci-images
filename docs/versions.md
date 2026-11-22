@@ -8,7 +8,7 @@ The runtime inherits `ci-base`. Buildx and the capability helper reuse the exist
 
 | Component | Version |
 | --- | --- |
-| `Docker Buildx` | `0.38.2` |
+| `Docker Buildx` | `0.39.1` |
 
 Cleanup and its internal capability helper are repository-owned commands tied to the suite source revision, with no independent release stream.
 
@@ -88,7 +88,7 @@ These packages are installed at exact revisions from the pinned Debian snapshots
 | `ncurses-bin` | `6.6+20260608-2` |
 | `netbase` | `6.5` |
 | `netcat-openbsd` | `1.229-1` |
-| `openssl` | `3.5.7-1~deb13u3` |
+| `openssl` | `3.5.9-1~deb13u1` |
 | `perl` | `5.44.0-3` |
 | `perl-base` | `5.44.0-3` |
 | `perl-modules-5.44` | `5.44.0-3` |
@@ -136,8 +136,8 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | `Node.js` | `26.13.1` |
 | `npm` | `12.2.3` |
 | `pnpm` | `12.22.0` |
-| `markdownlint-cli2` | `0.24.1` |
-| `@redocly/cli` | `2.80.0` |
+| `markdownlint-cli2` | `0.24.2` |
+| `@redocly/cli` | `2.82.0` |
 
 ## `ci-vite`
 
@@ -150,7 +150,7 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | `vitest` | `5.1.1` |
 | `@vitest/coverage-v8` | `5.1.1` |
 | `oxlint` | `1.94.0` |
-| `oxlint-tsgolint` | `7.0.2007` |
+| `oxlint-tsgolint` | `7.0.2008` |
 | `oxfmt` | `0.79.0` |
 
 ## `ci-playwright`

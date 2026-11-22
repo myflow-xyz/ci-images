@@ -3,7 +3,7 @@ module myflow.xyz/ci-utils/buildkit-probe
 go 1.27.4
 
 require (
-	github.com/moby/buildkit v0.35.0
+	github.com/moby/buildkit v0.35.1
 	github.com/moby/moby/client v0.6.3
 )
 
@@ -32,7 +32,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.34.0 // indirect
 	github.com/in-toto/attestation v1.2.0 // indirect
 	github.com/in-toto/in-toto-golang v0.11.0 // indirect
-	github.com/klauspost/compress v1.20.4 // indirect
+	github.com/klauspost/compress v1.20.5 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/locker v1.0.1 // indirect
 	github.com/moby/moby/api v1.57.0 // indirect
@@ -46,7 +46,7 @@ require (
 	github.com/shibumi/go-pathspec v1.3.0 // indirect
 	github.com/sirupsen/logrus v1.10.2 // indirect
 	github.com/tonistiigi/fsutil v0.0.0-20261103125000-e075fd9305eb // indirect
-	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
+	go.opentelemetry.io/auto/sdk v1.2.2 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.72.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.72.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0 // indirect

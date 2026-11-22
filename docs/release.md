@@ -4,15 +4,15 @@ A release assigns one semantic numeric version to the verified eight-image suite
 
 ## Preconditions
 
-The release workflow accepts only the current `main` commit. The CI images workflow for that commit must have completed successfully and promoted all eight images to `sha-<full-commit>` tags for immutable source identity.
+The release workflow accepts only the current `main` commit. The **Release / Build and Qualify CI Image Candidates [PR + Push + Manual]** workflow for that commit must have completed successfully and promoted all eight images to `sha-<full-commit>` tags for immutable source identity.
 
 The immutable revision tags are the release inputs. The mutable `latest` tag identifies the most recent published stable release and is not a release precondition. A verified `main` build does not move `latest`.
 
-If the automatic workflow skipped image publication because the commit did not change image inputs, dispatch the CI images workflow manually from `main`. Manual publication creates the required immutable revision tags without moving `latest`.
+If the automatic workflow skipped image publication because the commit did not change image inputs, dispatch the image-candidate workflow manually from `main`. Manual publication creates the required immutable revision tags without moving `latest`.
 
 ## Version selection
 
-Run the **Release CI images** workflow on `main` and select one bump:
+Run the **Release** workflow on `main` and select one bump:
 
 | Selection | Previous Git tag | Next Git tag |
 | --- | --- | --- |
@@ -58,7 +58,7 @@ Consumers can use `latest` to follow stable releases automatically. For reproduc
 
 A release is successful only when:
 
-- the Release CI images workflow completed successfully;
+- the **Release** workflow completed successfully;
 - the GitHub Release and Git tag point to the intended `main` commit;
 - all eight unprefixed release tags exist in GHCR;
 - each release tag resolves to the digest recorded in the GitHub Release;
@@ -77,7 +77,7 @@ If registry promotion stops after assigning only some stable image tags, rerun t
 
 If an existing stable image tag has a different digest, the workflow fails before promotion. Investigate the registry state; do not overwrite or delete the stable tag to force a release.
 
-If only **Update latest release tags** fails, rerun failed jobs in the same workflow run. This retries the aliases without creating another version. The job validates all eight versioned image tags before moving any alias and rejects an old run if a newer stable release has been published. GHCR updates each image tag separately, so a partial failure can temporarily leave `latest` tags on different suite versions until the retry succeeds.
+If only **Promote released images to latest** fails, rerun failed jobs in the same workflow run. This retries the aliases without creating another version. The job validates all eight versioned image tags before moving any alias and rejects an old run if a newer stable release has been published. GHCR updates each image tag separately, so a partial failure can temporarily leave `latest` tags on different suite versions until the retry succeeds.
 
 Published versions are never moved. Roll back a consumer by restoring a previous recorded digest. Publish a new version for any corrected image suite.
 

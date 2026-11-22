@@ -71,4 +71,4 @@ sudo scripts/setup-runner-permissions.sh \
 - `tests/setup-runner-from-scratch_spec.sh` checks required inputs and the CLI contract through ShellSpec.
 - `tests/setup-runner-from-scratch_integration.sh` verifies dry-run behavior, prerequisite membership, the complete directory structure, ownership and mode boundaries, non-recursive reruns, and unsafe target rejection in a disposable Linux tree.
 
-The independent `Runner helper / Contract` workflow runs both suites without accessing real runner host paths.
+The `ci/runner-helpers/contract` job in **CI / Verify Runner Helpers [PR + Push + Manual]** runs both suites without accessing real runner host paths.

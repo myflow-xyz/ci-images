@@ -1,4 +1,4 @@
-name: CI images
+name: Release / Build and Qualify CI Image Candidates [PR + Push + Manual]
 
 on:
   pull_request:
@@ -17,11 +17,11 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
-  BUILDX_VERSION: v0.38.2
+  BUILDX_VERSION: v0.39.1
 
 jobs:
   contract:
-    name: Repository contract
+    name: ci/repository/contract
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -170,7 +170,7 @@ jobs:
           printf 'smoke_changed=%s\n' "$smoke_changed" >>"$GITHUB_OUTPUT"
 
   smoke:
-    name: Smoke (${{ matrix.platform }})
+    name: ci/images/smoke (platform=${{ matrix.platform }})
     if: >-
       github.event_name != 'pull_request' &&
       needs.contract.outputs.smoke_changed == 'true'
@@ -253,7 +253,7 @@ jobs:
             actionlint
 
   publish-base:
-    name: Publish candidate (base)
+    name: Publish base candidate
     if: >-
       always() &&
       github.event_name != 'pull_request' &&
@@ -271,7 +271,7 @@ jobs:
       image: base
 
   publish-go:
-    name: Publish candidate (go)
+    name: Publish go candidate
     needs: publish-base
     permissions:
       contents: read
@@ -282,7 +282,7 @@ jobs:
       parent_image: ${{ needs.publish-base.outputs.reference }}
 
   publish-utils:
-    name: Publish candidate (utils)
+    name: Publish utils candidate
     needs:
       - publish-base
       - publish-go
@@ -296,7 +296,7 @@ jobs:
       go_image: ${{ needs.publish-go.outputs.reference }}
 
   publish-net:
-    name: Publish candidate (net)
+    name: Publish net candidate
     needs: publish-base
     permissions:
       contents: read
@@ -307,7 +307,7 @@ jobs:
       parent_image: ${{ needs.publish-base.outputs.reference }}
 
   publish-node:
-    name: Publish candidate (node)
+    name: Publish node candidate
     needs: publish-base
     permissions:
       contents: read
@@ -318,7 +318,7 @@ jobs:
       parent_image: ${{ needs.publish-base.outputs.reference }}
 
   publish-vite:
-    name: Publish candidate (vite)
+    name: Publish vite candidate
     needs: publish-node
     permissions:
       contents: read
@@ -329,7 +329,7 @@ jobs:
       parent_image: ${{ needs.publish-node.outputs.reference }}
 
   publish-playwright:
-    name: Publish candidate (playwright)
+    name: Publish playwright candidate
     needs: publish-vite
     permissions:
       contents: read
@@ -340,7 +340,7 @@ jobs:
       parent_image: ${{ needs.publish-vite.outputs.reference }}
 
   publish-postgres:
-    name: Publish candidate (postgres)
+    name: Publish postgres candidate
     if: >-
       always() &&
       github.event_name != 'pull_request' &&
@@ -417,7 +417,7 @@ jobs:
           printf 'images=%s\n' "$images" >>"$GITHUB_OUTPUT"
 
   hosted-container:
-    name: Hosted job-container compatibility
+    name: release/compatibility/hosted-job-container
     if: needs.publish.result == 'success'
     needs: publish
     runs-on: ubuntu-24.04
@@ -460,7 +460,7 @@ jobs:
           test -z "$(git status --short)"
 
   scan:
-    name: Scan ${{ matrix.image.name }} (${{ matrix.platform }})
+    name: release/artifact/security (image=${{ matrix.image.name }}, platform=${{ matrix.platform }})
     if: >-
       needs.publish.result == 'success' &&
       needs.hosted-container.result == 'success'
@@ -505,7 +505,7 @@ jobs:
           timeout: 20m
 
   promote:
-    name: Promote verified images
+    name: Promote verified candidates
     if: needs.scan.result == 'success'
     needs:
       - publish
