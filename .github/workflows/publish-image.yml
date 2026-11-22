@@ -1,4 +1,4 @@
-name: Publish image
+name: Release / Publish CI Image Candidate [Called]
 
 on:
   workflow_call:
@@ -38,7 +38,7 @@ env:
 
 jobs:
   build:
-    name: Build ${{ inputs.image }} (${{ matrix.architecture }})
+    name: Build platform candidate (architecture=${{ matrix.architecture }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 180
     strategy:
@@ -92,7 +92,7 @@ jobs:
           retention-days: 1
 
   publish:
-    name: Publish candidate (${{ inputs.image }})
+    name: Publish candidate index
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -124,7 +124,7 @@ jobs:
           pattern: candidate-${{ inputs.image }}-*
           path: ${{ runner.temp }}/platforms
 
-      - name: Assemble candidate index
+      - name: Publish candidate index
         id: publish
         env:
           IMAGE: ${{ inputs.image }}
