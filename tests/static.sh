@@ -193,6 +193,9 @@ jq --exit-status '
   .ci_user.gid == 2001 and
   (.debian_snapshot | test("^[0-9]{8}T[0-9]{6}Z$")) and
   (.debian_updates_snapshot | test("^[0-9]{8}T[0-9]{6}Z$")) and
+  (.tools.go.linux_libc_dev as $headers |
+    ($headers.asset.url | test("^https://snapshot[.]debian[.]org/archive/debian/[0-9]{8}T[0-9]{6}Z/pool/main/l/linux/")) and
+    ($headers.asset.url | endswith("/linux-libc-dev_" + $headers.version + "_all.deb"))) and
   (.upstream_images.debian.reference |
     endswith("debian:trixie-slim")) and
   (.tools.node as $node |
@@ -227,7 +230,7 @@ jq --exit-status '
     ($buildx.commit | test("^[0-9a-f]{40}$")) and
     ($buildx.module_sum | test("^h1:[A-Za-z0-9+/]{43}=$")) and
     $buildx.dependency_overrides["github.com/moby/go-archive"] == "v0.3.3" and
-    $buildx.dependency_overrides["golang.org/x/net"] == "v0.62.0") and
+    $buildx.dependency_overrides["golang.org/x/net"] == "v0.63.0") and
   .images.node.parent == "images.base" and
   .images.vite.parent == "images.node" and
   .images.playwright.parent == "images.vite" and

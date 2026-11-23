@@ -9,7 +9,7 @@
     "uid": 1001,
     "gid": 2001
   },
-  "debian_snapshot": "20261121T210000Z",
+  "debian_snapshot": "20261123T170000Z",
   "debian_updates_snapshot": "20261113T210000Z",
   "upstream_images": {
     "dockerfile_frontend": {
@@ -67,7 +67,7 @@
         "module": "github.com/rhysd/actionlint/cmd/actionlint",
         "dependency_overrides": {
           "golang.org/x/sys": "v0.50.0",
-          "golang.org/x/net": "v0.62.0"
+          "golang.org/x/net": "v0.63.0"
         }
       },
       "bash": {
@@ -127,8 +127,8 @@
         "source": "https://github.com/git-lfs/git-lfs",
         "module": "github.com/git-lfs/git-lfs/v3",
         "dependency_overrides": {
-          "golang.org/x/crypto": "v0.58.0",
-          "golang.org/x/net": "v0.62.0",
+          "golang.org/x/crypto": "v0.59.0",
+          "golang.org/x/net": "v0.63.0",
           "github.com/klauspost/compress": "v1.20.5"
         }
       },
@@ -140,7 +140,7 @@
           "github.com/klauspost/compress": "v1.20.5",
           "github.com/nwaples/rardecode/v2": "v2.4.6",
           "github.com/ulikunitz/xz": "v0.5.17",
-          "golang.org/x/crypto": "v0.58.0",
+          "golang.org/x/crypto": "v0.59.0",
           "github.com/andybalholm/brotli": "v1.3.0"
         }
       },
@@ -163,8 +163,8 @@
         "source": "https://github.com/google/osv-scanner",
         "module": "github.com/google/osv-scanner/v2/cmd/osv-scanner",
         "dependency_overrides": {
-          "golang.org/x/net": "v0.62.0",
-          "modernc.org/sqlite": "v1.62.0",
+          "golang.org/x/net": "v0.63.0",
+          "modernc.org/sqlite": "v1.63.0",
           "modernc.org/libc": "v1.81.2",
           "go.opentelemetry.io/otel/trace": "v1.47.0"
         }
@@ -174,10 +174,10 @@
         "source": "https://github.com/aquasecurity/trivy",
         "module": "github.com/aquasecurity/trivy/cmd/trivy",
         "dependency_overrides": {
-          "golang.org/x/net": "v0.62.0",
+          "golang.org/x/net": "v0.63.0",
           "google.golang.org/grpc": "v1.85.0",
           "github.com/go-jose/go-jose/v4": "v4.1.9",
-          "modernc.org/sqlite": "v1.62.0",
+          "modernc.org/sqlite": "v1.63.0",
           "modernc.org/libc": "v1.81.2",
           "github.com/klauspost/compress": "v1.20.5",
           "go.opentelemetry.io/otel/sdk": "v1.47.0"
@@ -237,7 +237,7 @@
         "source": "https://github.com/mikefarah/yq",
         "module": "github.com/mikefarah/yq/v4",
         "dependency_overrides": {
-          "golang.org/x/net": "v0.62.0",
+          "golang.org/x/net": "v0.63.0",
           "golang.org/x/text": "v0.44.0"
         }
       },
@@ -247,7 +247,7 @@
         "module": "github.com/docker/cli",
         "commit": "fdd4b8e5da335e1d0d83d29af5045f57280cd694",
         "dependency_overrides": {
-          "golang.org/x/net": "v0.62.0",
+          "golang.org/x/net": "v0.63.0",
           "github.com/go-jose/go-jose/v4": "v4.1.9"
         }
       },
@@ -256,7 +256,7 @@
         "source": "https://github.com/docker/compose",
         "module": "github.com/docker/compose/v5",
         "dependency_overrides": {
-          "golang.org/x/net": "v0.62.0",
+          "golang.org/x/net": "v0.63.0",
           "github.com/klauspost/compress": "v1.20.5",
           "go.opentelemetry.io/otel/sdk": "v1.47.0"
         }
@@ -290,7 +290,7 @@
         "module": "github.com/sqlc-dev/sqlc/cmd/sqlc",
         "version": "v1.31.1",
         "dependency_overrides": {
-          "golang.org/x/net": "v0.62.0",
+          "golang.org/x/net": "v0.63.0",
           "google.golang.org/grpc": "v1.85.0",
           "github.com/google/cel-go": "v0.30.0"
         }
@@ -299,11 +299,11 @@
         "module": "github.com/pressly/goose/v3/cmd/goose",
         "version": "v3.30.1",
         "dependency_overrides": {
-          "golang.org/x/crypto": "v0.58.0",
-          "golang.org/x/net": "v0.62.0",
+          "golang.org/x/crypto": "v0.59.0",
+          "golang.org/x/net": "v0.63.0",
           "google.golang.org/grpc": "v1.85.0",
           "modernc.org/libc": "v1.81.2",
-          "modernc.org/sqlite": "v1.62.0",
+          "modernc.org/sqlite": "v1.63.0",
           "github.com/andybalholm/brotli": "v1.3.0",
           "github.com/klauspost/compress": "v1.20.5"
         }
@@ -327,7 +327,11 @@
         "version": "v1.10.0"
       },
       "linux_libc_dev": {
-        "version": "7.3.4-1"
+        "version": "7.3.5-1",
+        "asset": {
+          "url": "https://snapshot.debian.org/archive/debian/20261123T170000Z/pool/main/l/linux/linux-libc-dev_7.3.5-1_all.deb",
+          "sha256": "e5f58c8d437593487294f418b0f366334b8cf7da676c42f82d75f961f72bec97"
+        }
       }
     },
     "node": {
@@ -339,9 +343,9 @@
           "sha256": "fa0711dd513fa1386bbad3962a292cb813461cb57dedf07d6eb7efe76dffe897"
         },
         "lockfile": "images/node/npm-runtime/package-lock.json",
-        "lockfile_sha256": "1e5571681857d53d3848165d9c58c4562788bc97a71e7d8318545af0318db529",
+        "lockfile_sha256": "f2049209a51ff8958b096d6c3fa0da7a3097a45bd13074713c1fc4757216cd83",
         "dependency_replacements": {
-          "brace-expansion": "5.0.13",
+          "brace-expansion": "5.1.0",
           "http-cache-semantics": "4.3.0",
           "ip-address": "10.7.6",
           "postcss-selector-parser": "7.2.1",
@@ -405,9 +409,9 @@
       }
     },
     "vite": {
-      "bundle_version": "27",
+      "bundle_version": "28",
       "lockfile": "images/vite/npm/package-lock.json",
-      "lockfile_sha256": "9908976a9587eb305d6a0227810f944f2cd00fa214b7d206eb183877f58d5e09",
+      "lockfile_sha256": "2a1f7f71d5f06019bf54bfbc62e2f5b9b2d356dd2341a6ec9e7284aaba0d3c29",
       "typescript": "7.0.2",
       "typescript_source": {
         "repository": "https://github.com/microsoft/typescript-go",
@@ -423,7 +427,7 @@
       "vite": "8.3.8",
       "vitest": "5.1.1",
       "coverage_v8": "5.1.1",
-      "oxlint": "1.94.0",
+      "oxlint": "1.95.0",
       "oxlint_tsgolint": "7.0.2008",
       "oxlint_tsgolint_source": {
         "repository": "https://github.com/oxc-project/tsgolint",
@@ -432,7 +436,7 @@
           "golang.org/x/text": "v0.44.0"
         }
       },
-      "oxfmt": "0.79.0"
+      "oxfmt": "0.80.0"
     },
     "playwright": {
       "version": "1.65.1",
@@ -484,7 +488,7 @@
         "module_sum": "h1:s4hM0MAtwEuEIVSHKkPpdo0gxP5FYzJc5/s65jVB2vc=",
         "dependency_overrides": {
           "github.com/moby/go-archive": "v0.3.3",
-          "golang.org/x/net": "v0.62.0"
+          "golang.org/x/net": "v0.63.0"
         }
       }
     },

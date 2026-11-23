@@ -154,6 +154,8 @@ ARG GO_SHA256_AMD64
 ARG GO_SHA256_ARM64
 ARG GO_VERSION
 ARG HURL_VERSION
+ARG LINUX_LIBC_DEV_ASSET_URL
+ARG LINUX_LIBC_DEV_SHA256
 ARG LINUX_LIBC_DEV_VERSION
 ARG MANIFEST_SHA=unknown
 ARG SQLC_VERSION
@@ -164,18 +166,25 @@ ARG TARGETARCH
 
 USER root
 
-RUN libc_version=$(dpkg-query -W -f='${Version}' libc6) \
-    && apt-get update \
-    && apt-get install --yes --no-install-recommends \
+RUN set -eu; \
+    /usr/local/libexec/ci/fetch-verified \
+      "${LINUX_LIBC_DEV_ASSET_URL}" \
+      "${LINUX_LIBC_DEV_SHA256}" \
+      /var/tmp/linux-libc-dev.deb; \
+    chmod 0644 /var/tmp/linux-libc-dev.deb; \
+    libc_version=$(dpkg-query -W -f='${Version}' libc6); \
+    apt-get update; \
+    apt-get install --yes --no-install-recommends \
       gcc \
       g++ \
       "libc6-dev=${libc_version}" \
       "libc-dev-bin=${libc_version}" \
       libxml2 \
       pkg-config \
-      "linux-libc-dev=${LINUX_LIBC_DEV_VERSION}" \
-    && test "$(dpkg-query -W -f='${Version}' linux-libc-dev)" = "${LINUX_LIBC_DEV_VERSION}" \
-    && rm -rf /var/lib/apt/lists/*
+      /var/tmp/linux-libc-dev.deb; \
+    test "$(dpkg-query -W -f='${Version}' linux-libc-dev)" = "${LINUX_LIBC_DEV_VERSION}"; \
+    rm -f /var/tmp/linux-libc-dev.deb; \
+    rm -rf /var/lib/apt/lists/*
 
 RUN set -eu; \
     case "${TARGETARCH}" in \
