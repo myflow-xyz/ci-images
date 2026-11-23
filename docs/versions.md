@@ -121,7 +121,7 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | Component | Version |
 | --- | --- |
 | `Go` | `1.27.4` |
-| `linux-libc-dev` | `7.3.4-1` |
+| `linux-libc-dev` | `7.3.5-1` |
 | `Hurl` | `8.1.0` |
 | `sqlc` | `1.31.1` |
 | `goose` | `3.30.1` |
@@ -149,9 +149,9 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | `vite` | `8.3.8` |
 | `vitest` | `5.1.1` |
 | `@vitest/coverage-v8` | `5.1.1` |
-| `oxlint` | `1.94.0` |
+| `oxlint` | `1.95.0` |
 | `oxlint-tsgolint` | `7.0.2008` |
-| `oxfmt` | `0.79.0` |
+| `oxfmt` | `0.80.0` |
 
 ## `ci-playwright`
 
