@@ -15,7 +15,7 @@ The runtime inherits the tools from `ci-base`. Its [maintenance commands and int
 | `Git LFS` | `3.8.1` |
 | `GitHub CLI` | `2.105.0` |
 | `CPython` | `3.15.2` |
-| `Docker CLI` | `29.10.0` |
+| `Docker CLI` | `29.10.1` |
 | `Docker Compose` | `5.8.0` |
 | `Docker Buildx` | `0.39.1` |
 | `actionlint` | `1.7.12` |
@@ -31,7 +31,7 @@ The runtime inherits the tools from `ci-base`. Its [maintenance commands and int
 
 ### Direct Debian packages
 
-These packages are installed at exact revisions from the pinned Debian snapshots. Selected binary updates use the separate Sid snapshot with APT priority 1. Transitive packages remain snapshot-controlled and are covered by the image vulnerability scan. The Debian `git` package supplies system integration files; the exposed Git executable is the source-built version listed above. The Debian `bash` package remains installed for package management, with its binary diverted; the exposed Bash is the patched upstream version listed above.
+These packages are installed at exact revisions from the pinned Debian snapshots. Selected updates use the shared Sid snapshot with APT priority 1. Expat uses a checksum-pinned binary package from a newer signed Sid snapshot. Transitive packages remain snapshot-controlled and are covered by the image vulnerability scan. The Debian `git` package supplies system integration files. The Debian `bash` package remains installed for package management, with its binary diverted. The image exposes the Git and Bash executables listed above.
 
 | Package | Version |
 | --- | --- |
@@ -56,7 +56,7 @@ These packages are installed at exact revisions from the pinned Debian snapshots
 | `libcurl3t64-gnutls` | `8.23.0-2` |
 | `libcurl4-gnutls` | `8.23.0-2` |
 | `libcurl4t64` | `8.23.0-2` |
-| `libexpat1` | `2.10.0-1` |
+| `libexpat1` | `2.11.0-1` |
 | `liblastlog2-2` | `2.42.4-1` |
 | `libmount1` | `2.42.4-1` |
 | `libncursesw6` | `6.6+20260608-2` |
@@ -116,10 +116,10 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | Component | Version |
 | --- | --- |
 | `Go` | `1.27.4` |
-| `linux-libc-dev` | `7.3.5-1` |
+| `linux-libc-dev` | `7.3.6-1` |
 | `Hurl` | `8.1.0` |
 | `sqlc` | `1.31.1` |
-| `goose` | `3.30.1` |
+| `goose` | `3.30.2` |
 | `golangci-lint` | `2.15.0` |
 | `goimports` | `0.53.0` |
 | `govulncheck` | `1.10.0` |
@@ -142,8 +142,8 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | `TypeScript compatibility package` | `6.0.2` |
 | `TypeScript legacy compiler` | `6.0.3` |
 | `vite` | `8.3.8` |
-| `vitest` | `5.1.1` |
-| `@vitest/coverage-v8` | `5.1.1` |
+| `vitest` | `5.1.2` |
+| `@vitest/coverage-v8` | `5.1.2` |
 | `oxlint` | `1.95.0` |
 | `oxlint-tsgolint` | `7.0.2008` |
 | `oxfmt` | `0.80.0` |

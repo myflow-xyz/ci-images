@@ -91,6 +91,10 @@ if [[ $target == all || $target == base ]]; then
 		--env "EXPECTED_SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
 		--env "EXPECTED_TRIVY_VERSION=$(json '.tools.base.trivy.version')" \
 		--env \
+		"EXPECTED_TRIVY_MOBY_USER_VERSION=$(json '.tools.base.trivy.dependency_overrides["github.com/moby/sys/user"]')" \
+		--env \
+		"EXPECTED_DOCKER_MOBY_USER_VERSION=$(json '.tools.base.docker.embedded_dependencies["github.com/moby/sys/user"]')" \
+		--env \
 		"EXPECTED_TRIVY_OTEL_SDK_VERSION=$(json '.tools.base.trivy.dependency_overrides["go.opentelemetry.io/otel/sdk"]')" \
 		--env \
 		"EXPECTED_TRIVY_X_NET_VERSION=$(json '.tools.base.trivy.dependency_overrides["golang.org/x/net"]')" \

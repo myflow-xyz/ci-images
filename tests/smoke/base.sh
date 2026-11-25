@@ -36,6 +36,8 @@ expected_bash=${EXPECTED_BASH_VERSION:?EXPECTED_BASH_VERSION is not set}
 : "${EXPECTED_SHELLCHECK_VERSION:?EXPECTED_SHELLCHECK_VERSION is not set}"
 : "${EXPECTED_SHFMT_VERSION:?EXPECTED_SHFMT_VERSION is not set}"
 : "${EXPECTED_TRIVY_VERSION:?EXPECTED_TRIVY_VERSION is not set}"
+: "${EXPECTED_TRIVY_MOBY_USER_VERSION:?EXPECTED_TRIVY_MOBY_USER_VERSION is not set}"
+: "${EXPECTED_DOCKER_MOBY_USER_VERSION:?EXPECTED_DOCKER_MOBY_USER_VERSION is not set}"
 : "${EXPECTED_TRIVY_GRPC_VERSION:?EXPECTED_TRIVY_GRPC_VERSION is not set}"
 : "${EXPECTED_YQ_VERSION:?EXPECTED_YQ_VERSION is not set}"
 : "${EXPECTED_YQ_X_TEXT_VERSION:?EXPECTED_YQ_X_TEXT_VERSION is not set}"
@@ -316,6 +318,14 @@ assert_dependency_version \
 	"$(command -v trivy)" \
 	go.opentelemetry.io/otel/sdk \
 	"$EXPECTED_TRIVY_OTEL_SDK_VERSION"
+assert_dependency_version \
+	"$(command -v trivy)" \
+	github.com/moby/sys/user \
+	"$EXPECTED_TRIVY_MOBY_USER_VERSION"
+assert_dependency_version \
+	"$(command -v docker)" \
+	github.com/moby/sys/user \
+	"$EXPECTED_DOCKER_MOBY_USER_VERSION"
 assert_dependency_version \
 	"$(command -v gitleaks)" \
 	github.com/klauspost/compress \

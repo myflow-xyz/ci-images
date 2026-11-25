@@ -9,7 +9,7 @@
     "uid": 1001,
     "gid": 2001
   },
-  "debian_snapshot": "20261123T170000Z",
+  "debian_snapshot": "20261125T170000Z",
   "debian_updates_snapshot": "20261113T210000Z",
   "upstream_images": {
     "dockerfile_frontend": {
@@ -18,7 +18,7 @@
     },
     "debian": {
       "reference": "docker.io/library/debian:trixie-slim",
-      "digest": "sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2"
+      "digest": "sha256:8aa5a7bf5a1955bddbe7d74fcdd0b91ab30e74362a8b73af672b0481b35b44a0"
     },
     "pgvector": {
       "reference": "docker.io/pgvector/pgvector:0.8.7-pg18-trixie",
@@ -88,11 +88,11 @@
         "lockfiles": {
           "amd64": {
             "lockfile": "images/base/debian-packages.amd64.lock",
-            "lockfile_sha256": "8b6d5f41c2bbc934c3daf624699fa785be1211d27226f6c23f35ae1375f81a9c"
+            "lockfile_sha256": "09c3203cd51a55a482240252e5511edab28ec310497fb3502f5f6c092fe68aef"
           },
           "arm64": {
             "lockfile": "images/base/debian-packages.arm64.lock",
-            "lockfile_sha256": "06e5124048afac072883e59c392980d6a31e81ae3ce1ae9e361ac256ec64fb2b"
+            "lockfile_sha256": "6cd74e66dd1486f1dea858cea49f2d5a7a651b7fca304a383770c766fa755d91"
           }
         }
       },
@@ -180,7 +180,8 @@
           "modernc.org/sqlite": "v1.63.0",
           "modernc.org/libc": "v1.81.2",
           "github.com/klauspost/compress": "v1.20.5",
-          "go.opentelemetry.io/otel/sdk": "v1.47.0"
+          "go.opentelemetry.io/otel/sdk": "v1.47.0",
+          "github.com/moby/sys/user": "v0.5.1"
         }
       },
       "python": {
@@ -242,13 +243,16 @@
         }
       },
       "docker": {
-        "version": "29.10.0",
+        "version": "29.10.1",
         "source": "https://github.com/docker/cli",
         "module": "github.com/docker/cli",
-        "commit": "fdd4b8e5da335e1d0d83d29af5045f57280cd694",
+        "commit": "c48360f51c53d2029ab6721ad4d012f9e14df846",
         "dependency_overrides": {
           "golang.org/x/net": "v0.63.0",
           "github.com/go-jose/go-jose/v4": "v4.1.9"
+        },
+        "embedded_dependencies": {
+          "github.com/moby/sys/user": "v0.5.1"
         }
       },
       "compose": {
@@ -269,6 +273,19 @@
         "dependency_overrides": {
           "github.com/moby/go-archive": "v0.3.3",
           "golang.org/x/net": "v0.63.0"
+        }
+      },
+      "libexpat": {
+        "version": "2.11.0-1",
+        "assets": {
+          "amd64": {
+            "url": "https://snapshot.debian.org/archive/debian/20261125T170000Z/pool/main/e/expat/libexpat1_2.11.0-1_amd64.deb",
+            "sha256": "2a8e9ee7746f8563cd38b7acb324c4ad61c2c877e7ba5f9a5001f44998876526"
+          },
+          "arm64": {
+            "url": "https://snapshot.debian.org/archive/debian/20261125T170000Z/pool/main/e/expat/libexpat1_2.11.0-1_arm64.deb",
+            "sha256": "ddf1e2d2d0a2379d5696f1441aa9f2e3a6e126ba18411d926ebfe9dcfd11032b"
+          }
         }
       }
     },
@@ -294,7 +311,7 @@
           "commit": "2641800501e077c835cc4059e39e5a251e8b1ccb"
         },
         "lockfile": "images/go/hurl/Cargo.lock",
-        "lockfile_sha256": "8d57bb99a3fe677a7fa77f8a07050d57390fd1b9ff35d9ad1a984f539f81de42"
+        "lockfile_sha256": "299d59b8dae862d797f83b5f2bba53927f6f8ff0630674610a43e4ba5f58dd1b"
       },
       "sqlc": {
         "module": "github.com/sqlc-dev/sqlc/cmd/sqlc",
@@ -307,7 +324,7 @@
       },
       "goose": {
         "module": "github.com/pressly/goose/v3/cmd/goose",
-        "version": "v3.30.1",
+        "version": "v3.30.2",
         "dependency_overrides": {
           "golang.org/x/crypto": "v0.59.0",
           "golang.org/x/net": "v0.63.0",
@@ -337,10 +354,10 @@
         "version": "v1.10.0"
       },
       "linux_libc_dev": {
-        "version": "7.3.5-1",
+        "version": "7.3.6-1",
         "asset": {
-          "url": "https://snapshot.debian.org/archive/debian/20261123T170000Z/pool/main/l/linux/linux-libc-dev_7.3.5-1_all.deb",
-          "sha256": "e5f58c8d437593487294f418b0f366334b8cf7da676c42f82d75f961f72bec97"
+          "url": "https://snapshot.debian.org/archive/debian/20261125T170000Z/pool/main/l/linux/linux-libc-dev_7.3.6-1_all.deb",
+          "sha256": "5385b22cdd5c7796d1b9b40c3d49e47a30600b799f6c336497bd33d04ebaf97d"
         }
       }
     },
@@ -371,7 +388,7 @@
       "markdownlint_cli2": {
         "version": "0.24.2",
         "lockfile": "images/node/markdownlint/package-lock.json",
-        "lockfile_sha256": "ca08ec73ef1e5ff215efd1603971dee174f777656b1160b66203f1b4d3ba61e4",
+        "lockfile_sha256": "28d49a90e2e8ee93387e3e0d9c2cda6e323df2ed5d4c5488efda9a9cb69b4611",
         "dependency_overrides": {
           "smol-toml": "1.9.1",
           "katex": "0.19.1",
@@ -419,9 +436,9 @@
       }
     },
     "vite": {
-      "bundle_version": "28",
+      "bundle_version": "29",
       "lockfile": "images/vite/npm/package-lock.json",
-      "lockfile_sha256": "2a1f7f71d5f06019bf54bfbc62e2f5b9b2d356dd2341a6ec9e7284aaba0d3c29",
+      "lockfile_sha256": "34cddec88842486a00f71a9d1cf87f8dcbc08578551d7b8cd98492da9b3ea4cc",
       "typescript": "7.0.2",
       "typescript_source": {
         "repository": "https://github.com/microsoft/typescript-go",
@@ -435,8 +452,8 @@
         "compiler": "6.0.3"
       },
       "vite": "8.3.8",
-      "vitest": "5.1.1",
-      "coverage_v8": "5.1.1",
+      "vitest": "5.1.2",
+      "coverage_v8": "5.1.2",
       "oxlint": "1.95.0",
       "oxlint_tsgolint": "7.0.2008",
       "oxlint_tsgolint_source": {
@@ -473,7 +490,7 @@
         "module": "github.com/tianon/gosu",
         "commit": "29b939aa5bd4dc588af765b8248f6e39150d2565",
         "dependency_overrides": {
-          "github.com/moby/sys/user": "v0.5.0",
+          "github.com/moby/sys/user": "v0.5.1",
           "golang.org/x/sys": "v0.50.0"
         }
       },

@@ -316,6 +316,10 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 			"BUILDX_X_NET_VERSION=$(jq -r '.tools.base.buildx.dependency_overrides["golang.org/x/net"]' "$manifest")" \
 			"COMPOSE_OTEL_SDK_VERSION=$(jq -r '.tools.base.compose.dependency_overrides["go.opentelemetry.io/otel/sdk"]' "$manifest")" \
 			"COMPOSE_X_NET_VERSION=$(jq -r '.tools.base.compose.dependency_overrides["golang.org/x/net"]' "$manifest")" \
+			"EXPAT_ASSET_URL_AMD64=$(jq -r '.tools.base.libexpat.assets.amd64.url' "$manifest")" \
+			"EXPAT_ASSET_URL_ARM64=$(jq -r '.tools.base.libexpat.assets.arm64.url' "$manifest")" \
+			"EXPAT_SHA256_AMD64=$(jq -r '.tools.base.libexpat.assets.amd64.sha256' "$manifest")" \
+			"EXPAT_SHA256_ARM64=$(jq -r '.tools.base.libexpat.assets.arm64.sha256' "$manifest")" \
 			"GH_ASSET_URL_AMD64=$(jq -r '.tools.base.gh.assets.amd64.url' "$manifest")" \
 			"GH_ASSET_URL_ARM64=$(jq -r '.tools.base.gh.assets.arm64.url' "$manifest")" \
 			"GH_SHA256_AMD64=$(jq -r '.tools.base.gh.assets.amd64.sha256' "$manifest")" \
@@ -325,6 +329,7 @@ for target in "${names[@]/%/-amd64}" "${names[@]/%/-arm64}"; do
 			"OSV_SCANNER_X_NET_VERSION=$(jq -r '.tools.base.osv_scanner.dependency_overrides["golang.org/x/net"]' "$manifest")" \
 			"TRIVY_OTEL_SDK_VERSION=$(jq -r '.tools.base.trivy.dependency_overrides["go.opentelemetry.io/otel/sdk"]' "$manifest")" \
 			"TRIVY_X_NET_VERSION=$(jq -r '.tools.base.trivy.dependency_overrides["golang.org/x/net"]' "$manifest")" \
+			"TRIVY_MOBY_USER_VERSION=$(jq -r '.tools.base.trivy.dependency_overrides["github.com/moby/sys/user"]' "$manifest")" \
 			"GITLEAKS_COMPRESS_VERSION=$(jq -r '.tools.base.gitleaks.dependency_overrides["github.com/klauspost/compress"]' "$manifest")" \
 			"YQ_X_NET_VERSION=$(jq -r '.tools.base.yq.dependency_overrides["golang.org/x/net"]' "$manifest")" \
 			"DOCKER_VERSION=$(jq -r '.tools.base.docker.version' "$manifest")" \
