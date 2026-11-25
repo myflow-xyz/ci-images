@@ -22,7 +22,7 @@ The runtime inherits the tools from `ci-base`. Its [maintenance commands and int
 | `gitleaks` | `8.30.1` |
 | `jq` | `1.8.2` |
 | `osv-scanner` | `2.7.1` |
-| `ripgrep` | `15.2.0` |
+| `ripgrep` | `16.0.0` |
 | `ShellCheck` | `0.11.0` |
 | `shellspec` | `0.28.1` |
 | `shfmt` | `3.14.1` |
