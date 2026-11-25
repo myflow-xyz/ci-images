@@ -130,7 +130,7 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | --- | --- |
 | `Node.js` | `26.13.1` |
 | `npm` | `12.2.3` |
-| `pnpm` | `12.22.0` |
+| `pnpm` | `12.23.0` |
 | `markdownlint-cli2` | `0.24.2` |
 | `@redocly/cli` | `2.82.0` |
 

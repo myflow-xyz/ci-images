@@ -8,7 +8,7 @@ The initial image contract includes:
 
 - Node.js 26.13.1 from a checksum-pinned official Linux binary archive;
 - npm and npx 12.2.3 from a hash-verified release artifact;
-- pnpm 12.22.0 from a checksum-pinned official Linux binary archive;
+- pnpm 12.23.0 from a checksum-pinned official Linux binary archive;
 - `markdownlint-cli2` 0.24.2;
 - Redocly CLI 2.82.0 for OpenAPI validation;
 - explicit npm and pnpm cache paths.
@@ -46,7 +46,7 @@ npm cache=/var/cache/npm
 pnpm store=/var/cache/pnpm/store
 ```
 
-pnpm creates a store-format directory below the configured store root. pnpm 12.22.0 uses store format `v11`. The manifest records the CLI and store-format versions independently. The caches contain package content only. Do not persist `node_modules`, build output, or a repository workspace.
+pnpm creates a store-format directory below the configured store root. pnpm 12.23.0 uses store format `v11`. The manifest records the CLI and store-format versions independently. The caches contain package content only. Do not persist `node_modules`, build output, or a repository workspace.
 
 ## Usage
 
