@@ -127,7 +127,8 @@ dpkg --compare-versions \
 [[ $(command -v python3) == /usr/local/bin/python3 ]]
 [[ $(python3 --version) == "Python ${expected_python}" ]]
 
-python3 - "$expected_python" <<'PY'
+expat_package_version=$(dpkg-query --show --showformat='${Version}' libexpat1)
+python3 - "$expected_python" "${expat_package_version%%-*}" <<'PY'
 import bz2
 import compression.zstd
 import ctypes
@@ -135,6 +136,7 @@ import dbm.gnu
 import json
 import lzma
 import mimetypes
+import pyexpat
 import readline
 import socket
 import sqlite3
@@ -144,6 +146,7 @@ import sys
 import urllib.parse
 import urllib.request
 import uuid
+import xml.etree.ElementTree as element_tree
 import zlib
 
 assert json.loads("{\"ok\": true}")["ok"]
@@ -152,6 +155,8 @@ assert mimetypes.guess_type("artifact.ics") == ("text/calendar", None)
 assert mimetypes.guess_type("artifact.zst") == ("application/zstd", None)
 assert socket.gethostname()
 assert sys.version.split()[0] == sys.argv[1]
+assert pyexpat.EXPAT_VERSION == f"expat_{sys.argv[2]}", pyexpat.EXPAT_VERSION
+assert element_tree.fromstring("<ci>ready</ci>").text == "ready"
 assert urllib.parse.urlsplit("https://ci.example/path").hostname == "ci.example"
 
 with socket.create_server(("127.0.0.1", 0)) as server:
