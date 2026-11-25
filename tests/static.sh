@@ -112,7 +112,7 @@ done < <(
       ["CPython", .tools.base.python.version],
       ["Docker CLI", .tools.base.docker.version],
       ["Docker Compose", .tools.base.compose.version],
-      ["Docker Buildx", .tools.utils.buildx.version],
+      ["Docker Buildx", .tools.base.buildx.version],
       ["actionlint", .tools.base.actionlint.version],
       ["GitHub CLI", .tools.base.gh.version],
       ["Git LFS", .tools.base.git_lfs.version],
@@ -226,7 +226,7 @@ jq --exit-status '
   .images.go.parent == "images.base" and
   .images.net.parent == "images.base" and
   .images.utils.parent == "images.base" and
-  (.tools.utils.buildx as $buildx |
+  (.tools.base.buildx as $buildx |
     ($buildx.commit | test("^[0-9a-f]{40}$")) and
     ($buildx.module_sum | test("^h1:[A-Za-z0-9+/]{43}=$")) and
     $buildx.dependency_overrides["github.com/moby/go-archive"] == "v0.3.3" and

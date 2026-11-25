@@ -133,6 +133,7 @@ RUN set -eu; \
     tar -xJf /var/tmp/python.tar.xz --strip-components=1 -C /var/tmp/python; \
     cd /var/tmp/python; \
     ./configure --prefix=/usr/local --enable-shared \
+      --with-system-expat \
       --without-system-libmpdec \
       --enable-loadable-sqlite-extensions --enable-option-checking=fatal \
       --with-ensurepip=no; \
@@ -258,6 +259,7 @@ ARG TRIVY_GRPC_VERSION
 ARG TRIVY_VERSION
 ARG TRIVY_COMPRESS_VERSION
 ARG TRIVY_X_NET_VERSION
+ARG TRIVY_MOBY_USER_VERSION
 ARG TRIVY_MODERNC_LIBC_VERSION
 ARG TRIVY_MODERNC_SQLITE_VERSION
 ARG TRIVY_OTEL_SDK_VERSION
@@ -285,6 +287,7 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
     && apt-get install --yes --no-install-recommends \
       ca-certificates \
       curl \
+      jq \
     && rm -rf /var/lib/apt/lists/* \
     && chmod 0755 /usr/local/libexec/ci/fetch-verified
 
@@ -483,6 +486,7 @@ RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
       "v${TRIVY_VERSION}" \
       "google.golang.org/grpc@${TRIVY_GRPC_VERSION}" \
       "github.com/go-jose/go-jose/v4@${TRIVY_GO_JOSE_VERSION}" \
+      "github.com/moby/sys/user@${TRIVY_MOBY_USER_VERSION}" \
       "modernc.org/sqlite@${TRIVY_MODERNC_SQLITE_VERSION}" \
       "modernc.org/libc@${TRIVY_MODERNC_LIBC_VERSION}" \
       "golang.org/x/net@${TRIVY_X_NET_VERSION}" \
@@ -589,6 +593,53 @@ RUN set -eu; \
       /var/tmp/ripgrep.tar.gz \
       /var/tmp/shellcheck.tar.gz
 
+ARG BUILDX_VERSION
+ARG BUILDX_MODULE_SUM
+ARG BUILDX_COMMIT
+ARG BUILDX_GO_ARCHIVE_VERSION
+ARG BUILDX_X_NET_VERSION
+
+RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
+    --mount=type=cache,target=/var/cache/go/build,sharing=locked \
+    set -eu; \
+    export \
+      GOCACHE=/var/cache/go/build \
+      GOMODCACHE=/var/cache/go/mod \
+      GOPATH=/var/lib/go \
+      GOTOOLCHAIN=local; \
+    build_directory=/var/tmp/build/buildx; \
+    output_directory="/out/buildx/${BUILDX_VERSION}"; \
+    install -d "${build_directory}" "${output_directory}"; \
+    /usr/local/go/bin/go mod download -json \
+      "github.com/docker/buildx@v${BUILDX_VERSION}" > /var/tmp/buildx-source.json; \
+    jq --exit-status --arg sum "${BUILDX_MODULE_SUM}" --arg commit "${BUILDX_COMMIT}" \
+      '.Sum == $sum and .Origin.Hash == $commit' /var/tmp/buildx-source.json >/dev/null; \
+    cp -R "${GOMODCACHE}/github.com/docker/buildx@v${BUILDX_VERSION}/." "${build_directory}/"; \
+    chmod -R u+w "${build_directory}"; \
+    cd "${build_directory}"; \
+    /usr/local/go/bin/go get \
+      "github.com/moby/go-archive@${BUILDX_GO_ARCHIVE_VERSION}" \
+      "golang.org/x/net@${BUILDX_X_NET_VERSION}"; \
+    CGO_ENABLED=0 GOOS=linux GOARCH="${TARGETARCH}" \
+      /usr/local/go/bin/go build -buildvcs=false -trimpath -mod=mod \
+      -ldflags "-s -w -X github.com/docker/buildx/version.Version=v${BUILDX_VERSION} -X github.com/docker/buildx/version.Revision=${BUILDX_COMMIT}" \
+      -o "${output_directory}/docker-buildx" ./cmd/buildx; \
+    /usr/local/go/bin/go version -m "${output_directory}/docker-buildx" > "${output_directory}/buildx.buildinfo"
+
+ARG EXPAT_ASSET_URL_AMD64
+ARG EXPAT_ASSET_URL_ARM64
+ARG EXPAT_SHA256_AMD64
+ARG EXPAT_SHA256_ARM64
+
+RUN set -eu; \
+    case "${TARGETARCH}" in \
+      amd64) expat_url="${EXPAT_ASSET_URL_AMD64}"; expat_sha256="${EXPAT_SHA256_AMD64}" ;; \
+      arm64) expat_url="${EXPAT_ASSET_URL_ARM64}"; expat_sha256="${EXPAT_SHA256_ARM64}" ;; \
+      *) exit 1 ;; \
+    esac; \
+    /usr/local/libexec/ci/fetch-verified "${expat_url}" "${expat_sha256}" /var/tmp/libexpat1.deb; \
+    chmod 0644 /var/tmp/libexpat1.deb
+
 FROM ${BASE_IMAGE}
 
 USER root
@@ -598,6 +649,7 @@ ARG BASH_PATCHLEVEL
 ARG BASH_RELEASE
 ARG BUILD_CREATED=unknown
 ARG BUILD_REVISION=unknown
+ARG BUILDX_VERSION
 ARG CI_GID=2001
 ARG CI_UID=1001
 ARG COMPOSE_VERSION
@@ -634,6 +686,7 @@ COPY images/common/debian-updates.sources \
 COPY images/common/debian-updates.pref /etc/apt/preferences.d/ci-updates
 
 RUN --mount=from=base-python-runtime,source=/out/python-runtime-packages,target=/var/tmp/python-runtime-packages,ro \
+    --mount=from=base-go-tools-builder,source=/var/tmp/libexpat1.deb,target=/var/tmp/libexpat1.deb,ro \
     test -n "${DEBIAN_SNAPSHOT}" \
     && test -n "${DEBIAN_UPDATES_SNAPSHOT}" \
     && sed -i \
@@ -667,7 +720,7 @@ RUN --mount=from=base-python-runtime,source=/out/python-runtime-packages,target=
       "${debian_package_lock}" \
       /usr/local/share/ci/debian-packages.lock \
     && xargs -r \
-      apt-get install --yes --no-install-recommends \
+      apt-get install --yes --no-install-recommends /var/tmp/libexpat1.deb \
       < /usr/local/share/ci/debian-packages.lock \
     && xargs -r \
       apt-get install --yes --no-install-recommends \
@@ -705,6 +758,8 @@ RUN set -eu; \
       /opt/ci-tools/bin/actionlint; \
     ln -s "../docker/${DOCKER_VERSION}/docker" /opt/ci-tools/bin/docker; \
     install -d /usr/local/lib/docker/cli-plugins; \
+    ln -s "/opt/ci-tools/buildx/${BUILDX_VERSION}/docker-buildx" \
+      /usr/local/lib/docker/cli-plugins/docker-buildx; \
     ln -s "/opt/ci-tools/docker-compose/${COMPOSE_VERSION}/docker-compose" \
       /usr/local/lib/docker/cli-plugins/docker-compose; \
     ln -s \

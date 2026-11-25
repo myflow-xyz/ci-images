@@ -8,11 +8,6 @@ FROM --platform=$BUILDPLATFORM ${GO_IMAGE} AS utils-tools-builder
 USER root
 
 ARG TARGETARCH
-ARG BUILDX_VERSION
-ARG BUILDX_MODULE_SUM
-ARG BUILDX_COMMIT
-ARG BUILDX_GO_ARCHIVE_VERSION
-ARG BUILDX_X_NET_VERSION
 ARG GO_VERSION
 
 ENV GOCACHE=/var/cache/go/build \
@@ -20,31 +15,13 @@ ENV GOCACHE=/var/cache/go/build \
     GOPATH=/var/lib/go \
     GOTOOLCHAIN=local
 
-RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
-    --mount=type=cache,target=/var/cache/go/build,sharing=locked \
-    set -eu; \
-    test "$(/usr/local/go/bin/go version | awk '{print $3}')" = "go${GO_VERSION}"; \
-    install -d /out/ci-utils "/out/buildx/${BUILDX_VERSION}"; \
-    /usr/local/go/bin/go mod download -json "github.com/docker/buildx@v${BUILDX_VERSION}" > /var/tmp/buildx-source.json; \
-    test "$(jq -r .Sum /var/tmp/buildx-source.json)" = "${BUILDX_MODULE_SUM}"; \
-    test "$(jq -r .Origin.Hash /var/tmp/buildx-source.json)" = "${BUILDX_COMMIT}"; \
-    cp -R "/var/cache/go/mod/github.com/docker/buildx@v${BUILDX_VERSION}" /var/tmp/buildx; \
-    chmod -R u+w /var/tmp/buildx; \
-    cd /var/tmp/buildx; \
-    /usr/local/go/bin/go get \
-      "github.com/moby/go-archive@${BUILDX_GO_ARCHIVE_VERSION}" \
-      "golang.org/x/net@${BUILDX_X_NET_VERSION}"; \
-    CGO_ENABLED=0 GOOS=linux GOARCH="${TARGETARCH}" \
-      /usr/local/go/bin/go build -buildvcs=false -trimpath -mod=mod \
-      -ldflags "-s -w -X github.com/docker/buildx/version.Version=v${BUILDX_VERSION} -X github.com/docker/buildx/version.Revision=${BUILDX_COMMIT}" \
-      -o "/out/buildx/${BUILDX_VERSION}/docker-buildx" ./cmd/buildx; \
-    /usr/local/go/bin/go version -m "/out/buildx/${BUILDX_VERSION}/docker-buildx" > /out/ci-utils/buildx.buildinfo
-
 COPY images/utils/buildkit-probe/ /var/tmp/buildkit-probe/
 
 RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
     --mount=type=cache,target=/var/cache/go/build,sharing=locked \
     set -eu; \
+    test "$(/usr/local/go/bin/go version | awk '{print $3}')" = "go${GO_VERSION}"; \
+    install -d /out/ci-utils; \
     cd /var/tmp/buildkit-probe; \
     /usr/local/go/bin/go test -race -mod=readonly ./...; \
     CGO_ENABLED=0 GOOS=linux GOARCH="${TARGETARCH}" \
@@ -59,7 +36,6 @@ USER root
 ARG BUILD_CREATED=unknown
 ARG BUILD_REVISION=unknown
 ARG MANIFEST_SHA=unknown
-ARG BUILDX_VERSION
 
 COPY --from=utils-tools-builder /out/ /opt/ci-tools/
 COPY images/utils/ci_utils/ /opt/ci-tools/ci-utils/ci_utils/
@@ -75,7 +51,6 @@ RUN set -eu; \
     ln -s ../ci-utils/bin/ci-go-cleanup /opt/ci-tools/bin/ci-go-cleanup; \
     ln -s ../ci-utils/bin/ci-pnpm-cleanup /opt/ci-tools/bin/ci-pnpm-cleanup; \
     ln -s ../ci-utils/ci-buildkit-probe /opt/ci-tools/bin/ci-buildkit-probe; \
-    ln -s "/opt/ci-tools/buildx/${BUILDX_VERSION}/docker-buildx" /usr/local/lib/docker/cli-plugins/docker-buildx; \
     python3 -c 'import json,sys; from pathlib import Path; Path("/opt/ci-tools/ci-utils/build.json").write_text(json.dumps({"revision":sys.argv[1],"version":"sha-"+sys.argv[1]})+"\n")' "${BUILD_REVISION}"; \
     chmod -R go-w /opt/ci-tools/ci-utils
 

@@ -7,7 +7,7 @@ set -euo pipefail
 unset DOCKER_DEFAULT_PLATFORM
 
 repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-dind_image=docker.io/library/docker:29.10.0-dind@sha256:4bbc7223f81db790097c6dea42fb93e05b8fead4f0431fbe6ccaba6e8473201c
+dind_image=docker.io/library/docker:29.10.1-dind@sha256:fbbc96e0af32cdc190aff92ba97a1281a115351a723afe21af78879cc55126b0
 image_store=${CI_UTILS_TEST_IMAGE_STORE:-containerd}
 case "$image_store" in
 containerd) snapshotter=true ;;

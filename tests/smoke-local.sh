@@ -41,6 +41,10 @@ if [[ $target == all || $target == base ]]; then
 		--env "EXPECTED_CI_GID=$(json '.ci_user.gid')" \
 		--env "EXPECTED_TOOLCHAIN_GO_VERSION=$(json '.tools.go.runtime')" \
 		--env \
+		"EXPECTED_BUILDX_GO_ARCHIVE_VERSION=$(json '.tools.base.buildx.dependency_overrides["github.com/moby/go-archive"]')" \
+		--env \
+		"EXPECTED_BUILDX_X_NET_VERSION=$(json '.tools.base.buildx.dependency_overrides["golang.org/x/net"]')" \
+		--env \
 		"EXPECTED_COMPOSE_OTEL_SDK_VERSION=$(json '.tools.base.compose.dependency_overrides["go.opentelemetry.io/otel/sdk"]')" \
 		--env \
 		"EXPECTED_COMPOSE_X_NET_VERSION=$(json '.tools.base.compose.dependency_overrides["golang.org/x/net"]')" \
@@ -87,6 +91,10 @@ if [[ $target == all || $target == base ]]; then
 		--env "EXPECTED_SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
 		--env "EXPECTED_TRIVY_VERSION=$(json '.tools.base.trivy.version')" \
 		--env \
+		"EXPECTED_TRIVY_MOBY_USER_VERSION=$(json '.tools.base.trivy.dependency_overrides["github.com/moby/sys/user"]')" \
+		--env \
+		"EXPECTED_DOCKER_MOBY_USER_VERSION=$(json '.tools.base.docker.embedded_dependencies["github.com/moby/sys/user"]')" \
+		--env \
 		"EXPECTED_TRIVY_OTEL_SDK_VERSION=$(json '.tools.base.trivy.dependency_overrides["go.opentelemetry.io/otel/sdk"]')" \
 		--env \
 		"EXPECTED_TRIVY_X_NET_VERSION=$(json '.tools.base.trivy.dependency_overrides["golang.org/x/net"]')" \
@@ -120,9 +128,7 @@ if [[ $target == all || $target == utils ]]; then
 		--network=none --read-only --cap-drop=ALL --security-opt=no-new-privileges \
 		--tmpfs /var/tmp:rw,noexec,nosuid,nodev,size=32m,mode=1777 \
 		--env "EXPECTED_CI_UID=$(json '.ci_user.uid')" \
-		--env "EXPECTED_CI_GID=$(json '.ci_user.gid')" \
-		--env "EXPECTED_BUILDX_VERSION=$(json '.tools.utils.buildx.version')" \
-		--env "EXPECTED_BUILDX_X_NET_VERSION=$(json '.tools.utils.buildx.dependency_overrides["golang.org/x/net"]')"
+		--env "EXPECTED_CI_GID=$(json '.ci_user.gid')"
 fi
 
 if [[ $target == all || $target == go ]]; then
@@ -237,13 +243,9 @@ else
 	docker_targets=()
 fi
 for image in "${docker_targets[@]}"; do
-	buildx_environment=()
-	if [[ $image == utils ]]; then
-		buildx_environment=(--env "EXPECTED_BUILDX_VERSION=$(json '.tools.utils.buildx.version')")
-	fi
 	smoke_script "ci-${image}:test" docker \
 		--network none \
-		"${buildx_environment[@]}" \
 		--env "EXPECTED_DOCKER_VERSION=$(json '.tools.base.docker.version')" \
+		--env "EXPECTED_BUILDX_VERSION=$(json '.tools.base.buildx.version')" \
 		--env "EXPECTED_COMPOSE_VERSION=$(json '.tools.base.compose.version')"
 done

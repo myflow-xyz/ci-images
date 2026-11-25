@@ -30,12 +30,12 @@ The base image includes:
 - shell and build utilities: `sh`, Bash 5.3.20, Make, coreutils, findutils, diffutils, grep, sed, awk, and `procps`;
 - Source and transfer tools include Git, Git LFS, CA certificates, curl, wget, OpenBSD netcat (`nc`), OpenSSL, tar, gzip, xz, zip, and unzip.
 - CPython 3.15.2 and its standard-library modules for repository-owned CI automation;
-- Docker CLI 29.10.0 and the Compose 5.8.0 CLI plugin;
+- Docker CLI 29.10.1, Compose 5.8.0, and Buildx 0.39.1;
 - structured-data and diagnosis tools: `jq`, `yq`, ripgrep, and GitHub CLI;
-- shared policy tools: OSV-Scanner 2.7.0, Trivy 0.76.2, gitleaks, actionlint, shfmt, ShellCheck, and ShellSpec;
+- shared policy tools: OSV-Scanner 2.7.1, Trivy 0.76.2, gitleaks, actionlint, shfmt, ShellCheck, and ShellSpec;
 - `tini` for descendants that require subprocess reaping.
 
-Python is built from its checksum-pinned official 3.15.2 source release using the reviewed Debian snapshot. Its shared-library dependencies are installed from the same snapshot. The runtime is limited to the interpreter and standard library: the image does not include pip, virtual-environment support, development headers, or third-party Python packages.
+Python is built from its checksum-pinned official 3.15.2 source release. Its shared-library dependencies use pinned Debian packages. The Python XML parser uses the system Expat package, so a security update to that package also updates Python's parser. The runtime contains the interpreter and standard library.
 
 Git is built from a checksum-pinned upstream source release so the protected system configuration can scope trust to GitHub's workspace tree. GitHub CLI, jq, ripgrep, and ShellCheck use checksum-pinned upstream release artifacts for each supported architecture. Git LFS, actionlint, gitleaks, OSV-Scanner, shfmt, and yq are built from exact module releases with Go 1.27.4. Trivy 0.76.2 uses the same toolchain with the `jsonv2` build mode required by that release. Narrow dependency overrides used to remove known vulnerabilities from released tools are recorded in the version manifest and verified by image smoke tests. Go tools are installed into immutable versioned directories and exposed through stable links in `/opt/ci-tools/bin`. Compilers are build inputs and are not retained in this image. Their pure-Go binaries are compiled on the native build platform for each target architecture. Publication uses native AMD64 and ARM64 runners for all image stages, avoiding emulated Git and Go compilation. Vulnerability data is not embedded in the image; online scans by OSV-Scanner and Trivy still query or download their external data sources.
 
@@ -44,14 +44,15 @@ Bash is built from the checksum-pinned GNU 5.3 source release with its twenty re
 ## Docker client contract
 
 Docker CLI and Compose are built from their exact upstream module releases with Go 1.27.4. Go authenticates module downloads through its checksum database. This gives the clients the current Go security fixes, which were absent from the previous image's upstream executables. Their upstream version metadata is retained. The image includes only the client executables; compilers remain in the build stages.
+Buildx uses the same Go toolchain. The build verifies the pinned Buildx source commit and module checksum, then applies the dependency versions recorded in the [version manifest](../../manifests/versions.json).
 
-The client is exposed through `/opt/ci-tools/bin/docker`. Compose is exposed at `/usr/local/lib/docker/cli-plugins/docker-compose`, a root-owned system-wide plugin location following [Docker's installation guidance][compose-install]. It remains discoverable with a fresh private `DOCKER_CONFIG`. The tools are inherited by `ci-go`, `ci-node`, `ci-vite`, and `ci-playwright`; independently based `ci-postgres` excludes them.
+The client is exposed through `/opt/ci-tools/bin/docker`. Compose and Buildx are installed under `/usr/local/lib/docker/cli-plugins`, a root-owned system-wide plugin location following [Docker's installation guidance][compose-install]. Both plugins are discoverable with a fresh private `DOCKER_CONFIG` and are inherited by all images derived from `ci-base`.
 
 Version queries and offline Compose configuration need no daemon, socket, network, registry credentials, or startup installation. Daemon operations require an endpoint explicitly supplied by a trusted workflow. Installation never grants daemon access or changes host/socket permissions. Registry credentials remain job-scoped, preferably in a private client configuration.
 
-The supported target range is Linux Docker Engine 28.x and 29.x, using normal API negotiation and the API overlap with Docker CLI 29.10.0 and Compose 5.8.0. [Docker documents negotiation as best effort][docker-api]; feature-specific consumer qualification is still required. This includes the 28.0.4 daemon listed in the [GitHub Ubuntu 24.04 runner inventory][runner-tools]; the image-managed client version does not require an identical host daemon. The integration check records the actual daemon/API/platform and verifies fixture startup, HTTP receipt, and owned container/network/volume cleanup after both successful and failed verification. Qualification of the whole version range is not implied by a passing check against one daemon. Older daemons, Windows daemons, rootless/user-namespace networking and remapped socket permissions need separate qualification.
+The supported target range is Linux Docker Engine 28.x and 29.x, using normal API negotiation and the API overlap with Docker CLI 29.10.1 and Compose 5.8.0. [Docker documents negotiation as best effort][docker-api]; feature-specific consumer qualification is still required. This includes the 28.0.4 daemon listed in the [GitHub Ubuntu 24.04 runner inventory][runner-tools]; the image-managed client version does not require an identical host daemon. The integration check records the actual daemon/API/platform and verifies fixture startup, HTTP receipt, and owned container/network/volume cleanup after both successful and failed verification. Qualification of the whole version range is not implied by a passing check against one daemon. Older daemons, Windows daemons, rootless/user-namespace networking and remapped socket permissions need separate qualification.
 
-Local qualification used a Linux ARM64 client against Docker Engine 29.4.0 with API 1.54. Native AMD64/ARM64 Actions repeat the checks against their runner daemons. Other versions in the target range have not been directly qualified by this local run. The preflight regression covers admission of 28.x and 29.x daemons, including 28.0.4, and explicit rejection diagnostics; it does not replace live integration qualification of those versions.
+Native AMD64 and ARM64 Actions run the integration check against their runner daemons. The preflight checks separately cover admission of 28.x and 29.x daemons, including 28.0.4, and rejection diagnostics.
 
 [compose-install]: https://docs.docker.com/compose/install/linux/
 [docker-api]: https://docs.docker.com/reference/api/engine/
@@ -67,7 +68,7 @@ Self-hosted bind-mount permissions are defined in the [usage guide](../usage.md#
 
 The image intentionally excludes:
 
-- Docker daemon, implicit socket/API access, and runtime Buildx;
+- Docker daemon and implicit socket/API access;
 - application source and dependency trees;
 - application runtime toolchains and language package managers;
 - third-party Python packages;

@@ -34,7 +34,7 @@ env:
   BUILDKIT_IMAGE: >-
     docker.io/moby/buildkit@sha256:baf6138eb8c37644800c7c913fba051e840ebb9ba13eaf92d92ef9a1712d0b4c
   CI_IMAGES_SBOM_GENERATOR: >-
-    docker.io/docker/buildkit-syft-scanner@sha256:873a7458c3c8ac8e32c7b796c10e1600b07b963d2aa000a72a2d97aaaa2d6315
+    docker.io/docker/buildkit-syft-scanner@sha256:a190379321cf51fba8c284a1834555b55e7bf58d577d574db23370461defc430
 
 jobs:
   build:

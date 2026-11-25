@@ -8,6 +8,8 @@ expected_go=${EXPECTED_TOOLCHAIN_GO_VERSION:?EXPECTED_TOOLCHAIN_GO_VERSION is no
 expected_python=${EXPECTED_PYTHON_VERSION:?EXPECTED_PYTHON_VERSION is not set}
 expected_bash=${EXPECTED_BASH_VERSION:?EXPECTED_BASH_VERSION is not set}
 : "${EXPECTED_ACTIONLINT_VERSION:?EXPECTED_ACTIONLINT_VERSION is not set}"
+: "${EXPECTED_BUILDX_GO_ARCHIVE_VERSION:?EXPECTED_BUILDX_GO_ARCHIVE_VERSION is not set}"
+: "${EXPECTED_BUILDX_X_NET_VERSION:?EXPECTED_BUILDX_X_NET_VERSION is not set}"
 : "${EXPECTED_COMPOSE_OTEL_SDK_VERSION:?EXPECTED_COMPOSE_OTEL_SDK_VERSION is not set}"
 : "${EXPECTED_COMPOSE_X_NET_VERSION:?EXPECTED_COMPOSE_X_NET_VERSION is not set}"
 : "${EXPECTED_GH_X_CRYPTO_VERSION:?EXPECTED_GH_X_CRYPTO_VERSION is not set}"
@@ -34,6 +36,8 @@ expected_bash=${EXPECTED_BASH_VERSION:?EXPECTED_BASH_VERSION is not set}
 : "${EXPECTED_SHELLCHECK_VERSION:?EXPECTED_SHELLCHECK_VERSION is not set}"
 : "${EXPECTED_SHFMT_VERSION:?EXPECTED_SHFMT_VERSION is not set}"
 : "${EXPECTED_TRIVY_VERSION:?EXPECTED_TRIVY_VERSION is not set}"
+: "${EXPECTED_TRIVY_MOBY_USER_VERSION:?EXPECTED_TRIVY_MOBY_USER_VERSION is not set}"
+: "${EXPECTED_DOCKER_MOBY_USER_VERSION:?EXPECTED_DOCKER_MOBY_USER_VERSION is not set}"
 : "${EXPECTED_TRIVY_GRPC_VERSION:?EXPECTED_TRIVY_GRPC_VERSION is not set}"
 : "${EXPECTED_YQ_VERSION:?EXPECTED_YQ_VERSION is not set}"
 : "${EXPECTED_YQ_X_TEXT_VERSION:?EXPECTED_YQ_X_TEXT_VERSION is not set}"
@@ -123,7 +127,8 @@ dpkg --compare-versions \
 [[ $(command -v python3) == /usr/local/bin/python3 ]]
 [[ $(python3 --version) == "Python ${expected_python}" ]]
 
-python3 - "$expected_python" <<'PY'
+expat_package_version=$(dpkg-query --show --showformat='${Version}' libexpat1)
+python3 - "$expected_python" "${expat_package_version%%-*}" <<'PY'
 import bz2
 import compression.zstd
 import ctypes
@@ -131,6 +136,7 @@ import dbm.gnu
 import json
 import lzma
 import mimetypes
+import pyexpat
 import readline
 import socket
 import sqlite3
@@ -140,6 +146,7 @@ import sys
 import urllib.parse
 import urllib.request
 import uuid
+import xml.etree.ElementTree as element_tree
 import zlib
 
 assert json.loads("{\"ok\": true}")["ok"]
@@ -148,6 +155,8 @@ assert mimetypes.guess_type("artifact.ics") == ("text/calendar", None)
 assert mimetypes.guess_type("artifact.zst") == ("application/zstd", None)
 assert socket.gethostname()
 assert sys.version.split()[0] == sys.argv[1]
+assert pyexpat.EXPAT_VERSION == f"expat_{sys.argv[2]}", pyexpat.EXPAT_VERSION
+assert element_tree.fromstring("<ci>ready</ci>").text == "ready"
 assert urllib.parse.urlsplit("https://ci.example/path").hostname == "ci.example"
 
 with socket.create_server(("127.0.0.1", 0)) as server:
@@ -271,6 +280,14 @@ assert_dependency_version() {
 }
 
 assert_dependency_version \
+	/usr/local/lib/docker/cli-plugins/docker-buildx \
+	github.com/moby/go-archive \
+	"$EXPECTED_BUILDX_GO_ARCHIVE_VERSION"
+assert_dependency_version \
+	/usr/local/lib/docker/cli-plugins/docker-buildx \
+	golang.org/x/net \
+	"$EXPECTED_BUILDX_X_NET_VERSION"
+assert_dependency_version \
 	/usr/local/lib/docker/cli-plugins/docker-compose \
 	golang.org/x/net \
 	"$EXPECTED_COMPOSE_X_NET_VERSION"
@@ -306,6 +323,14 @@ assert_dependency_version \
 	"$(command -v trivy)" \
 	go.opentelemetry.io/otel/sdk \
 	"$EXPECTED_TRIVY_OTEL_SDK_VERSION"
+assert_dependency_version \
+	"$(command -v trivy)" \
+	github.com/moby/sys/user \
+	"$EXPECTED_TRIVY_MOBY_USER_VERSION"
+assert_dependency_version \
+	"$(command -v docker)" \
+	github.com/moby/sys/user \
+	"$EXPECTED_DOCKER_MOBY_USER_VERSION"
 assert_dependency_version \
 	"$(command -v gitleaks)" \
 	github.com/klauspost/compress \

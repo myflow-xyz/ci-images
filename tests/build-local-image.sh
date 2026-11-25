@@ -73,6 +73,14 @@ build_base() {
 		--build-arg \
 		"DEBIAN_UPDATES_SNAPSHOT=$(json '.debian_updates_snapshot')" \
 		--build-arg \
+		"EXPAT_ASSET_URL_AMD64=$(json '.tools.base.libexpat.assets.amd64.url')" \
+		--build-arg \
+		"EXPAT_ASSET_URL_ARM64=$(json '.tools.base.libexpat.assets.arm64.url')" \
+		--build-arg \
+		"EXPAT_SHA256_AMD64=$(json '.tools.base.libexpat.assets.amd64.sha256')" \
+		--build-arg \
+		"EXPAT_SHA256_ARM64=$(json '.tools.base.libexpat.assets.arm64.sha256')" \
+		--build-arg \
 		"ACTIONLINT_VERSION=$(json '.tools.base.actionlint.version')" \
 		--build-arg \
 		"ACTIONLINT_X_SYS_VERSION=$(json '.tools.base.actionlint.dependency_overrides["golang.org/x/sys"]')" \
@@ -89,6 +97,11 @@ build_base() {
 		"DOCKER_X_NET_VERSION=$(json '.tools.base.docker.dependency_overrides["golang.org/x/net"]')" \
 		--build-arg \
 		"DOCKER_GO_JOSE_VERSION=$(json '.tools.base.docker.dependency_overrides["github.com/go-jose/go-jose/v4"]')" \
+		--build-arg "BUILDX_VERSION=$(json '.tools.base.buildx.version')" \
+		--build-arg "BUILDX_MODULE_SUM=$(json '.tools.base.buildx.module_sum')" \
+		--build-arg "BUILDX_COMMIT=$(json '.tools.base.buildx.commit')" \
+		--build-arg "BUILDX_GO_ARCHIVE_VERSION=$(json '.tools.base.buildx.dependency_overrides["github.com/moby/go-archive"]')" \
+		--build-arg "BUILDX_X_NET_VERSION=$(json '.tools.base.buildx.dependency_overrides["golang.org/x/net"]')" \
 		--build-arg "COMPOSE_VERSION=$(json '.tools.base.compose.version')" \
 		--build-arg \
 		"COMPOSE_COMPRESS_VERSION=$(json '.tools.base.compose.dependency_overrides["github.com/klauspost/compress"]')" \
@@ -183,6 +196,8 @@ build_base() {
 		--build-arg "SHFMT_VERSION=$(json '.tools.base.shfmt.version')" \
 		--build-arg "TRIVY_VERSION=$(json '.tools.base.trivy.version')" \
 		--build-arg \
+		"TRIVY_MOBY_USER_VERSION=$(json '.tools.base.trivy.dependency_overrides["github.com/moby/sys/user"]')" \
+		--build-arg \
 		"TRIVY_COMPRESS_VERSION=$(json '.tools.base.trivy.dependency_overrides["github.com/klauspost/compress"]')" \
 		--build-arg \
 		"TRIVY_X_NET_VERSION=$(json '.tools.base.trivy.dependency_overrides["golang.org/x/net"]')" \
@@ -219,11 +234,6 @@ build_utils() {
 		--build-arg BASE_IMAGE=ci-base:test \
 		--build-arg GO_IMAGE=ci-go:test \
 		--build-arg "GO_VERSION=$(json '.tools.go.runtime')" \
-		--build-arg "BUILDX_VERSION=$(json '.tools.utils.buildx.version')" \
-		--build-arg "BUILDX_MODULE_SUM=$(json '.tools.utils.buildx.module_sum')" \
-		--build-arg "BUILDX_COMMIT=$(json '.tools.utils.buildx.commit')" \
-		--build-arg "BUILDX_GO_ARCHIVE_VERSION=$(json '.tools.utils.buildx.dependency_overrides["github.com/moby/go-archive"]')" \
-		--build-arg "BUILDX_X_NET_VERSION=$(json '.tools.utils.buildx.dependency_overrides["golang.org/x/net"]')" \
 		"$repository_root"
 }
 
