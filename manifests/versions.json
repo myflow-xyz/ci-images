@@ -260,6 +260,16 @@
           "github.com/klauspost/compress": "v1.20.5",
           "go.opentelemetry.io/otel/sdk": "v1.47.0"
         }
+      },
+      "buildx": {
+        "version": "0.39.1",
+        "source": "https://github.com/docker/buildx",
+        "commit": "334b63fe2bb0f0e89a8fd067704a0d113f57ec25",
+        "module_sum": "h1:s4hM0MAtwEuEIVSHKkPpdo0gxP5FYzJc5/s65jVB2vc=",
+        "dependency_overrides": {
+          "github.com/moby/go-archive": "v0.3.3",
+          "golang.org/x/net": "v0.63.0"
+        }
       }
     },
     "go": {
@@ -477,18 +487,6 @@
             "lockfile": "images/postgres/debian-packages.arm64.lock",
             "lockfile_sha256": "d3c9f25b549a5c79cb6d3cccd67bb9f8608bdbb5da34120deb23dff72abde7e0"
           }
-        }
-      }
-    },
-    "utils": {
-      "buildx": {
-        "version": "0.39.1",
-        "source": "https://github.com/docker/buildx",
-        "commit": "334b63fe2bb0f0e89a8fd067704a0d113f57ec25",
-        "module_sum": "h1:s4hM0MAtwEuEIVSHKkPpdo0gxP5FYzJc5/s65jVB2vc=",
-        "dependency_overrides": {
-          "github.com/moby/go-archive": "v0.3.3",
-          "golang.org/x/net": "v0.63.0"
         }
       }
     },

@@ -30,9 +30,9 @@ The base image includes:
 - shell and build utilities: `sh`, Bash 5.3.20, Make, coreutils, findutils, diffutils, grep, sed, awk, and `procps`;
 - Source and transfer tools include Git, Git LFS, CA certificates, curl, wget, OpenBSD netcat (`nc`), OpenSSL, tar, gzip, xz, zip, and unzip.
 - CPython 3.15.2 and its standard-library modules for repository-owned CI automation;
-- Docker CLI 29.10.0 and the Compose 5.8.0 CLI plugin;
+- Docker CLI 29.10.0, Compose 5.8.0, and Buildx 0.39.1;
 - structured-data and diagnosis tools: `jq`, `yq`, ripgrep, and GitHub CLI;
-- shared policy tools: OSV-Scanner 2.7.0, Trivy 0.76.2, gitleaks, actionlint, shfmt, ShellCheck, and ShellSpec;
+- shared policy tools: OSV-Scanner 2.7.1, Trivy 0.76.2, gitleaks, actionlint, shfmt, ShellCheck, and ShellSpec;
 - `tini` for descendants that require subprocess reaping.
 
 Python is built from its checksum-pinned official 3.15.2 source release using the reviewed Debian snapshot. Its shared-library dependencies are installed from the same snapshot. The runtime is limited to the interpreter and standard library: the image does not include pip, virtual-environment support, development headers, or third-party Python packages.
@@ -44,8 +44,9 @@ Bash is built from the checksum-pinned GNU 5.3 source release with its twenty re
 ## Docker client contract
 
 Docker CLI and Compose are built from their exact upstream module releases with Go 1.27.4. Go authenticates module downloads through its checksum database. This gives the clients the current Go security fixes, which were absent from the previous image's upstream executables. Their upstream version metadata is retained. The image includes only the client executables; compilers remain in the build stages.
+Buildx uses the same Go toolchain. The build verifies the pinned Buildx source commit and module checksum, then applies the dependency versions recorded in the [version manifest](../../manifests/versions.json).
 
-The client is exposed through `/opt/ci-tools/bin/docker`. Compose is exposed at `/usr/local/lib/docker/cli-plugins/docker-compose`, a root-owned system-wide plugin location following [Docker's installation guidance][compose-install]. It remains discoverable with a fresh private `DOCKER_CONFIG`. The tools are inherited by `ci-go`, `ci-node`, `ci-vite`, and `ci-playwright`; independently based `ci-postgres` excludes them.
+The client is exposed through `/opt/ci-tools/bin/docker`. Compose and Buildx are installed under `/usr/local/lib/docker/cli-plugins`, a root-owned system-wide plugin location following [Docker's installation guidance][compose-install]. Both plugins are discoverable with a fresh private `DOCKER_CONFIG` and are inherited by all images derived from `ci-base`.
 
 Version queries and offline Compose configuration need no daemon, socket, network, registry credentials, or startup installation. Daemon operations require an endpoint explicitly supplied by a trusted workflow. Installation never grants daemon access or changes host/socket permissions. Registry credentials remain job-scoped, preferably in a private client configuration.
 
@@ -67,7 +68,7 @@ Self-hosted bind-mount permissions are defined in the [usage guide](../usage.md#
 
 The image intentionally excludes:
 
-- Docker daemon, implicit socket/API access, and runtime Buildx;
+- Docker daemon and implicit socket/API access;
 - application source and dependency trees;
 - application runtime toolchains and language package managers;
 - third-party Python packages;

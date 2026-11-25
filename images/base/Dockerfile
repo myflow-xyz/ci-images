@@ -285,6 +285,7 @@ RUN test -n "${DEBIAN_SNAPSHOT}" \
     && apt-get install --yes --no-install-recommends \
       ca-certificates \
       curl \
+      jq \
     && rm -rf /var/lib/apt/lists/* \
     && chmod 0755 /usr/local/libexec/ci/fetch-verified
 
@@ -589,6 +590,39 @@ RUN set -eu; \
       /var/tmp/ripgrep.tar.gz \
       /var/tmp/shellcheck.tar.gz
 
+ARG BUILDX_VERSION
+ARG BUILDX_MODULE_SUM
+ARG BUILDX_COMMIT
+ARG BUILDX_GO_ARCHIVE_VERSION
+ARG BUILDX_X_NET_VERSION
+
+RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
+    --mount=type=cache,target=/var/cache/go/build,sharing=locked \
+    set -eu; \
+    export \
+      GOCACHE=/var/cache/go/build \
+      GOMODCACHE=/var/cache/go/mod \
+      GOPATH=/var/lib/go \
+      GOTOOLCHAIN=local; \
+    build_directory=/var/tmp/build/buildx; \
+    output_directory="/out/buildx/${BUILDX_VERSION}"; \
+    install -d "${build_directory}" "${output_directory}"; \
+    /usr/local/go/bin/go mod download -json \
+      "github.com/docker/buildx@v${BUILDX_VERSION}" > /var/tmp/buildx-source.json; \
+    jq --exit-status --arg sum "${BUILDX_MODULE_SUM}" --arg commit "${BUILDX_COMMIT}" \
+      '.Sum == $sum and .Origin.Hash == $commit' /var/tmp/buildx-source.json >/dev/null; \
+    cp -R "${GOMODCACHE}/github.com/docker/buildx@v${BUILDX_VERSION}/." "${build_directory}/"; \
+    chmod -R u+w "${build_directory}"; \
+    cd "${build_directory}"; \
+    /usr/local/go/bin/go get \
+      "github.com/moby/go-archive@${BUILDX_GO_ARCHIVE_VERSION}" \
+      "golang.org/x/net@${BUILDX_X_NET_VERSION}"; \
+    CGO_ENABLED=0 GOOS=linux GOARCH="${TARGETARCH}" \
+      /usr/local/go/bin/go build -buildvcs=false -trimpath -mod=mod \
+      -ldflags "-s -w -X github.com/docker/buildx/version.Version=v${BUILDX_VERSION} -X github.com/docker/buildx/version.Revision=${BUILDX_COMMIT}" \
+      -o "${output_directory}/docker-buildx" ./cmd/buildx; \
+    /usr/local/go/bin/go version -m "${output_directory}/docker-buildx" > "${output_directory}/buildx.buildinfo"
+
 FROM ${BASE_IMAGE}
 
 USER root
@@ -598,6 +632,7 @@ ARG BASH_PATCHLEVEL
 ARG BASH_RELEASE
 ARG BUILD_CREATED=unknown
 ARG BUILD_REVISION=unknown
+ARG BUILDX_VERSION
 ARG CI_GID=2001
 ARG CI_UID=1001
 ARG COMPOSE_VERSION
@@ -705,6 +740,8 @@ RUN set -eu; \
       /opt/ci-tools/bin/actionlint; \
     ln -s "../docker/${DOCKER_VERSION}/docker" /opt/ci-tools/bin/docker; \
     install -d /usr/local/lib/docker/cli-plugins; \
+    ln -s "/opt/ci-tools/buildx/${BUILDX_VERSION}/docker-buildx" \
+      /usr/local/lib/docker/cli-plugins/docker-buildx; \
     ln -s "/opt/ci-tools/docker-compose/${COMPOSE_VERSION}/docker-compose" \
       /usr/local/lib/docker/cli-plugins/docker-compose; \
     ln -s \

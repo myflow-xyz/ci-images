@@ -10,12 +10,15 @@ command -v docker >/dev/null 2>&1 || {
 }
 [[ $(command -v docker) == /opt/ci-tools/bin/docker ]]
 [[ $(docker --version) == "Docker version ${EXPECTED_DOCKER_VERSION},"* ]]
-[[ $(docker compose version --short) == "${EXPECTED_COMPOSE_VERSION}" ]]
 [[ ! -S /var/run/docker.sock ]]
 [[ -z ${DOCKER_HOST:-} && -z ${DOCKER_API_VERSION:-} ]]
-plugin=/usr/local/lib/docker/cli-plugins/docker-compose
-[[ -x $plugin && ! -w $plugin ]]
-[[ $(stat --format=%u "$plugin") == 0 ]]
+plugin_directory=/usr/local/lib/docker/cli-plugins
+for name in docker-compose docker-buildx; do
+	plugin="${plugin_directory}/${name}"
+	[[ -x $plugin && ! -w $plugin ]]
+	[[ $(stat --format=%u "$plugin") == 0 ]]
+done
+[[ $(readlink -f "${plugin_directory}/docker-buildx") == "/opt/ci-tools/buildx/${EXPECTED_BUILDX_VERSION}/docker-buildx" ]]
 
 for command in dockerd containerd ctr runc docker-compose; do
 	if command -v "$command" >/dev/null 2>&1; then
@@ -23,13 +26,6 @@ for command in dockerd containerd ctr runc docker-compose; do
 		exit 1
 	fi
 done
-if [[ -n ${EXPECTED_BUILDX_VERSION:-} ]]; then
-	[[ -x /usr/local/lib/docker/cli-plugins/docker-buildx ]]
-	[[ ! -w /usr/local/lib/docker/cli-plugins/docker-buildx ]]
-	docker buildx version | grep --fixed-strings "v${EXPECTED_BUILDX_VERSION}" >/dev/null
-else
-	[[ ! -e /usr/local/lib/docker/cli-plugins/docker-buildx ]]
-fi
 
 test_directory=$(mktemp -d)
 trap 'rm -rf "$test_directory"' EXIT
@@ -45,6 +41,8 @@ volumes:
 YAML
 
 verify_offline_config() {
+	[[ $(docker compose version --short) == "${EXPECTED_COMPOSE_VERSION}" ]]
+	docker buildx version | grep --fixed-strings "v${EXPECTED_BUILDX_VERSION}" >/dev/null
 	docker compose --project-name ci-offline --file "${test_directory}/compose.yaml" \
 		config --format json |
 		jq --exit-status '
@@ -58,7 +56,6 @@ verify_offline_config
 
 export DOCKER_CONFIG="${test_directory}/private-config"
 install -d -m 0700 "$DOCKER_CONFIG"
-[[ $(docker compose version --short) == "${EXPECTED_COMPOSE_VERSION}" ]]
 verify_offline_config
 [[ ! -e ${DOCKER_CONFIG}/cli-plugins ]]
 
@@ -70,5 +67,5 @@ grep --ignore-case --extended-regexp \
 	'cannot connect|connection refused|no such file or directory' \
 	"${test_directory}/no-daemon.log" >/dev/null
 [[ ! -S /var/run/docker.sock ]]
-printf 'non-root Docker %s / Compose %s offline discovery and no-access checks passed\n' \
-	"$EXPECTED_DOCKER_VERSION" "$EXPECTED_COMPOSE_VERSION"
+printf 'non-root Docker %s / Compose %s / Buildx %s offline discovery and no-access checks passed\n' \
+	"$EXPECTED_DOCKER_VERSION" "$EXPECTED_COMPOSE_VERSION" "$EXPECTED_BUILDX_VERSION"

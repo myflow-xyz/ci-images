@@ -8,6 +8,8 @@ expected_go=${EXPECTED_TOOLCHAIN_GO_VERSION:?EXPECTED_TOOLCHAIN_GO_VERSION is no
 expected_python=${EXPECTED_PYTHON_VERSION:?EXPECTED_PYTHON_VERSION is not set}
 expected_bash=${EXPECTED_BASH_VERSION:?EXPECTED_BASH_VERSION is not set}
 : "${EXPECTED_ACTIONLINT_VERSION:?EXPECTED_ACTIONLINT_VERSION is not set}"
+: "${EXPECTED_BUILDX_GO_ARCHIVE_VERSION:?EXPECTED_BUILDX_GO_ARCHIVE_VERSION is not set}"
+: "${EXPECTED_BUILDX_X_NET_VERSION:?EXPECTED_BUILDX_X_NET_VERSION is not set}"
 : "${EXPECTED_COMPOSE_OTEL_SDK_VERSION:?EXPECTED_COMPOSE_OTEL_SDK_VERSION is not set}"
 : "${EXPECTED_COMPOSE_X_NET_VERSION:?EXPECTED_COMPOSE_X_NET_VERSION is not set}"
 : "${EXPECTED_GH_X_CRYPTO_VERSION:?EXPECTED_GH_X_CRYPTO_VERSION is not set}"
@@ -270,6 +272,14 @@ assert_dependency_version() {
 		$'dep\t'"${module}"$'\t'"${version}"$'\t' "$binary" >/dev/null
 }
 
+assert_dependency_version \
+	/usr/local/lib/docker/cli-plugins/docker-buildx \
+	github.com/moby/go-archive \
+	"$EXPECTED_BUILDX_GO_ARCHIVE_VERSION"
+assert_dependency_version \
+	/usr/local/lib/docker/cli-plugins/docker-buildx \
+	golang.org/x/net \
+	"$EXPECTED_BUILDX_X_NET_VERSION"
 assert_dependency_version \
 	/usr/local/lib/docker/cli-plugins/docker-compose \
 	golang.org/x/net \

@@ -4,13 +4,7 @@ This page provides one view of the explicitly pinned runtimes and first-order to
 
 ## `ci-utils`
 
-The runtime inherits `ci-base`. Buildx and the capability helper reuse the existing `ci-go` toolchain; Go is not installed in the utility runtime.
-
-| Component | Version |
-| --- | --- |
-| `Docker Buildx` | `0.39.1` |
-
-Cleanup and its internal capability helper are repository-owned commands tied to the suite source revision, with no independent release stream.
+The runtime inherits the tools from `ci-base`. Its [maintenance commands and internal capability probe](images/utils.md#included-tools) are versioned with the suite source revision.
 
 ## `ci-base`
 
@@ -23,6 +17,7 @@ Cleanup and its internal capability helper are repository-owned commands tied to
 | `CPython` | `3.15.2` |
 | `Docker CLI` | `29.10.0` |
 | `Docker Compose` | `5.8.0` |
+| `Docker Buildx` | `0.39.1` |
 | `actionlint` | `1.7.12` |
 | `gitleaks` | `8.30.1` |
 | `jq` | `1.8.2` |

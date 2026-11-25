@@ -20,9 +20,9 @@ pgvector/pgvector:0.8.7-pg18-trixie@<digest>
 
 `ci-base` builds CPython 3.15.2 from its checksum-pinned official source release with the reviewed Debian snapshot. `ci-node` installs Node 26.13.1 from checksum-pinned official Linux binary archives.
 
-- `ghcr.io/myflow-xyz/ci-base`: operating-system utilities, Python 3.15.2 standard-library scripting, OSV-Scanner, Trivy, and runtime-independent repository policy tools.
+- `ghcr.io/myflow-xyz/ci-base`: operating-system utilities, Python 3.15.2 standard-library scripting, Docker CLI with Compose and Buildx, and shared policy tools including OSV-Scanner and Trivy.
 - `ghcr.io/myflow-xyz/ci-go`: Go toolchain, native race-test prerequisites, and reusable Go CI executables.
-- `ghcr.io/myflow-xyz/ci-utils`: inherited base tools, pinned Buildx, runner image refresh, guarded Docker cleanup, and explicit Go and pnpm cache resets. Its build reuses `ci-go`; its runtime inherits `ci-base`.
+- `ghcr.io/myflow-xyz/ci-utils`: runner image refresh, guarded Docker cleanup, and explicit Go and pnpm cache resets. Its runtime inherits `ci-base`.
 - `ghcr.io/myflow-xyz/ci-net`: network diagnostics and isolated network tests, with explicit namespace and capability constraints in its [image contract](docs/images/net.md).
 - `ghcr.io/myflow-xyz/ci-node`: generic Node.js, Markdown, and OpenAPI jobs that do not require a frontend toolchain.
 - `ghcr.io/myflow-xyz/ci-vite`: TypeScript, Vite, Vitest, Oxlint, and Oxfmt quality and build jobs.

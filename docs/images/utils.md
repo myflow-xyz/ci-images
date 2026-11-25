@@ -1,8 +1,20 @@
 # CI utilities
 
-`ghcr.io/myflow-xyz/ci-utils` provides reusable CI maintenance commands. It derives from `ci-base` and adds Docker Buildx, `ci-utils-list`, `ci-docker-cleanup`, `ci-upgrade-images`, `ci-remove-images`, `ci-go-cleanup`, and `ci-pnpm-cleanup`. It follows the suite's version and digest promotion rules.
+`ghcr.io/myflow-xyz/ci-utils` packages reusable scripts and tools for runner maintenance. It inherits the shared tools from [`ci-base`](base.md#included-tools), including Docker CLI, Compose, and Buildx.
 
-The build reuses `ci-go` to compile Buildx and the internal capability checker. The final image copies those binaries into `ci-base`; it does not add the Go toolchain or the `ci-go` runtime environment. Buildx source and its required security fixes are pinned in `manifests/versions.json`. The upstream binary failed the image scan on fixed Go, `go-archive`, and `golang.org/x/net` vulnerabilities. The internal BuildKit probe checks the selected backend's advertised cache-space capability before cleanup. The cleanup policy and execution use Python's standard library.
+## Included tools
+
+| Command | Purpose |
+| --- | --- |
+| `ci-utils`, `ci-utils-list` | List the available maintenance commands. |
+| `ci-docker-cleanup` | Check, plan, and apply guarded cleanup of Docker resources and build cache. |
+| `ci-upgrade-images` | Refresh cached CI images to a verified published release. |
+| `ci-remove-images` | Plan and apply guarded removal of older local CI image tags. |
+| `ci-go-cleanup` | Reset selected Go build and module caches. |
+| `ci-pnpm-cleanup` | Reset the pnpm store. |
+| `ci-buildkit-probe` | Check the selected BuildKit backend's cache-cleanup capabilities for `ci-docker-cleanup`. |
+
+These tools follow the suite's version and digest promotion rules. The build reuses `ci-go` to compile the internal BuildKit probe. The cleanup policy and execution use Python's standard library.
 
 ## Commands
 
