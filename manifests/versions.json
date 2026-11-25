@@ -404,9 +404,9 @@
           }
         }
       },
-      "bundle_version": "23",
+      "bundle_version": "24",
       "lockfile": "images/node/npm/package-lock.json",
-      "lockfile_sha256": "3e54bf54abeaa9625fd80bfda6b1b7e2813607552aca289a98778275846d2f3f",
+      "lockfile_sha256": "8288c962616c860cca2bd21a66bccc331fde16ff43b0460ead55e265d67af594",
       "pnpm": {
         "version": "12.23.0",
         "store_version": "11",
@@ -422,7 +422,7 @@
           }
         }
       },
-      "redocly": "2.82.0",
+      "redocly": "2.83.0",
       "source": "https://nodejs.org/dist/",
       "assets": {
         "amd64": {
@@ -436,9 +436,9 @@
       }
     },
     "vite": {
-      "bundle_version": "29",
+      "bundle_version": "30",
       "lockfile": "images/vite/npm/package-lock.json",
-      "lockfile_sha256": "34cddec88842486a00f71a9d1cf87f8dcbc08578551d7b8cd98492da9b3ea4cc",
+      "lockfile_sha256": "17c177578a4b0b194cb0aab17329f4c8bbe1879924b56920c796993e01c22c4e",
       "typescript": "7.0.2",
       "typescript_source": {
         "repository": "https://github.com/microsoft/typescript-go",

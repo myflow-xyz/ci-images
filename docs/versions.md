@@ -132,7 +132,7 @@ The runtime inherits `ci-base` and adds these snapshot-pinned packages on both a
 | `npm` | `12.2.3` |
 | `pnpm` | `12.23.0` |
 | `markdownlint-cli2` | `0.24.2` |
-| `@redocly/cli` | `2.82.0` |
+| `@redocly/cli` | `2.83.0` |
 
 ## `ci-vite`
 
