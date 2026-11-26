@@ -52,6 +52,34 @@ jobs:
           CI_UTILS_NATIVE_CONTROLLER: ghcr.io/myflow-xyz/ci-base:0.0.30@sha256:2728dbdfbf4b1103aee5467a81201808aec41e8430cfed95893608ba03d97305
         run: tests/ci-utils-native.sh
 
+  macos-client:
+    name: ci/ci-utils/native (platform=darwin/arm64)
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Qualify the macOS runner client
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          DOCKER_CONFIG: ${{ runner.temp }}/ci-utils-docker
+        run: |
+          test "$(uname -sm)" = 'Darwin arm64'
+          brew install bash docker docker-buildx
+          PATH="$(brew --prefix bash)/bin:$(brew --prefix docker)/bin:$PATH"
+          mkdir -p "$DOCKER_CONFIG/cli-plugins"
+          ln -s "$(brew --prefix docker-buildx)/bin/docker-buildx" "$DOCKER_CONFIG/cli-plugins/docker-buildx"
+          bash --version
+          python3 --version
+          docker buildx version
+          for version in 0.0.31 0.0.32; do
+            python3 .github/scripts/package-ci-utils.py "$version" "$GITHUB_SHA" \
+              "$RUNNER_TEMP" "$RUNNER_TEMP/assets" --platform darwin/arm64
+          done
+          python3 -B scripts/tests/ci-utils/user_install_integration.py "$RUNNER_TEMP/assets" 0.0.31 0.0.32
+
   contract:
     name: ci/runner-helpers/contract
     runs-on: ubuntu-24.04
