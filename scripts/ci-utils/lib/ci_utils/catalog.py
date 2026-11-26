@@ -45,6 +45,12 @@ def main(prog="ci-utils", argv=None, *, native=False):
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=catalog,
     )
+    if native and prog == "ci-utils":
+        from .cleanup import build_metadata
+
+        build = build_metadata()
+        parser.add_argument("--version", action="version",
+                            version=f"%(prog)s {build['version']} (revision {build['revision']})")
     parser.add_argument("operation", nargs="?", choices=("help",), default="help")
     parser.parse_args(argv)
     if prog == "ci-utils-list":

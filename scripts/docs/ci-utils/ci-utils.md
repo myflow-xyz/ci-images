@@ -1,6 +1,6 @@
 # ci-utils
 
-Show command help and the maintenance catalog. Run `ci-utils` or `ci-utils help`. Use `-h` or `--help` for the same usage page.
+Show command help and the maintenance catalog. Run `ci-utils` or `ci-utils help`. Use `-h` or `--help` for the same usage page. Use `ci-utils --version` to print the installed release and its source revision.
 
 ```bash
 ci-utils
