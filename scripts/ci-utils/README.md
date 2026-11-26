@@ -1,21 +1,14 @@
 # Native CI utilities
 
-Linux amd64 and arm64 runners receive eight Bash commands, their Python implementation and the compiled BuildKit probe. Apple Silicon macOS runners receive three native client commands for discovery and image refresh against a Linux Docker daemon. Select a published version with an archive for your runner. The example uses `0.0.31`.
+Install the native commands on the runner and invoke them directly from your shell. Linux amd64 and arm64 receive the full suite and its BuildKit probe. Apple Silicon macOS receives the catalog and image refresh commands. [Install or upgrade ci-utils](../docs/ci-utils/install.md)
 
-Run this command as the runner account for a per-user install, or as a Linux administrator to provision the system commands for guarded maintenance. It downloads the bootstrap from the matching Git tag and runs it after the download succeeds.
-
-```bash
-(set -eu; v=0.0.31; f=$(mktemp); trap 'rm -f "$f"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' "https://raw.githubusercontent.com/myflow-xyz/ci-images/v$v/scripts/ci-utils/install.sh" -o "$f"; sh "$f" "$v")
-```
-
-For a per-user install, the commands are in `~/.local/bin` and the release is under `${XDG_DATA_HOME:-$HOME/.local/share}/ci-utils`. On macOS, apply the printed PATH hint if needed before running these checks.
+Put the command directory on `PATH` (`~/.local/bin` for a per-user install) and list the commands in your release.
 
 ```bash
-ci-utils --version
 ci-utils-list
 ```
 
-Compare the reported version and source revision with the pinned release. [Installation and migration](../docs/ci-utils/install.md)
+Installation checks for Docker CLI and Buildx and can run with the daemon stopped. After installation, the catalog, version report and Linux Go and pnpm cache commands run offline. Image refresh, retirement and Docker resource cleanup need access to the selected Linux daemon.
 
 | Command | Runner | Operator reference |
 | --- | --- | --- |

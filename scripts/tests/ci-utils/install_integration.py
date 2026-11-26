@@ -174,6 +174,10 @@ def qualify(root, assets, version, upgrade):
     identity = active(upgrade)
     for path in (config, gate):
         assert path.read_text() == "operator fixture\n"
+    (shim / "docker").unlink()
+    offline = {**isolated, "PATH": f"{prefix}/bin:{shim}"}
+    run("ci-utils", "--version", env=offline, contains=upgrade)
+    run("ci-utils-list", env=offline, contains="ci-go-cleanup")
     for command, parts, option in (
         ("ci-go-cleanup", "go/build", "--build-cache"),
         ("ci-pnpm-cleanup", "pnpm/store", "--store-dir"),
@@ -181,9 +185,9 @@ def qualify(root, assets, version, upgrade):
         cache = root / parts
         cache.mkdir(parents=True)
         (cache / "entry").touch()
-        run(command, option, cache, env=cli, contains='"mode": "plan"')
+        run(command, option, cache, env=offline, contains='"mode": "plan"')
         assert (cache / "entry").exists()
-        run(command, option, cache, "--apply", env=cli)
+        run(command, option, cache, "--apply", env=offline)
         assert cache.is_dir() and not list(cache.iterdir())
     probe = private / "current/lib/ci-buildkit-probe"
     run(probe, status=2, contains="explicit local Unix endpoint")

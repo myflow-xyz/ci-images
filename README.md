@@ -55,47 +55,19 @@ Browse [the documentation index](docs/index.md) for detailed image contracts. Us
 
 ## Upgrade runner images
 
-On Linux and Apple Silicon macOS runners, run the installed `ci-upgrade-images` against the selected Linux Docker daemon. The command reports the verified release digest and retains old versions by default. [Native installation and command guide](scripts/ci-utils/README.md)
-
-### Legacy utility image
-
-On the Linux runner, set `CI_UTILS_IMAGE` to a locally cached utility image that includes the version-aware upgrade helper. Use its numeric tag or digest if available. Omit registry credentials for publicly readable images. For private packages, set `GHCR_USER` and a classic `GHCR_TOKEN` with `read:packages` access.
+Install ci-utils once on a Linux amd64, Linux arm64 or Apple Silicon macOS runner. Choose a release with native ci-utils archives. The pinned example uses `0.0.31`. [Installation and prerequisites](scripts/docs/ci-utils/install.md)
 
 ```bash
-CI_UTILS_IMAGE=ghcr.io/myflow-xyz/ci-utils:latest
-docker run --rm --pull=never --network=none "$CI_UTILS_IMAGE" ci-utils-list
-
-printf '%s\n' "${GHCR_TOKEN:-}" |
-  docker run \
-    --rm \
-    --interactive \
-    --pull=never \
-    --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock,readonly \
-    --group-add "$(stat -c %g /var/run/docker.sock)" \
-    --tmpfs /var/tmp:mode=1777 \
-    --env DOCKER_CONFIG=/var/tmp/ghcr \
-    --env "GHCR_USER=${GHCR_USER:-}" \
-    "$CI_UTILS_IMAGE" sh -ec '
-      if [ -n "$GHCR_USER" ]; then
-        docker --host unix:///var/run/docker.sock login ghcr.io \
-          --username "$GHCR_USER" \
-          --password-stdin
-      fi
-      exec ci-upgrade-images
-    '
+(set -eu; v=0.0.31; f=$(mktemp); trap 'rm -f "$f"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' "https://raw.githubusercontent.com/myflow-xyz/ci-images/v$v/scripts/ci-utils/install.sh" -o "$f"; sh "$f" "$v")
 ```
 
-The refresh container needs HTTPS access to `api.github.com` and `ghcr.io` to verify release tags. With only the utility image cached, the command refreshes `ci-utils` itself. Pull each other suite image once to include it in future runs.
-
-The report names the exact version and the default keeps old tags. Copy the reported reference to confirm that it and the local `:latest` resolve to the same image ID.
+For a per-user install, add `~/.local/bin` to your `PATH` if needed. Then run the installed command directly.
 
 ```bash
-docker image inspect --format '{{.Id}}' \
-  ghcr.io/myflow-xyz/ci-utils:0.0.26 \
-  ghcr.io/myflow-xyz/ci-utils:latest
+ci-upgrade-images
 ```
 
-Use the reported version in place of `0.0.26`. See [image upgrade details](docs/images/utils.md#refresh-cached-ci-images) and [scheduled maintenance](docs/maintenance.md#refresh-cached-ci-images).
+This refreshes cached MyFlow images on the local Linux Docker daemon and keeps older tags. Use `--endpoint` if the daemon has a different Unix socket. [Refresh options](scripts/docs/ci-utils/ci-upgrade-images.md) · [Command catalog](scripts/ci-utils/README.md)
 
 ## Local image verification
 

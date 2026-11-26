@@ -3,7 +3,7 @@
 Refresh MyFlow suite images already cached on the selected daemon. The command reads the GitHub release digest table and pulls the approved index by digest for the Linux platform reported by that daemon. It checks the local image OS and architecture before updating the numeric and `:latest` tags. A runner's cross-build setting for `DOCKER_DEFAULT_PLATFORM` does not change this selection. Refresh runs immediately and retains older versions by default.
 
 ```bash
-ci-upgrade-images --endpoint unix:///var/run/docker.sock
+ci-upgrade-images
 ```
 
 The default endpoint is `unix:///var/run/docker.sock`. Use `--expected-daemon-id ID` to require a specific daemon, `--config PATH` for an optional cleanup policy and its image protections, and `-h` for help. The account needs access to a rootful Linux Docker 28.x or 29.x daemon supporting API 1.48, Docker CLI with Buildx, and HTTPS to `api.github.com` and `ghcr.io`. Supply Docker registry credentials for restricted repositories. Only cached suite repositories are refreshed.

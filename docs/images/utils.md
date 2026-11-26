@@ -1,8 +1,8 @@
-# CI utilities
+# CI utilities image
 
 `ghcr.io/myflow-xyz/ci-utils` packages reusable scripts and tools for runner maintenance. It inherits the shared tools from [`ci-base`](base.md#included-tools), including Docker CLI, Compose, and Buildx.
 
-For the native Linux suite or macOS arm64 refresh client, use the [runner guide](../../scripts/ci-utils/README.md). The container instructions below cover legacy image delivery.
+This page covers existing deployments that run the utility image. For runner installation and direct CLI examples, use the native guide. [Native ci-utils commands](../../scripts/ci-utils/README.md)
 
 ## Included tools
 
@@ -20,19 +20,13 @@ These tools follow the suite's version and digest promotion rules. The build reu
 
 ## Commands
 
+List the commands included in a published utility image.
+
 ```sh
-docker run --rm ghcr.io/myflow-xyz/ci-utils:<suite-version>
 docker run --rm ghcr.io/myflow-xyz/ci-utils:<suite-version> ci-utils-list
-docker run --rm ghcr.io/myflow-xyz/ci-utils:<suite-version> ci-docker-cleanup --help
-docker run --rm ghcr.io/myflow-xyz/ci-utils:<suite-version> ci-docker-cleanup version
-docker run --rm ghcr.io/myflow-xyz/ci-utils:<suite-version> ci-upgrade-images --help
-docker run --rm ghcr.io/myflow-xyz/ci-utils:<suite-version> ci-remove-images --help
-docker run --rm ghcr.io/myflow-xyz/ci-utils:<suite-version> ci-go-cleanup --help
-docker run --rm ghcr.io/myflow-xyz/ci-utils:<suite-version> ci-pnpm-cleanup --help
-docker run --rm ghcr.io/myflow-xyz/ci-utils:<suite-version> bash --version
 ```
 
-The image default and `ci-utils-list` show the same supported maintenance commands, descriptions, and Docker tools without accessing a Docker daemon or caches. Commands are directly callable. Use `ci-go-cleanup -h` or `ci-pnpm-cleanup -h` for options, default paths, and example usages. `ci-docker-cleanup` defaults to `plan` and requires a valid policy and explicit local endpoint. It supports `check`, `plan`, `apply`, and `version`. Build identity uses the source revision; the shared suite tag and OCI digest identify the promoted artifact.
+Inside an existing job container, run `ci-utils-list` or use `--help` on a listed command. The catalog works without a Docker socket or cache mounts. The suite tag and OCI digest identify the image.
 
 Use the [host maintenance adapter](../maintenance.md) for Docker cleanup apply. A direct Docker socket mount or a Boolean environment flag cannot authorize Docker deletion. The host must coordinate every participant that uses the selected daemon.
 
@@ -83,7 +77,7 @@ JSON Lines report each selected path, entry counts, logical file bytes, and fina
 
 The helper matches the registry's `:latest` index digest to an exact version recorded in a published GitHub Release. It verifies the numeric tag against GHCR and pulls the immutable index. It then makes the verified `:X.Y.Z` and `:latest` available locally. Existing version tags are kept by default.
 
-The command defaults to `unix:///var/run/docker.sock` and uses Docker CLI registry credentials. The utility container needs HTTPS access to `api.github.com` and `ghcr.io` for verification. The [one-off runner command](../../README.md#upgrade-runner-images) uses the cached image and supports temporary credentials for private packages. Mount a policy file and pass `--config` to protect additional images by ID, reference, or repository.
+The command defaults to `unix:///var/run/docker.sock` and uses Docker CLI registry credentials. The utility container needs HTTPS access to `api.github.com` and `ghcr.io` for verification. For private packages, supply credentials in the named container. Mount a policy file and pass `--config` to protect additional images by ID, reference, or repository. [Named container setup](#keep-a-utility-container-running)
 
 Each JSON Lines `pulled` event provides the following fields.
 

@@ -5,6 +5,8 @@ import io
 import json
 import os
 from pathlib import Path
+import re
+import shlex
 import socket
 import subprocess
 import tarfile
@@ -28,6 +30,12 @@ from release_http_fixture import REPO, VERSION, ReleaseServer
 
 def events(args, **kwargs):
     return [json.loads(line) for line in command(args, **kwargs).splitlines()]
+
+
+def readme_quickstart():
+    readme = Path("/workspace/README.md").read_text()
+    section = readme.split("## Upgrade runner images\n", 1)[1].split("\n## ", 1)[0]
+    return re.findall(r"```bash\n(.*?)\n```", section, re.DOTALL)
 
 
 def seed(tag):
@@ -103,13 +111,15 @@ class NativeDocker(unittest.TestCase):
     def test_operator_bootstrap_downloads_the_pinned_release(self):
         guide = Path("/workspace/scripts/docs/ci-utils/install.md").read_text()
         example = guide.split("```bash\n", 1)[1].split("\n```", 1)[0]
+        readme_install, _ = readme_quickstart()
         version = json.loads(command(["ci-docker-cleanup", "version"]))["version"]
         with ReleaseServer(version):
-            output = command(
-                ["bash", "-ec", example.replace("v=0.0.31;", f"v={version};")],
-                env={**os.environ, "CURL_CA_BUNDLE": "/fixture-tls/ca.crt"},
-            )
-        self.assertIn(f"Installed ci-utils {version}", output)
+            for bootstrap in (readme_install, example):
+                output = command(
+                    ["bash", "-ec", bootstrap.replace("v=0.0.31;", f"v={version};")],
+                    env={**os.environ, "CURL_CA_BUNDLE": "/fixture-tls/ca.crt"},
+                )
+                self.assertIn(f"Installed ci-utils {version}", output)
         self.assertEqual(
             json.loads(command(["ci-docker-cleanup", "version"]))["version"], version
         )
@@ -117,7 +127,8 @@ class NativeDocker(unittest.TestCase):
     def test_refresh_and_digest_mismatch(self):
         old = REPO + ":0.0.1"
         seed(old)
-        args = ["ci-upgrade-images", "--config", str(self.config)]
+        _, refresh = readme_quickstart()
+        args = [*shlex.split(refresh), "--config", str(self.config)]
         arch = self.engine.version["Arch"]
         other = "arm64" if arch == "amd64" else "amd64"
         with ReleaseServer() as registry:

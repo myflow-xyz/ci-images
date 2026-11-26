@@ -20,7 +20,7 @@ The bootstrap uses the runner's OS and CPU to select `linux_amd64`, `linux_arm64
 
 Python 3.9 is both the source lower bound and the qualified minimum for this package. Linux qualification exercised Bash 5.0.3 with Python 3.9.23 and Bash 5.3.20 with Python 3.15.2. It also exercised rejection of Bash 4.4 and Python 3.8. The probe is a static Go binary. Runners need no Go compiler, pip packages or utility container.
 
-Preflight runs before installation writes. For example, `requires Docker Buildx (detected: missing or unusable with a clean Docker configuration)` means the plugin could not report its version without personal Docker settings. Install the system-wide Docker Buildx CLI plugin and repeat the pinned command. Live daemon identity, registry access and cache permissions are checked by the commands that use them.
+Preflight runs before installation writes. It checks the Docker CLI and Buildx versions and can run with the daemon stopped. For example, `requires Docker Buildx (detected: missing or unusable with a clean Docker configuration)` means the plugin could not report its version without personal Docker settings. Install the system-wide Docker Buildx CLI plugin on Linux and repeat the pinned command. The installed catalog and filesystem cache commands work offline. Image and Docker resource operations check the selected daemon when invoked.
 
 ### Shipped runtime inventory
 
