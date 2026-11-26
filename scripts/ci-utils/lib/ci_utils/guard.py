@@ -23,7 +23,8 @@ class LeaseGuard:
             "daemon_id": daemon_id,
             "policy_hash": policy_hash,
             "profile": profile,
-            **({"archive_digest": archive_digest} if archive_digest else {"image_digest": image_digest}),
+            **({"operation": "apply", "archive_digest": archive_digest}
+               if archive_digest else {"image_digest": image_digest}),
         }
 
     def check(self):

@@ -5,6 +5,7 @@ import io
 import json
 import os
 from pathlib import Path
+import socket
 import subprocess
 import tarfile
 import tempfile
@@ -234,6 +235,22 @@ class NativeDocker(unittest.TestCase):
                         proxy.deleted.wait(10), "no Engine DELETE reached the daemon"
                     )
                     record = json.loads((self.gate / "maintenance.json").read_text())
+                    scope = dict(
+                        protocol_version=2,
+                        operation="apply",
+                        run_id=record["id"],
+                        daemon_id=self.daemon,
+                        policy_hash=record["policy_hash"],
+                        profile=record["profile"],
+                        archive_digest=record["archive_digest"],
+                    )
+                    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
+                        client.settimeout(2)
+                        client.connect(str(self.gate / "lease.sock"))
+                        client.sendall((json.dumps(scope) + "\n").encode())
+                        with client.makefile("rb") as stream:
+                            reply = json.loads(stream.readline(4096))
+                    self.assertEqual(reply, dict(**scope, active=False, pending=False))
                     # Exact scope and release, but another process cannot use the live lease.
                     events(
                         [

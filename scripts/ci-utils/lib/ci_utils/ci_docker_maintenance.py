@@ -483,7 +483,7 @@ def maintain(settings, policy, operation, profile, wait_seconds, selected=None, 
                 with server_context as server:
                     if native:
                         if lease:
-                            lease.record.update(archive_digest=digest, profile=profile)
+                            lease.record.update(archive_digest=digest, profile=profile, operation=operation)
                             with gate._admission(gate._deadline(5)):
                                 gate._write(gate.directory / "maintenance.json", lease.record)
                         # Cancellation can occur after Popen creates the child.
@@ -631,7 +631,7 @@ def main(argv=None, *, native=False):
         if sys.platform != "linux":
             raise GateError(
                 2,
-                "the host adapter requires native Linux in the Docker daemon PID namespace",
+                "the host adapter requires native Linux",
             )
         if args.operation == "job-complete":
             return ci_docker_job.complete()

@@ -39,7 +39,8 @@ class LeaseServer:
             "daemon_id": lease.record["daemon_id"],
             "policy_hash": lease.record["policy_hash"],
             "profile": profile,
-            ("archive_digest" if native else "image_digest"): image_digest,
+            **({"operation": "apply", "archive_digest": image_digest}
+               if native else {"image_digest": image_digest}),
         }
 
     def __enter__(self):
