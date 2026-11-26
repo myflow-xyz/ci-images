@@ -55,7 +55,7 @@ Browse [the documentation index](docs/index.md) for detailed image contracts. Us
 
 ## Upgrade runner images
 
-On Linux runners with the native suite installed, run `ci-upgrade-images`. The command reports the verified release digest and retains old versions by default. [Native installation and command guide](scripts/ci-utils/README.md)
+On Linux and Apple Silicon macOS runners, run the installed `ci-upgrade-images` against the selected Linux Docker daemon. The command reports the verified release digest and retains old versions by default. [Native installation and command guide](scripts/ci-utils/README.md)
 
 ### Legacy utility image
 

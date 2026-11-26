@@ -1,22 +1,22 @@
 # Install or upgrade ci-utils
 
-Use a published Git tag with both Linux archives and a checksum file. The pinned example uses `v0.0.31`. Earlier image-only releases have no native assets. In an administrator shell, run the bootstrap from that same tag.
+Use a published Git tag with the archive for your runner and its checksum file. The pinned example uses `v0.0.31`. Earlier image-only releases have no native assets. Run the bootstrap from that same tag under your runner account. Use a Linux administrator shell for the system-wide maintenance service.
 
 ```bash
 (set -eu; v=0.0.31; f=$(mktemp); trap 'rm -f "$f"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' "https://raw.githubusercontent.com/myflow-xyz/ci-images/v$v/scripts/ci-utils/install.sh" -o "$f"; sh "$f" "$v")
 ```
 
-The bootstrap selects `linux_amd64` for `x86_64` and `linux_arm64` for `aarch64` or `arm64`. It downloads `ci-utils_<version>_SHA256SUMS` and the selected `.tar.gz` over HTTPS from the pinned GitHub release. It requires exactly one matching SHA-256 entry and verifies the archive before extraction. Activation checks the embedded version, source revision format, architecture and probe ELF machine type. CI packages the probe already compiled for that platform from the verified utility image index.
+The bootstrap uses the runner's OS and CPU to select `linux_amd64`, `linux_arm64` or `darwin_arm64`. It downloads `ci-utils_<version>_SHA256SUMS` and the selected `.tar.gz` over HTTPS from the pinned GitHub release. It requires one matching SHA-256 entry and verifies the archive before extraction. Activation checks the embedded OS, architecture, version and source revision. Linux archives include a probe from the verified utility image index and activation checks its ELF machine type. The macOS archive contains the Bash and Python client for catalog and refresh.
 
 ## Dependencies
 
 | Dependency | Minimum or required capability | Why |
 | --- | --- | --- |
-| Linux, `/bin/sh`, `/usr/bin/env`, Bash | Bash 5.0 | The repository sets this floor for Bash entry points. The bootstrap starts under POSIX sh so it can diagnose an absent or older Bash. |
+| `/bin/sh`, `/usr/bin/env`, Bash | Bash 5.0 | The repository sets this floor for Bash entry points. On macOS, put a supported Bash on PATH before invoking the bootstrap. |
 | `python3` and its standard library | Python 3.9 | Image selection uses `str.removeprefix`. Cache selection uses `Path.is_relative_to`. Linux file descriptors, locks, Unix sockets, TLS, JSON and SHA-256 are required. |
-| Transfer and extraction | HTTPS-capable `curl`, `sha256sum --check --status`, `tar --no-same-owner -xzf`, `gzip` | Download from GitHub, verify the release checksum and extract a verified archive. |
-| Linux utilities | `uname`, `readlink -f`, `mktemp -d`, `cp`, `rm` | Select the platform, resolve installed entry points, stage files and remove temporary data. |
-| Docker CLI with Buildx | `docker --version` and `docker buildx version` must succeed | Refresh inspects OCI indexes. Cleanup selects the local default builder. Install the plugin where the maintenance service can discover it with an empty Docker configuration. |
+| Transfer and extraction | HTTPS-capable `curl`, Linux `sha256sum` or macOS `shasum -a 256` with `--check --status`, `tar --no-same-owner -xzf`, `gzip` | Download from GitHub, verify the release checksum and extract a verified archive. |
+| Runner utilities | `uname`, `readlink -f`, `mktemp -d`, `cp`, `rm` | Select the platform, resolve installed entry points, stage files and remove temporary data. |
+| Docker CLI with Buildx | `docker --version` and `docker buildx version` must succeed | Linux maintenance needs Buildx with an empty Docker configuration. The macOS client checks Buildx in the runner account's configuration, which it also uses for refresh. |
 
 Python 3.9 is both the source lower bound and the qualified minimum for this package. Linux qualification exercised Bash 5.0.3 with Python 3.9.23 and Bash 5.3.20 with Python 3.15.2. It also exercised rejection of Bash 4.4 and Python 3.8. The probe is a static Go binary. Runners need no Go compiler, pip packages or utility container.
 
@@ -35,7 +35,13 @@ All eight Bash entry points resolve their release with `readlink -f` and execute
 
 ## Paths, repeat installation and migration
 
-The installer accepts `X.Y.Z [--prefix ABSOLUTE_PATH] [--from-dir TRUSTED_RELEASE_DIRECTORY]`. On Linux, an administrator installation defaults to `/usr/local` for the trusted maintenance service. Under an ordinary runner account, the installer creates `~/.local/bin` for public links and `${XDG_DATA_HOME:-$HOME/.local/share}/ci-utils` for releases. An explicit prefix selects its `bin/` and `libexec/ci-utils/` instead. Use `--from-dir` with a trusted offline copy of the checksum file and selected archive. Obtain the checksum file from the authenticated release or an independently verified mirror.
+The installer accepts `X.Y.Z [--prefix ABSOLUTE_PATH] [--from-dir TRUSTED_RELEASE_DIRECTORY]`. On Linux, an administrator installation defaults to `/usr/local` for the trusted maintenance service. On macOS and under an ordinary Linux runner account, the installer creates `~/.local/bin` for public links and `${XDG_DATA_HOME:-$HOME/.local/share}/ci-utils` for releases. An explicit prefix selects its `bin/` and `libexec/ci-utils/` instead. Use `--from-dir` with a trusted offline copy of the checksum file and selected archive. Obtain the checksum file from the authenticated release or an independently verified mirror.
+
+On macOS, follow the installer's PATH hint if the command directory is missing. For the default layout, add the following line to your shell startup file and run it in the current shell. The installer leaves shell configuration under your control. On Linux, the installer provisions the selected directories and links directly. A service can use its existing absolute entry point.
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
 
 | Linux system installation path | Role |
 | --- | --- |
@@ -54,10 +60,10 @@ If you used the legacy named container, remove the `ci-upgrade-images` alias tha
 command -v ci-utils
 if alias ci-upgrade-images >/dev/null 2>&1; then unalias ci-upgrade-images; fi
 type -a ci-upgrade-images
-ci-docker-cleanup version
+ci-utils --version
 ci-utils-list
 ```
 
-The version event reports the numeric release, full revision and verified archive digest. Compare them with the selected tag and checksum. For a new host, review the policy, host settings, service, timers and job wrapper before provisioning the gate. On an existing host, drain participants, resolve outstanding maintenance and record the active release before switching. The installer replaces the old absolute adapter entry point. Its native replacement accepts the deployed `image` setting and authorizes the installed release by archive digest. Keep the existing gate and run `status`, `check` and `plan` before the first apply. [Configuration and service examples](../../examples/ci-utils/) · [Maintenance and recovery](../../../docs/maintenance.md)
+Compare the reported version and revision with the selected release. The active release stores its verified checksum in `current/lib/archive.sha256`. On Linux, `ci-docker-cleanup version` also reports the digest in JSON. For a new Linux maintenance host, review the policy, host settings, service, timers and job wrapper before provisioning the gate. On an existing host, drain participants, resolve outstanding maintenance and record the active release before switching. The installer replaces the old absolute adapter entry point. Its native replacement accepts the deployed `image` setting and authorizes the installed release by archive digest. Keep the existing gate and run `status`, `check` and `plan` before the first apply. [Configuration and service examples](../../examples/ci-utils/) · [Maintenance and recovery](../../../docs/maintenance.md)
 
 From the repository root, run `(cd scripts && shellspec tests/ci-utils/install_spec.sh)`. The Linux installation and daemon qualification entry point is `tests/ci-utils-native.sh`.

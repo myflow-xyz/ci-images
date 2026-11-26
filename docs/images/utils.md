@@ -2,7 +2,7 @@
 
 `ghcr.io/myflow-xyz/ci-utils` packages reusable scripts and tools for runner maintenance. It inherits the shared tools from [`ci-base`](base.md#included-tools), including Docker CLI, Compose, and Buildx.
 
-For native Linux installation and command references, use the [runner guide](../../scripts/ci-utils/README.md). The container instructions below cover legacy image delivery.
+For the native Linux suite or macOS arm64 refresh client, use the [runner guide](../../scripts/ci-utils/README.md). The container instructions below cover legacy image delivery.
 
 ## Included tools
 
