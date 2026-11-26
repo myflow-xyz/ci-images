@@ -155,24 +155,7 @@ JSON Lines report requested versions, matched references, would-remove/removed/s
 
 ## Cleanup policy
 
-| Resource | Default selection |
-| --- | --- |
-| Containers | Explicitly owned, created or exited, creation age over `24h` |
-| Networks | Owned, local, supported, unused, creation age over `24h` |
-| Dangling images | Explicit scope, unreferenced; creation age over `168h` |
-| Tagged images | Scoped, unused; creation age over `168h`; weekly pressure |
-| Build cache | Last use over `24h`, then a separate `20gb` backend target |
-| Volumes | Report only; never removed by host cleanup |
-
-Ownership requires `xyz.myflow.ci.ephemeral=true`. Protection uses `xyz.myflow.cleanup.protect=true` or configured IDs/references/repositories. Protection through any image alias protects the whole local image. For routine `ci-docker-cleanup`, an empty image allowlist selects no images and multi-tag image deletion is conservatively skipped. Container creation age is not stop age; image creation age is not time since last use.
-
-Cache modes are `scheduled`, `native`, and `off`. Only the selected local default builder with the `docker` driver is managed. Internal/frontend cache is excluded unless explicitly enabled. The budget stage can remove recent records. Its target is not a hard quota or a guaranteed physical-space saving. Native GC can continue independently in every mode.
-
-Each stage sends its complete eligible ID selection to the Engine's BuildKit prune endpoint, so dependencies and eviction order remain under backend control. The form request is limited to 1 MiB; larger selections fail without submitting that stage. Requests are not split or retried after uncertain completion.
-
-The budget and `cache_budget.remaining_bytes` use non-shared cache bytes, matching BuildKit. Usage observations report total, shared, and non-shared bytes separately.
-
-Configuration precedence is defaults, JSON policy, documented `CLEANUP_*` scalar environment settings, then CLI overrides. Unknown settings fail. The supported environment names are `CLEANUP_CONTAINER_MIN_AGE`, `CLEANUP_NETWORK_MIN_AGE`, `CLEANUP_DANGLING_IMAGE_MIN_AGE`, `CLEANUP_UNUSED_IMAGE_MIN_AGE`, `CLEANUP_CACHE_MODE`, `CLEANUP_CACHE_MAX_UNUSED_AGE`, and `CLEANUP_CACHE_MAX_USED_SPACE`. Durations use positive integer `h`, `m`, and `s` components. Cache targets use positive integer `b`, `kb`, `mb`, `gb`, or `tb` binary units. Shell expressions are not accepted.
+The image and native command share the cleanup policy. Its resource selections, protections and cache limits are documented in the command reference. [Cleanup policy](../../scripts/docs/ci-utils/ci-docker-cleanup.md#cleanup-policy)
 
 ## Runtime environment
 

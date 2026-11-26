@@ -10,17 +10,17 @@ The reference adapter uses shared job leases and exclusive maintenance leases. E
 
 ## Install the reviewed adapter
 
-Install the pinned native release. The public adapter and the existing absolute service and job-hook path select the same installed worker. The issuer checks its Linux peer PID and release identity. The installation guide covers prerequisites, release verification and migration. [Install or upgrade ci-utils](../scripts/docs/ci-utils/install.md)
+Install the pinned release system-wide as a Linux administrator. The public command at `/usr/local/bin/ci-docker-maintenance` and the absolute path used by services and job hooks select the same installed worker. The issuer checks its Linux peer PID and release identity. [Install or upgrade ci-utils](../scripts/docs/ci-utils/install.md)
 
 Create `/etc/ci-utils` and `/var/lib/ci-utils` as root-owned directories. Install the reviewed `host.json` and `cleanup.json` into `/etc/ci-utils` as root-owned regular files, mode `0644` or stricter. The Docker CLI path must also be root-owned. The adapter rejects mutable configuration and symlinked trusted paths. Existing native installations can retain the legacy `image` field. For a legacy container launcher, that field must contain its verified, pre-pulled image digest.
 
-Provision the gate once:
+Provision the gate once and verify the installation with the public command.
 
 ```sh
-sudo /usr/local/libexec/ci-utils/ci-docker-maintenance init
-sudo /usr/local/libexec/ci-utils/ci-docker-maintenance status
-sudo /usr/local/libexec/ci-utils/ci-docker-maintenance check
-sudo /usr/local/libexec/ci-utils/ci-docker-maintenance plan --profile weekly
+sudo ci-docker-maintenance init
+sudo ci-docker-maintenance status
+sudo ci-docker-maintenance check
+sudo ci-docker-maintenance plan --profile weekly
 ```
 
 Existing gate state is never reset by initialization. Retain it across upgrades, service restarts, and host reboots. Gate records and reconciliation audits are under the configured gate directory. Scheduler logs need an operator-owned retention policy.
@@ -55,7 +55,7 @@ Set `pressure.reserve_bytes` from concurrent-job peak requirements and a margin.
 
 Review native BuildKit GC with the operator. Scheduled pruning neither disables native GC nor guarantees a seven-day minimum retention after the space-budget stage. Keep backend accounting, host free space, and any VM physical-host measurements separate. Logical reclamation is not proof that a VM disk image shrank.
 
-Shared Go and pnpm filesystem caches use separate [cache reset commands](images/utils.md#reset-shared-go-and-pnpm-caches). The Docker admission gate does not prove that all filesystem-cache consumers have stopped. Drain those consumers before a reset; the Docker age policy does not apply to these directories.
+The native Go and pnpm cache commands operate on the runner's filesystem. Drain all consumers of the selected directories before a reset, including jobs outside the Docker admission gate. [Go cache reset](../scripts/docs/ci-utils/ci-go-cleanup.md) · [pnpm store reset](../scripts/docs/ci-utils/ci-pnpm-cleanup.md)
 
 ## Schedule and run maintenance
 
@@ -134,8 +134,8 @@ The service uses `Requisite=` so it does not start an inactive Docker service. I
 Manual maintenance uses the same gate:
 
 ```sh
-sudo /usr/local/libexec/ci-utils/ci-docker-maintenance apply --profile daily
-sudo /usr/local/libexec/ci-utils/ci-docker-maintenance apply --profile weekly
+sudo ci-docker-maintenance apply --profile daily
+sudo ci-docker-maintenance apply --profile weekly
 ```
 
 The native launcher passes a read-only policy snapshot, storage observations and the selected Unix socket to the installed process. Apply also receives a process-bound lease. The adapter checks the worker's terminal JSON result before releasing admission. A lost result retains the gate record for reconciliation.
@@ -148,28 +148,22 @@ Keep the exact references in the JSON Lines log. Use the final result and exit s
 
 The default keeps old versions. To retire eligible tags after refresh, add `--prune-old-versions` after pausing job admission and waiting for active jobs to finish. The host adapter coordinates job admission for lease-gated Docker cleanup and standalone version retirement.
 
-For legacy image delivery, use the [named utility container](images/utils.md#keep-a-utility-container-running).
-
 ## Remove local suite versions
 
-Use the same installed adapter, trusted configuration and participant integration for version retirement. Omit `--versions` to retain the local latest image in each suite repository. Preview before applying:
+Use the installed adapter and its trusted host configuration for version retirement. Preview the selection before applying it.
 
 ```sh
-sudo /usr/local/libexec/ci-utils/ci-docker-maintenance \
-  --config /etc/ci-utils/host.json remove-images
-sudo /usr/local/libexec/ci-utils/ci-docker-maintenance \
-  --config /etc/ci-utils/host.json remove-images --apply
-sudo /usr/local/libexec/ci-utils/ci-docker-maintenance \
-  --config /etc/ci-utils/host.json remove-images --versions 0.0.1,0.0.2,0.0.3
-sudo /usr/local/libexec/ci-utils/ci-docker-maintenance \
-  --config /etc/ci-utils/host.json remove-images --versions 0.0.1,0.0.2,0.0.3 --apply
+sudo ci-docker-maintenance remove-images
+sudo ci-docker-maintenance remove-images --apply
 ```
 
-The adapter launches the installed `ci-remove-images` worker. Apply waits for the exclusive maintenance lease (`--wait 15m` by default), bound to the selected daemon, policy, archive digest, process and retirement selection. It removes only eligible exact suite tags, preserves images referenced by any container or protected through any alias, and leaves unselected tags intact. Retirement selects versions independently of age and disk pressure. See the [command contract](images/utils.md#remove-local-suite-versions). Unknown completion retains the admission block and requires the recovery below.
+The default retains each repository's local `latest` image, or its highest numeric version if `latest` is absent. To select exact versions, add the same `--versions 0.0.1,0.0.2` to both commands. For an alternate host configuration, pass `--config PATH` before `remove-images`.
+
+The adapter launches the installed `ci-remove-images` worker. Apply waits for the exclusive maintenance lease (`--wait 15m` by default), bound to the selected daemon, policy, archive digest, process and retirement selection. It removes only eligible exact suite tags, preserves images referenced by any container or protected through any alias, and leaves unselected tags intact. Retirement selects versions independently of age and disk pressure. Unknown completion retains the admission block and requires the recovery below. [Retirement options and protections](../scripts/docs/ci-utils/ci-remove-images.md)
 
 ## Reconcile uncertain completion
 
-Disable new dispatch through every participant and inspect `status` plus the retained job/maintenance record and logs. Establish that the selected daemon has finished the relevant work. A dead client, an unlocked file, or a stopped maintenance container alone does not prove that backend pruning/builds completed. Keep admission blocked if that evidence is unavailable.
+Disable new dispatch through every participant and inspect `status` plus the retained job/maintenance record and logs. Establish that the selected daemon has finished the relevant work. Backend pruning or builds can continue after the worker exits and its locks are released. Keep admission blocked if completion is unknown.
 
 When completion is established, the administrator supplies a root-owned JSON file containing current evidence for one exact record:
 
@@ -189,11 +183,11 @@ When completion is established, the administrator supplies a root-owned JSON fil
 These assertions require actual operator evidence; do not generate them from process exit alone. Then run:
 
 ```sh
-sudo /usr/local/libexec/ci-utils/ci-docker-maintenance reconcile \
+sudo ci-docker-maintenance reconcile \
   --record-id <record-id> --evidence /path/to/root-owned-evidence.json
 ```
 
-Recovery takes exclusive access, verifies the daemon and record, refuses an active or indeterminate maintenance container, writes a durable audit, and clears only that record. Evidence must be no older than 15 minutes. Reconcile every unresolved record before resuming dispatch. Do not delete lock/state files or blindly retry cleanup. The command does not kill processes or cancel daemon work.
+Recovery takes exclusive access and verifies the daemon and record. If a legacy record identifies a maintenance container, recovery also checks that it has stopped or been removed. After verification, recovery writes a durable audit and clears only that record. Evidence must be no older than 15 minutes. Reconcile every unresolved record before resuming dispatch. Do not delete lock/state files or blindly retry cleanup. The command does not kill processes or cancel daemon work.
 
 ## Rollout and rollback
 
