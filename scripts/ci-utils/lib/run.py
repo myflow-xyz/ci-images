@@ -18,9 +18,13 @@ if command in ("ci-go-cleanup", "ci-pnpm-cleanup"):
     raise SystemExit(main("go" if command == "ci-go-cleanup" else "pnpm"))
 if command == "ci-docker-maintenance":
     from ci_docker_maintenance import main
-elif command == "ci-docker-cleanup":
+
+    raise SystemExit(main(native=True))
+if command == "ci-docker-cleanup":
     from ci_utils.cleanup import main
-elif command == "ci-remove-images":
+
+    raise SystemExit(main(probe=library / "ci-buildkit-probe"))
+if command == "ci-remove-images":
     from ci_utils.remove_images import main
 elif command == "ci-upgrade-images":
     from ci_utils.upgrade_images import main

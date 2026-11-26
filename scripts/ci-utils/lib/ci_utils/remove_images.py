@@ -301,6 +301,7 @@ def main(argv=None):
             report.context["policy_hash"],
             PROFILE,
             report.context["image_digest"],
+            archive_digest=report.context.get("archive_digest"),
         )
         if args.apply:
             guard.check()

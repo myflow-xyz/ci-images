@@ -20,7 +20,7 @@ import ci_docker_job
 from ci_docker_gate import Gate, GateError, LeaseServer
 from ci_docker_reconcile import reconcile
 from ci_docker_storage import measure
-from ci_utils.cleanup import reject_constant, strict_object
+from ci_utils.cleanup import build_metadata, reject_constant, strict_object
 from ci_utils.engine import Engine, Failure
 from ci_utils.policy import InvalidPolicy, configuration, duration, reference_name
 from ci_utils.remove_images import PROFILE, scope_hash, versions
@@ -65,7 +65,7 @@ def trusted_path(value, directory=False):
         if not expected(path.stat().st_mode):
             raise GateError(2, "trusted host path has the wrong type")
     except OSError as error:
-        raise GateError(2, "trusted host path is unavailable") from error
+        raise GateError(2, f"trusted host path is unavailable: {path}") from error
     return path
 
 
@@ -84,7 +84,7 @@ def trusted_json(path):
         raise GateError(2, "host input is not valid declarative JSON") from error
 
 
-def load_settings(path):
+def load_settings(path, *, native=False):
     settings = trusted_json(path)
     fields = {
         "schema_version",
@@ -97,6 +97,9 @@ def load_settings(path):
         "docker_cli",
         "storage",
     }
+    # Native runners accept the deployed v1 settings while operators migrate.
+    if native and isinstance(settings, dict) and "image" not in settings:
+        fields.remove("image")
     if not isinstance(settings, dict) or set(settings) != fields:
         raise GateError(2, "host settings have missing or unknown fields")
     if type(settings["schema_version"]) is not int or settings["schema_version"] != 1:
@@ -106,14 +109,15 @@ def load_settings(path):
         for key in ("policy_path", "gate_directory", "docker_cli")
     ):
         raise GateError(2, "host paths must be nonempty strings")
-    image = settings["image"]
-    digest = image.rsplit("@", 1)[-1] if isinstance(image, str) else ""
-    if not re.fullmatch(r"sha256:[a-f0-9]{64}", digest):
-        raise GateError(2, "maintenance image must be pinned to an immutable digest")
-    if "@" in image:
-        reference_name(image)
-    elif image != digest:
-        raise GateError(2, "invalid immutable image reference")
+    if not native:
+        image = settings["image"]
+        digest = image.rsplit("@", 1)[-1] if isinstance(image, str) else ""
+        if not re.fullmatch(r"sha256:[a-f0-9]{64}", digest):
+            raise GateError(2, "maintenance image must be pinned to an immutable digest")
+        if "@" in image:
+            reference_name(image)
+        elif image != digest:
+            raise GateError(2, "invalid immutable image reference")
     participants = settings["participants"]
     if (
         not isinstance(participants, list)
@@ -241,6 +245,21 @@ def verify_image(docker, reference, *, image_maintenance=False):
         raise GateError(2, "the pinned ci-utils image must support automatic image maintenance")
 
 
+def worker_command(operation, profile, selected, observations):
+    if profile == PROFILE:
+        command = ["ci-remove-images"]
+        if selected is not None:
+            command += ["--versions", ",".join(selected)]
+        if operation == "apply":
+            command.append("--apply")
+    else:
+        command = [
+            "ci-docker-cleanup", operation, "--profile", profile,
+            "--observations", str(observations),
+        ]
+    return command
+
+
 def launch_args(
     settings, policy, root, run_id, operation, profile, socket_gid,
     lease_path=None, selected=None,
@@ -290,17 +309,7 @@ def launch_args(
     ]
     if lease_path:
         args += mount(lease_path, "/run/ci-utils/lease.sock")
-    if profile == PROFILE:
-        command = ["ci-remove-images"]
-        if selected is not None:
-            command += ["--versions", ",".join(selected)]
-        if operation == "apply":
-            command.append("--apply")
-    else:
-        command = [
-            "ci-docker-cleanup", operation, "--profile", profile,
-            "--observations", "/run/ci-utils/storage.json",
-        ]
+    command = worker_command(operation, profile, selected, "/run/ci-utils/storage.json")
     args += [
         "--entrypoint", "/opt/ci-tools/bin/" + command[0],
         settings["image"], *command[1:], "--run-id", run_id,
@@ -310,9 +319,7 @@ def launch_args(
     return args
 
 
-def terminal_result(
-    text, exit_code, run_id, policy_hash, image_digest, operation, profile, daemon_id
-):
+def terminal_result(text, exit_code, run_id, policy_hash, identity, operation, profile, daemon_id):
     try:
         events = [json.loads(line) for line in text.splitlines()]
         if (
@@ -330,7 +337,7 @@ def terminal_result(
             "run_id": run_id,
             "mode": operation,
             "profile": profile,
-            "image_digest": image_digest,
+            **identity,
             "exit_code": exit_code,
             "completion_known": True,
         }
@@ -363,7 +370,39 @@ def snapshot(path, value):
     path.chmod(0o444)
 
 
-def maintain(settings, policy, operation, profile, wait_seconds, selected=None):
+def run_native(entry, settings, root, run_id, operation, profile, selected, lease, server, timeout):
+    args = worker_command(operation, profile, selected, root / "storage.json")
+    args += ["--config", str(root / "policy.json"), "--run-id", run_id]
+    if server:
+        args += ["--lease-socket", str(server.path)]
+    interpreter = trusted_path(pathlib.Path(sys.executable).resolve())
+    with tempfile.TemporaryFile(dir=root) as output:
+        child = subprocess.Popen(
+            [str(interpreter), "-IB", str(entry), *args], cwd=root,
+            stdin=subprocess.DEVNULL, stdout=output,
+            env={"PATH": "/usr/local/bin:/usr/bin:/bin", "TMPDIR": str(root),
+                 "HOME": str(root), "CI_UTILS_DOCKER_CLI": settings["docker_cli"]},
+            # A surviving worker holds the exclusive activity lock through parent loss.
+            pass_fds=(lease.descriptor,) if lease else (),
+        )
+        try:
+            if server:
+                server.bind_client(child.pid)
+            code = child.wait(timeout=timeout)
+        except subprocess.TimeoutExpired as error:
+            raise GateError(6, "native maintenance timed out; reconcile the run") from error
+        finally:
+            if child.poll() is None:
+                child.kill()
+                child.wait()
+        output.seek(0)
+        raw = output.read(16 * 1024 * 1024 + 1)
+        if len(raw) > 16 * 1024 * 1024:
+            raise GateError(6, "native maintenance report exceeds the limit")
+        return raw.decode(), code
+
+
+def maintain(settings, policy, operation, profile, wait_seconds, selected=None, *, native=False):
     if os.geteuid() != 0:
         raise GateError(2, "maintenance requires the native host administrator")
     gate = Gate(settings["gate_directory"])
@@ -399,11 +438,19 @@ def maintain(settings, policy, operation, profile, wait_seconds, selected=None):
                 prefix="run-", dir=gate.directory.parent
             ) as directory:
                 root = pathlib.Path(directory)
-                docker = Docker(settings, policy, root)
-                verify_image(
-                    docker, settings["image"],
-                    image_maintenance=profile == PROFILE and selected is None,
-                )
+                if native:
+                    library = pathlib.Path(__file__).resolve().parents[1]
+                    entry = trusted_path(library / "run.py")
+                    trusted_path(library / "archive.sha256")
+                    digest = build_metadata().get("archive_digest")
+                    if not digest:
+                        raise GateError(2, "a verified installed native release is required")
+                else:
+                    docker = Docker(settings, policy, root)
+                    verify_image(docker, settings["image"],
+                                 image_maintenance=profile == PROFILE and selected is None)
+                    digest = settings["image"].rsplit("@", 1)[-1]
+                identity = {("archive_digest" if native else "image_digest"): digest}
                 info = engine.preflight(policy["expected_daemon_id"])
                 try:
                     storage = measure(info, settings["storage"], run_id)
@@ -415,7 +462,7 @@ def maintain(settings, policy, operation, profile, wait_seconds, selected=None):
                     "run_id": run_id,
                     "daemon_id": info["ID"],
                     "policy_hash": policy_hash,
-                    "image_digest": settings["image"].rsplit("@", 1)[-1],
+                    **identity,
                     "profile": profile,
                 }
                 emit(
@@ -426,75 +473,88 @@ def maintain(settings, policy, operation, profile, wait_seconds, selected=None):
                         gate,
                         lease,
                         profile,
-                        host_context["image_digest"],
+                        digest,
                         timeout=duration(policy["timeouts"]["run"]) + 30,
+                        native=native,
                     )
                     if lease
                     else contextlib.nullcontext(None)
                 )
                 with server_context as server:
-                    identifier = docker.call(
-                        *launch_args(
-                            settings,
-                            policy,
-                            root,
-                            run_id,
-                            operation,
-                            profile,
-                            metadata.st_gid,
-                            server.path if server else None,
-                            selected,
+                    if native:
+                        if lease:
+                            lease.record.update(archive_digest=digest, profile=profile)
+                            with gate._admission(gate._deadline(5)):
+                                gate._write(gate.directory / "maintenance.json", lease.record)
+                        # Cancellation can occur after Popen creates the child.
+                        started = True
+                        logs, exit_code = run_native(
+                            entry, settings, root, run_id, operation, profile, selected,
+                            lease, server, duration(policy["timeouts"]["run"]) + 30,
                         )
-                    ).strip()
-                    if not re.fullmatch(r"[a-f0-9]{64}", identifier):
-                        raise GateError(
-                            7, "Docker did not return a full maintenance container ID"
-                        )
-                    if lease:
-                        lease.record.update(
-                            container_id=identifier,
-                            image=settings["image"],
-                            profile=profile,
-                        )
-                        with gate._admission(gate._deadline(5)):
-                            gate._write(
-                                gate.directory / "maintenance.json", lease.record
+                    else:
+                        identifier = docker.call(
+                            *launch_args(
+                                settings,
+                                policy,
+                                root,
+                                run_id,
+                                operation,
+                                profile,
+                                metadata.st_gid,
+                                server.path if server else None,
+                                selected,
                             )
-                    started = True
-                    docker.call("start", identifier)
-                    state = docker.inspect("container", identifier).get("State", {})
-                    if not isinstance(state, dict):
-                        raise GateError(
-                            6, "maintenance container state is indeterminate"
-                        )
-                    if server and state.get("Running") is True:
-                        server.bind_client(state.get("Pid"))
-                    exit_text = docker.call("wait", identifier, wait=True).strip()
-                    if not exit_text.isdecimal():
-                        raise GateError(
-                            7, "maintenance container exit is indeterminate"
-                        )
-                    exit_code = int(exit_text)
-                    state = docker.inspect("container", identifier).get("State", {})
-                    if (
-                        not isinstance(state, dict)
-                        or state.get("Running") is not False
-                        or state.get("Status") != "exited"
-                        or state.get("ExitCode") != exit_code
-                        or type(state.get("ExitCode")) is not int
-                        or state.get("OOMKilled") is not False
-                    ):
-                        raise GateError(
-                            6,
-                            "maintenance container has no cleanly observed terminal state",
-                        )
-                    logs = docker.call("logs", identifier)
+                        ).strip()
+                        if not re.fullmatch(r"[a-f0-9]{64}", identifier):
+                            raise GateError(
+                                7, "Docker did not return a full maintenance container ID"
+                            )
+                        if lease:
+                            lease.record.update(
+                                container_id=identifier,
+                                image=settings["image"],
+                                profile=profile,
+                            )
+                            with gate._admission(gate._deadline(5)):
+                                gate._write(
+                                    gate.directory / "maintenance.json", lease.record
+                                )
+                        started = True
+                        docker.call("start", identifier)
+                        state = docker.inspect("container", identifier).get("State", {})
+                        if not isinstance(state, dict):
+                            raise GateError(
+                                6, "maintenance container state is indeterminate"
+                            )
+                        if server and state.get("Running") is True:
+                            server.bind_client(state.get("Pid"))
+                        exit_text = docker.call("wait", identifier, wait=True).strip()
+                        if not exit_text.isdecimal():
+                            raise GateError(
+                                7, "maintenance container exit is indeterminate"
+                            )
+                        exit_code = int(exit_text)
+                        state = docker.inspect("container", identifier).get("State", {})
+                        if (
+                            not isinstance(state, dict)
+                            or state.get("Running") is not False
+                            or state.get("Status") != "exited"
+                            or state.get("ExitCode") != exit_code
+                            or type(state.get("ExitCode")) is not int
+                            or state.get("OOMKilled") is not False
+                        ):
+                            raise GateError(
+                                6,
+                                "maintenance container has no cleanly observed terminal state",
+                            )
+                        logs = docker.call("logs", identifier)
                     events = terminal_result(
                         logs,
                         exit_code,
                         run_id,
                         policy_hash,
-                        host_context["image_digest"],
+                        identity,
                         operation,
                         profile,
                         info["ID"],
@@ -514,7 +574,8 @@ def maintain(settings, policy, operation, profile, wait_seconds, selected=None):
                         storage=storage,
                         **host_context,
                     )
-                    docker.call("rm", identifier)
+                    if not native:
+                        docker.call("rm", identifier)
                     emit(
                         "host_result",
                         application_exit_code=exit_code,
@@ -560,7 +621,7 @@ def interrupted(signum, frame):
     )
 
 
-def main(argv=None):
+def main(argv=None, *, native=False):
     old_signals = {}
     try:
         args = arguments(argv)
@@ -574,7 +635,7 @@ def main(argv=None):
             )
         if args.operation == "job-complete":
             return ci_docker_job.complete()
-        settings, policy = load_settings(args.config)
+        settings, policy = load_settings(args.config, native=native)
         gate = Gate(settings["gate_directory"])
         if args.operation == "init":
             if os.geteuid() != 0:
@@ -596,10 +657,10 @@ def main(argv=None):
         if args.operation == PROFILE:
             return maintain(
                 settings, policy, "apply" if args.apply else "plan", PROFILE,
-                duration(args.wait), selected,
+                duration(args.wait), selected, native=native,
             )
         return maintain(
-            settings, policy, args.operation, args.profile, duration(args.wait)
+            settings, policy, args.operation, args.profile, duration(args.wait), native=native
         )
     except (InvalidPolicy, GateError, Failure, OSError) as error:
         code = error.code if isinstance(error, (GateError, Failure)) else 2

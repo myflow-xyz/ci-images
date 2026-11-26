@@ -61,13 +61,18 @@ def load_policy(path, environ, overrides):
 
 
 def build_metadata():
+    library = pathlib.Path(__file__).resolve().parents[1]
     try:
-        value = json.loads(
-            (pathlib.Path(__file__).resolve().parents[1] / "build.json").read_text()
-        )
-        return {
+        value = json.loads((library / "build.json").read_text())
+        metadata = {
             key: str(value.get(key, "unknown"))[:128] for key in ("revision", "version")
         }
+        if "arch" in value:
+            digest = (library / "archive.sha256").read_text().strip()
+            if not re.fullmatch(r"[a-f0-9]{64}", digest):
+                raise ValueError("invalid installed archive checksum")
+            metadata["archive_digest"] = "sha256:" + digest
+        return metadata
     except (OSError, ValueError, AttributeError):
         return {"revision": "unbuilt", "version": "unbuilt"}
 
@@ -529,7 +534,7 @@ def check_environment():
             )
 
 
-def main(argv=None):
+def main(argv=None, *, probe=None):
     report = Report()
     code = 0
     old_signals = {}
@@ -537,7 +542,9 @@ def main(argv=None):
     try:
         args = arguments(argv)
         if args.operation == "version":
-            report.emit("version", **build_metadata(), policy_schema=1, host_protocol=1)
+            metadata = build_metadata()
+            report.emit("version", **metadata, policy_schema=1,
+                        host_protocol=2 if "archive_digest" in metadata else 1)
             return 0
         if args.run_id is not None:
             if not re.fullmatch(r"[a-f0-9]{32}", args.run_id):
@@ -596,10 +603,11 @@ def main(argv=None):
             policy_hash,
             args.profile,
             report.context["image_digest"],
+            archive_digest=report.context.get("archive_digest"),
         )
         if args.operation == "apply":
             guard.check()
-        with BuildCache(engine, policy, info["ID"], report) as cache:
+        with BuildCache(engine, policy, info["ID"], report, probe=probe) as cache:
             cache.preflight()
             observation = None
             if args.observations:

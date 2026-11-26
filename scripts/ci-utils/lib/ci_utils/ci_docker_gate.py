@@ -24,7 +24,7 @@ class GateError(Exception):
 
 class LeaseServer:
     def __init__(
-        self, gate, lease, profile, image_digest, timeout=900, client_pid=None
+        self, gate, lease, profile, image_digest, timeout=900, client_pid=None, *, native=False
     ):
         self.path = gate.directory / "lease.sock"
         self.gate = gate
@@ -34,12 +34,12 @@ class LeaseServer:
             raise GateError(2, "cleanup process identity must be a positive PID")
         self.client_pid = client_pid
         self.expected = {
-            "protocol_version": 1,
+            "protocol_version": 2 if native else 1,
             "run_id": lease.id,
             "daemon_id": lease.record["daemon_id"],
             "policy_hash": lease.record["policy_hash"],
             "profile": profile,
-            "image_digest": image_digest,
+            ("archive_digest" if native else "image_digest"): image_digest,
         }
 
     def __enter__(self):

@@ -12,17 +12,18 @@ from .engine import Failure
 
 class LeaseGuard:
     def __init__(
-        self, engine, socket_path, run_id, daemon_id, policy_hash, profile, image_digest
+        self, engine, socket_path, run_id, daemon_id, policy_hash, profile, image_digest,
+        *, archive_digest=None,
     ):
         self.engine = engine
         self.path = socket_path
         self.expected = {
-            "protocol_version": 1,
+            "protocol_version": 2 if archive_digest else 1,
             "run_id": run_id,
             "daemon_id": daemon_id,
             "policy_hash": policy_hash,
             "profile": profile,
-            "image_digest": image_digest,
+            **({"archive_digest": archive_digest} if archive_digest else {"image_digest": image_digest}),
         }
 
     def check(self):

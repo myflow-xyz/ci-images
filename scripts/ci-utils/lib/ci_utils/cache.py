@@ -16,11 +16,12 @@ from .policy import duration, space_bytes, timestamp
 
 
 class BuildCache:
-    def __init__(self, engine, policy, daemon_id, report):
+    def __init__(self, engine, policy, daemon_id, report, *, probe=None):
         self.engine = engine
         self.policy = policy["cache"]
         self.daemon_id = daemon_id
         self.report = report
+        self.probe = probe
         self.directory = None
         self.verified = False
         self.records = []
@@ -97,8 +98,8 @@ class BuildCache:
             self.report.emit("cache", mode="off", builder="default", status="unmanaged")
             self.verified = True
             return
-        self.docker = shutil.which("docker", path=self.environ["PATH"])
-        probe = shutil.which("ci-buildkit-probe", path=self.environ["PATH"])
+        probe = self.probe or shutil.which("ci-buildkit-probe", path=self.environ["PATH"])
+        self.docker = os.environ.get("CI_UTILS_DOCKER_CLI") or shutil.which("docker", path=self.environ["PATH"])
         if not self.docker or not probe:
             raise Failure(2, "Docker CLI, Buildx, and ci-buildkit-probe are required")
         try:
