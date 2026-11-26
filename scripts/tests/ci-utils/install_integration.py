@@ -111,6 +111,9 @@ def qualify(root, assets, version, upgrade):
         (shim / "docker").write_text('#!/bin/sh\n[ "$1" = --version ]\n')
         (shim / "docker").chmod(0o755)
         install(upgrade, env=isolated, status=2, contains="requires Docker Buildx")
+        # The operator has a personal plugin. The service's empty config cannot use it.
+        (shim / "docker").write_text('#!/bin/sh\n[ "$1" = --version ] || [ "$1" = buildx ]\n')
+        install(upgrade, env=isolated, status=2, contains="requires Docker Buildx")
         (shim / "docker").unlink()
         (shim / "docker").symlink_to(shutil.which("docker"))
 

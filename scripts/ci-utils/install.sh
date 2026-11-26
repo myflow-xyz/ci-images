@@ -59,10 +59,10 @@ readlink -f / >/dev/null || fail 'requires readlink -f (detected: unsupported)'
 python3 -Ic 'import fcntl, hashlib, http.client, json, pathlib, socketserver, ssl, subprocess, urllib.request' ||
 	fail 'requires the Python standard library with Linux, HTTPS and SHA-256 support (detected: incomplete)'
 docker --version >/dev/null || fail 'requires a working Docker CLI (detected: unusable)'
-docker buildx version >/dev/null 2>&1 || fail 'requires Docker Buildx (detected: missing or unusable)'
-
 work=$(mktemp -d)
 trap 'rm -rf -- "$work"' EXIT
+docker --config "$work" buildx version >/dev/null 2>&1 ||
+	fail 'requires Docker Buildx (detected: missing or unusable with a clean Docker configuration)'
 base="ci-utils_${version}_linux_${arch}"
 archive="$base.tar.gz"
 sums="ci-utils_${version}_SHA256SUMS"
