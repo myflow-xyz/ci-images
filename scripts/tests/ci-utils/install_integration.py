@@ -12,15 +12,26 @@ import tempfile
 
 INSTALL = Path(__file__).resolve().parents[2] / "ci-utils/install.sh"
 COMMANDS = (
-    "ci-utils", "ci-utils-list", "ci-go-cleanup", "ci-pnpm-cleanup", "ci-upgrade-images",
-    "ci-remove-images", "ci-docker-cleanup", "ci-docker-maintenance",
+    "ci-utils",
+    "ci-utils-list",
+    "ci-go-cleanup",
+    "ci-pnpm-cleanup",
+    "ci-upgrade-images",
+    "ci-remove-images",
+    "ci-docker-cleanup",
+    "ci-docker-maintenance",
 )
 
 
 def run(*command, status=0, contains="", env=None):
-    result = subprocess.run(command, env=env, text=True, capture_output=True, timeout=60)
+    result = subprocess.run(
+        command, env=env, text=True, capture_output=True, timeout=60
+    )
     assert result.returncode == status and contains in result.stdout + result.stderr, (
-        command, result.returncode, result.stdout, result.stderr
+        command,
+        result.returncode,
+        result.stdout,
+        result.stderr,
     )
     return result.stdout
 
@@ -31,7 +42,20 @@ def qualify(root, assets, version, upgrade):
     compat = private / "ci-docker-maintenance"
     shim = root / "tools"
     shim.mkdir()
-    tools = ("bash", "python3", "uname", "readlink", "docker", "curl", "sha256sum", "tar", "gzip", "mktemp", "cp", "rm")
+    tools = (
+        "bash",
+        "python3",
+        "uname",
+        "readlink",
+        "docker",
+        "curl",
+        "sha256sum",
+        "tar",
+        "gzip",
+        "mktemp",
+        "cp",
+        "rm",
+    )
     for tool in tools:
         (shim / tool).symlink_to(shutil.which(tool))
     isolated = {**os.environ, "PATH": str(shim)}
@@ -39,7 +63,9 @@ def qualify(root, assets, version, upgrade):
 
     def install(tag, *extra, source=assets, **kwargs):
         options = ["--from-dir", source] if source else []
-        return run("/bin/sh", INSTALL, tag, "--prefix", prefix, *options, *extra, **kwargs)
+        return run(
+            "/bin/sh", INSTALL, tag, "--prefix", prefix, *options, *extra, **kwargs
+        )
 
     def active(tag):
         for name in COMMANDS:
@@ -51,13 +77,27 @@ def qualify(root, assets, version, upgrade):
         return identity
 
     def preflight():
-        cases = [(name, None, message) for name, message in (
-            ("bash", "Bash >= 5.0 (detected: missing)"), ("python3", "Python >= 3.9 (detected: missing)"),
-            *((name, f"executable {name} (detected: missing)") for name in tools if name not in ("bash", "python3")),
-        )]
+        cases = [
+            (name, None, message)
+            for name, message in (
+                ("bash", "Bash >= 5.0 (detected: missing)"),
+                ("python3", "Python >= 3.9 (detected: missing)"),
+                *(
+                    (name, f"executable {name} (detected: missing)")
+                    for name in tools
+                    if name not in ("bash", "python3")
+                ),
+            )
+        ]
         if Path("/opt/below/bin/bash").exists():
-            cases += [("bash", "/opt/below/bin/bash", "Bash >= 5.0 (detected: 4.4"),
-                      ("python3", "/opt/below/bin/python3", "Python >= 3.9 (detected: Python 3.8")]
+            cases += [
+                ("bash", "/opt/below/bin/bash", "Bash >= 5.0 (detected: 4.4"),
+                (
+                    "python3",
+                    "/opt/below/bin/python3",
+                    "Python >= 3.9 (detected: Python 3.8",
+                ),
+            ]
         for name, replacement, message in cases:
             path = shim / name
             original = os.readlink(path)
@@ -104,22 +144,30 @@ def qualify(root, assets, version, upgrade):
     # A checksum-valid archive for the other CPU must still fail activation.
     other = "arm64" if arch == "amd64" else "amd64"
     shutil.copy(assets / archive.replace(arch, other), bad / archive)
-    (bad / sums).write_text(f"{hashlib.sha256((bad / archive).read_bytes()).hexdigest()}  {archive}\n")
+    (bad / sums).write_text(
+        f"{hashlib.sha256((bad / archive).read_bytes()).hexdigest()}  {archive}\n"
+    )
     install(upgrade, source=bad, status=2, contains="architecture")
     curl = shim / "curl"
     curl.unlink()
-    curl.write_text('#!/bin/sh\nwhile [ "$1" != --output ]; do shift; done\n'
-                    'case "$3" in *SHA256SUMS) cp "$SUMS" "$2";; *) echo partial >"$2"; exit 18;; esac\n')
+    curl.write_text(
+        '#!/bin/sh\nwhile [ "$1" != --output ]; do shift; done\n'
+        'case "$3" in *SHA256SUMS) cp "$SUMS" "$2";; *) echo partial >"$2"; exit 18;; esac\n'
+    )
     curl.chmod(0o755)
-    install(upgrade, source=None, status=18, env={**isolated, "SUMS": str(assets / sums)})
+    install(
+        upgrade, source=None, status=18, env={**isolated, "SUMS": str(assets / sums)}
+    )
     assert previous == (private / "current").resolve()
     active(version)
     install(upgrade)
     identity = active(upgrade)
     for path in (config, gate):
         assert path.read_text() == "operator fixture\n"
-    for command, parts, option in (("ci-go-cleanup", "go/build", "--build-cache"),
-                                    ("ci-pnpm-cleanup", "pnpm/store", "--store-dir")):
+    for command, parts, option in (
+        ("ci-go-cleanup", "go/build", "--build-cache"),
+        ("ci-pnpm-cleanup", "pnpm/store", "--store-dir"),
+    ):
         cache = root / parts
         cache.mkdir(parents=True)
         (cache / "entry").touch()
@@ -129,8 +177,14 @@ def qualify(root, assets, version, upgrade):
         assert cache.is_dir() and not list(cache.iterdir())
     probe = private / "current/lib/ci-buildkit-probe"
     run(probe, status=2, contains="explicit local Unix endpoint")
-    print(arch, run("bash", "-c", 'echo "$BASH_VERSION"').strip(), platform.python_version(),
-          identity["version"], identity["revision"], "install, upgrade and preflight passed")
+    print(
+        arch,
+        run("bash", "-c", 'echo "$BASH_VERSION"').strip(),
+        platform.python_version(),
+        identity["version"],
+        identity["revision"],
+        "install, upgrade and preflight passed",
+    )
 
 
 if __name__ == "__main__":
