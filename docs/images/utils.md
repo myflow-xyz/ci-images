@@ -2,6 +2,8 @@
 
 `ghcr.io/myflow-xyz/ci-utils` packages reusable scripts and tools for runner maintenance. It inherits the shared tools from [`ci-base`](base.md#included-tools), including Docker CLI, Compose, and Buildx.
 
+For native Linux installation and command references, use the [runner guide](../../scripts/ci-utils/README.md). The container instructions below cover legacy image delivery.
+
 ## Included tools
 
 | Command | Purpose |
@@ -105,26 +107,27 @@ CI_UTILS_IMAGE=ghcr.io/myflow-xyz/ci-utils:latest
 docker run --detach --name ci-utils --init --restart unless-stopped \
   --pull=never \
   --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock,readonly \
+  --mount type=bind,src=/etc/ci-utils/cleanup.json,dst=/etc/ci-utils/cleanup.json,readonly \
   --group-add "$(stat -c %g /var/run/docker.sock)" \
   --tmpfs /var/tmp:mode=1777 \
-  --env DOCKER_CONFIG=/var/tmp/ghcr \
   "$CI_UTILS_IMAGE" sleep infinity
 
 docker exec ci-utils ci-utils-list
+docker exec ci-utils ci-remove-images
 ```
 
 If the repositories require authentication, set `GHCR_USER` and load `GHCR_TOKEN` from your runner's secret store. Log in before the refresh and again after a container restart, which clears the temporary credentials.
 
 ```bash
 printf '%s\n' "$GHCR_TOKEN" |
-  docker exec -i ci-utils docker --host unix:///var/run/docker.sock \
+  docker exec -i --env DOCKER_CONFIG=/var/tmp/ghcr ci-utils docker --host unix:///var/run/docker.sock \
     login ghcr.io --username "$GHCR_USER" --password-stdin
 ```
 
-Run `docker exec ci-utils ci-upgrade-images` for each refresh. Add an alias in your shell startup file to invoke it by its command name.
+Scope the credential directory to login and refresh. Retirement and cleanup previews reject an inherited `DOCKER_CONFIG`. The policy must be readable by the container user and select its mounted socket.
 
 ```bash
-alias ci-upgrade-images='docker exec -i ci-utils ci-upgrade-images'
+docker exec --env DOCKER_CONFIG=/var/tmp/ghcr ci-utils ci-upgrade-images
 ```
 
 Reuse `docker exec` for catalog, help, and image retirement previews. Docker cleanup plans need the selected socket and a policy, and cleanup apply uses the [guarded host adapter](../maintenance.md). Go and pnpm commands use [selected cache mounts](#reset-shared-go-and-pnpm-caches). Add those mounts when creating the container for cache maintenance.

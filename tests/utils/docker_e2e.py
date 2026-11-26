@@ -121,6 +121,25 @@ class DockerE2E(unittest.TestCase):
             (image["Os"], image["Architecture"]), (daemon["Os"], daemon["Arch"])
         )
 
+    def test_documented_named_container_previews_with_the_default_policy(self):
+        guide = pathlib.Path("/workspace/docs/images/utils.md").read_text()
+        section = guide.split("## Keep a utility container running\n", 1)[1]
+        example = section.split("```bash\n", 1)[1].split("\n```", 1)[0]
+        policy = self.root / "preview.json"
+        policy.write_text(json.dumps({**self.policy, "endpoint": "unix:///var/run/docker.sock"}))
+        # Substitute only the operator's source paths and verified image for this daemon.
+        example = example.replace("ghcr.io/myflow-xyz/ci-utils:latest", IMAGE)
+        example = example.replace("src=/var/run/docker.sock", "src=" + SOCKET[7:])
+        example = example.replace("stat -c %g /var/run/docker.sock", "stat -c %g " + SOCKET[7:])
+        example = example.replace("src=/etc/ci-utils/cleanup.json", "src=" + str(policy))
+        try:
+            preview = command(["bash", "-ec", example], env={**os.environ, "DOCKER_HOST": SOCKET})
+            result = json.loads(preview.splitlines()[-1])
+            self.assertEqual((result["mode"], result["exit_code"], result["mutation_started"]),
+                             ("plan", 0, False))
+        finally:
+            docker("rm", "-f", "ci-utils")
+
     def test_hardened_check_and_denied_socket(self):
         events = self.host("check")
         self.assertTrue(events[-1]["completion_known"])
