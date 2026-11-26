@@ -17,7 +17,8 @@ CATALOG = """Supported maintenance commands:
   ci-pnpm-cleanup        Preview or reset a pnpm store.
     [--store-dir [PATH]] [--apply] (default: preview the mfci pnpm store)
 
-Included Docker tools:
+{adapter}
+Docker tools:
   docker buildx         Docker Buildx CLI.
   ci-buildkit-probe     Internal capability checker used by Docker cleanup.
 
@@ -30,21 +31,24 @@ Examples:
   ci-upgrade-images -h
 
 Go and pnpm apply performs a full reset; stop all cache consumers first.
-The image also includes the tools inherited from ci-base.
-"""
+{image_note}"""
 
 
-def main(prog="ci-utils", argv=None):
+def main(prog="ci-utils", argv=None, *, native=False):
+    catalog = CATALOG.format(
+        adapter="  ci-docker-maintenance  Coordinate jobs, guarded apply and recovery.\n" if native else "",
+        image_note="" if native else "The image also includes the tools inherited from ci-base.\n",
+    )
     parser = argparse.ArgumentParser(
         prog=prog,
         description="Reusable CI operations tools. Invoke each command directly.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=CATALOG,
+        epilog=catalog,
     )
     parser.add_argument("operation", nargs="?", choices=("help",), default="help")
     parser.parse_args(argv)
     if prog == "ci-utils-list":
-        print(CATALOG, end="")
+        print(catalog, end="")
     else:
         parser.print_help()
     return 0
