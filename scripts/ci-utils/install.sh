@@ -25,7 +25,7 @@ usage='install.sh X.Y.Z [--prefix ABSOLUTE_PATH] [--from-dir TRUSTED_RELEASE_DIR
 version=${1:-}
 [[ $version =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || fail "$usage"
 shift
-prefix=/usr/local
+prefix=
 source_dir=
 while (($#)); do
 	case "$1" in
@@ -56,6 +56,18 @@ aarch64 | arm64) arch=arm64 ;;
 *) fail "requires Linux amd64 or arm64 (detected: $(uname -m))" ;;
 esac
 readlink -f / >/dev/null || fail 'requires readlink -f (detected: unsupported)'
+user_directory=()
+if [[ -z $prefix ]]; then
+	if ((EUID == 0)); then
+		prefix=/usr/local
+	else
+		[[ ${HOME:-} == /* ]] || fail 'per-user installation requires an absolute HOME'
+		prefix="$HOME/.local"
+		data=${XDG_DATA_HOME:-}
+		[[ $data == /* ]] || data="$prefix/share"
+		user_directory=("$data/ci-utils")
+	fi
+fi
 python3 -Ic 'import fcntl, hashlib, http.client, json, pathlib, socketserver, ssl, subprocess, urllib.request' ||
 	fail 'requires the Python standard library with Linux, HTTPS and SHA-256 support (detected: incomplete)'
 docker --version >/dev/null || fail 'requires a working Docker CLI (detected: unusable)'
@@ -88,6 +100,6 @@ done <"$work/$sums"
 	printf '%s  %s\n' "$digest" "$archive" | sha256sum --check --status || fail "checksum mismatch for $archive"
 	tar --no-same-owner -xzf "$archive"
 	[[ -f $base/lib/activate.py ]] || fail "archive does not contain the expected version $version and architecture $arch"
-	python3 -IB "$base/lib/activate.py" "$prefix" "$version" "$arch" "$digest"
+	python3 -IB "$base/lib/activate.py" "$prefix" "$version" "$arch" "$digest" "${user_directory[@]}"
 )
 CI_UTILS_INSTALL

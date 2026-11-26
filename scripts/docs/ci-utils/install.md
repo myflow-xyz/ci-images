@@ -35,9 +35,9 @@ All eight Bash entry points resolve their release with `readlink -f` and execute
 
 ## Paths, repeat installation and migration
 
-The installer accepts `X.Y.Z [--prefix ABSOLUTE_PATH] [--from-dir TRUSTED_RELEASE_DIRECTORY]`. The default prefix is `/usr/local`. Use `--from-dir` with a trusted offline copy of the checksum file and selected archive. The checksum file is the trust input. Obtain it from the authenticated release or an independently verified mirror. A writable private prefix also supports unprivileged installation for offline commands.
+The installer accepts `X.Y.Z [--prefix ABSOLUTE_PATH] [--from-dir TRUSTED_RELEASE_DIRECTORY]`. On Linux, an administrator installation defaults to `/usr/local` for the trusted maintenance service. Under an ordinary runner account, the installer creates `~/.local/bin` for public links and `${XDG_DATA_HOME:-$HOME/.local/share}/ci-utils` for releases. An explicit prefix selects its `bin/` and `libexec/ci-utils/` instead. Use `--from-dir` with a trusted offline copy of the checksum file and selected archive. Obtain the checksum file from the authenticated release or an independently verified mirror.
 
-| Path at the default prefix | Role |
+| Linux system installation path | Role |
 | --- | --- |
 | `/usr/local/bin/ci-*` | Eight Bash entry points on the runner's PATH. |
 | `/usr/local/libexec/ci-utils/releases/` | Complete release directories keyed by version and archive digest. |

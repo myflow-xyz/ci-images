@@ -26,6 +26,9 @@ done
 docker buildx build --load -t "$minimum" - <tests/utils/native-runtime.Dockerfile
 current=${CI_UTILS_NATIVE_CONTROLLER:-ci-base:test}
 for runtime in "$minimum" "$current"; do
+	docker run --rm --network none --user 1001:2001 \
+		-v "$repo:/workspace:ro" -v "$work/assets:/assets:ro" "$runtime" \
+		python3 -B /workspace/scripts/tests/ci-utils/user_install_integration.py /assets 0.0.31 0.0.32
 	docker run --rm --network none --user 0 \
 		-v "$repo:/workspace:ro" -v "$work/assets:/assets:ro" "$runtime" \
 		python3 -B /workspace/scripts/tests/ci-utils/install_integration.py /assets 0.0.31 0.0.32

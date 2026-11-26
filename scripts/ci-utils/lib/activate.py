@@ -18,7 +18,7 @@ def verify_probe(path, arch):
         sys.exit(f"ci-utils: expected a Linux {arch} probe, detected a different binary")
 
 
-def activate(prefix, version, arch, digest):
+def activate(prefix, version, arch, digest, user_directory=None):
     bundle = Path(__file__).resolve().parents[1]
     build = json.loads((bundle / "lib/build.json").read_text())
     if (build["version"], build["arch"]) != (version, arch) or not re.fullmatch(
@@ -28,7 +28,7 @@ def activate(prefix, version, arch, digest):
     verify_probe(bundle / "lib/ci-buildkit-probe", arch)
 
     public = prefix / "bin"
-    private = prefix / "libexec/ci-utils"
+    private = Path(user_directory) if user_directory else prefix / "libexec/ci-utils"
     releases = private / "releases"
     release = releases / f"{version}-{digest}"
     releases.mkdir(parents=True, exist_ok=True)
@@ -44,10 +44,8 @@ def activate(prefix, version, arch, digest):
                 shutil.copytree(bundle, tree)
                 (tree / "lib/archive.sha256").write_text(digest + "\n")
                 tree.rename(release)
-            links = {
-                public / cmd.name: Path("../libexec/ci-utils/current/bin") / cmd.name
-                for cmd in (release / "bin").iterdir()
-            }
+            current_bin = Path(os.path.relpath(private / "current/bin", public))
+            links = {public / cmd.name: current_bin / cmd.name for cmd in (release / "bin").iterdir()}
             links[private / "ci-docker-maintenance"] = Path(
                 "current/bin/ci-docker-maintenance"
             )
