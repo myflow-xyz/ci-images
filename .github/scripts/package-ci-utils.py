@@ -14,8 +14,8 @@ import tarfile
 
 ROOT = Path(__file__).resolve().parents[2]
 SUITE = ROOT / "scripts/ci-utils"
-sys.path.insert(0, str(SUITE / "lib"))
-from activate import verify_probe
+sys.path.insert(0, str(SUITE))
+from lib.installation.activate import verify_probe
 
 PLATFORMS = ("linux/amd64", "linux/arm64", "darwin/arm64")
 MACOS_COMMANDS = ("bin/ci-utils", "bin/ci-utils-list", "bin/ci-upgrade-images")
@@ -32,7 +32,7 @@ def package(version, revision, probes, output, platforms=PLATFORMS):
         commands = ("bin/ci-*",) if system == "linux" else MACOS_COMMANDS
         files = {
             str(source.relative_to(SUITE)): source.read_bytes()
-            for pattern in (*commands, "lib/*.py", "lib/ci_utils/*.py")
+            for pattern in (*commands, "lib/*.py", "lib/*/*.py")
             for source in SUITE.glob(pattern)
             if system == "linux"
             or not (
@@ -43,7 +43,7 @@ def package(version, revision, probes, output, platforms=PLATFORMS):
         if system == "linux":
             probe = probes / f"probe-{arch}"
             verify_probe(probe, arch)
-            files["lib/ci-buildkit-probe"] = probe.read_bytes()
+            files["lib/maintenance/ci-buildkit-probe"] = probe.read_bytes()
         files["lib/build.json"] = (
             json.dumps(
                 dict(version=version, revision=revision, os=system, arch=arch),
@@ -64,7 +64,7 @@ def package(version, revision, probes, output, platforms=PLATFORMS):
                 member.mtime = epoch
                 member.mode = (
                     0o755
-                    if name.startswith("bin/") or name == "lib/ci-buildkit-probe"
+                    if name.startswith("bin/") or name == "lib/maintenance/ci-buildkit-probe"
                     else 0o644
                 )
                 archive.addfile(member, io.BytesIO(data))

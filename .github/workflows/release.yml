@@ -128,6 +128,8 @@ jobs:
               '.[] | "| \(.release_ref) | \(.digest) |"' \
               "$OUTPUT_FILE"
             printf '\nConsumers should pin the recorded OCI index digest.\n'
+            printf '\n[Install native runner utilities](%s/%s/blob/%s/scripts/ci-utils/docs/installation/install.md).\n' \
+              "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GIT_TAG"
           } >"$RELEASE_NOTES"
 
           release_url=$(

@@ -53,7 +53,7 @@ Browse [the documentation index](docs/index.md) for detailed image contracts. Us
 
 ## Upgrade runner images
 
-Install ci-utils once on a Linux amd64, Linux arm64 or Apple Silicon macOS runner. Choose a release with native ci-utils archives. The pinned example uses `0.0.31`. [Installation and prerequisites](scripts/docs/ci-utils/install.md)
+Install ci-utils once on a Linux amd64, Linux arm64 or Apple Silicon macOS runner. Choose a release with native ci-utils archives. The pinned example uses `0.0.31`. [Installation and prerequisites](scripts/ci-utils/docs/installation/install.md)
 
 ```bash
 (set -eu; v=0.0.31; f=$(mktemp); trap 'rm -f "$f"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' "https://raw.githubusercontent.com/myflow-xyz/ci-images/v$v/scripts/ci-utils/install.sh" -o "$f"; sh "$f" "$v")
@@ -65,7 +65,7 @@ For a per-user install, add `~/.local/bin` to your `PATH` if needed. Then run th
 ci-upgrade-images
 ```
 
-This refreshes cached MyFlow images on the local Linux Docker daemon and keeps older tags. Use `--endpoint` if the daemon has a different Unix socket. [Refresh options](scripts/docs/ci-utils/ci-upgrade-images.md) · [Command catalog](scripts/ci-utils/README.md)
+This refreshes cached MyFlow images on the local Linux Docker daemon and keeps older tags. Use `--endpoint` if the daemon has a different Unix socket. [Refresh options](scripts/ci-utils/docs/images/ci-upgrade-images.md) · [Command catalog](scripts/ci-utils/README.md)
 
 ## Local image verification
 

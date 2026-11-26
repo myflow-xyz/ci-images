@@ -2,7 +2,7 @@
 
 set -euo pipefail
 output=$(cd "${1:?probe output directory is required}" && pwd)
-cd "$(dirname "${BASH_SOURCE[0]}")/../../scripts/ci-utils/buildkit-probe"
+cd "$(dirname "${BASH_SOURCE[0]}")/../../scripts/ci-utils/lib/maintenance/buildkit-probe"
 
 go test -race -mod=readonly ./...
 for arch in amd64 arm64; do

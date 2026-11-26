@@ -50,7 +50,7 @@ jobs:
       - name: Qualify installed archives and guarded maintenance
         env:
           CI_UTILS_NATIVE_CONTROLLER: ghcr.io/myflow-xyz/ci-base:0.0.30@sha256:2728dbdfbf4b1103aee5467a81201808aec41e8430cfed95893608ba03d97305
-        run: tests/ci-utils-native.sh
+        run: scripts/ci-utils/tests/installation/qualify.sh
 
   macos-client:
     name: ci/ci-utils/native (platform=darwin/arm64)
@@ -78,7 +78,8 @@ jobs:
             python3 .github/scripts/package-ci-utils.py "$version" "$GITHUB_SHA" \
               "$RUNNER_TEMP" "$RUNNER_TEMP/assets" --platform darwin/arm64
           done
-          python3 -B scripts/tests/ci-utils/user_install_integration.py "$RUNNER_TEMP/assets" 0.0.31 0.0.32
+          cd scripts/ci-utils
+          python3 -B -m tests.installation.user_install_integration "$RUNNER_TEMP/assets" 0.0.31 0.0.32
 
   contract:
     name: ci/runner-helpers/contract
@@ -122,6 +123,15 @@ jobs:
           tar -xzf "$shellspec_archive" \
             --strip-components=1 \
             --directory "$shellspec_root"
+
+      - name: Verify systemd example syntax
+        run: |
+          unit_directory=$(mktemp -d)
+          trap 'rm -rf "$unit_directory"' EXIT
+          cp scripts/ci-utils/examples/maintenance/*.service scripts/ci-utils/examples/maintenance/*.timer "$unit_directory/"
+          sed -i "s|/usr/local/libexec/ci-utils/ci-docker-maintenance|$GITHUB_WORKSPACE/scripts/ci-utils/bin/ci-docker-maintenance|" \
+            "$unit_directory/ci-docker-maintenance@.service"
+          systemd-analyze verify "$unit_directory"/*.service "$unit_directory"/*.timer
 
       - name: Verify CLI contract
         run: |

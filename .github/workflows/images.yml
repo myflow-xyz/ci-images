@@ -51,18 +51,6 @@ jobs:
           tests/static.sh
           git diff --check
 
-      - name: Verify utility policy and host protocol
-        run: sudo python3 -B -m unittest discover -s tests/utils -p 'test_*.py'
-
-      - name: Verify systemd example syntax
-        run: |
-          unit_directory=$(mktemp -d)
-          trap 'rm -rf "$unit_directory"' EXIT
-          cp scripts/examples/ci-utils/*.service scripts/examples/ci-utils/*.timer "$unit_directory/"
-          sed -i "s|/usr/local/libexec/ci-utils/ci-docker-maintenance|$GITHUB_WORKSPACE/scripts/ci-utils/bin/ci-docker-maintenance|" \
-            "$unit_directory/ci-docker-maintenance@.service"
-          systemd-analyze verify "$unit_directory"/*.service "$unit_directory"/*.timer
-
       - name: Verify documentation
         run: |
           npm ci \
@@ -76,11 +64,7 @@ jobs:
             "$GITHUB_WORKSPACE/images/node/markdownlint"
           images/node/markdownlint/node_modules/.bin/markdownlint-cli2 \
             README.md \
-            "docs/**/*.md" scripts/ci-utils/README.md "scripts/docs/ci-utils/*.md"
-
-      - name: Verify native runner archives
-        run: |
-          python3 -B -m unittest discover -s tests/qualification -p 'test_*.py'
+            "docs/**/*.md" scripts/ci-utils/README.md "scripts/ci-utils/docs/**/*.md"
 
       - name: Verify workflows
         env:
@@ -149,6 +133,9 @@ jobs:
               .github/workflows/images.yml \
               .github/workflows/publish-image.yml \
               images \
+              scripts/ci-utils/bin \
+              scripts/ci-utils/install.sh \
+              scripts/ci-utils/lib \
               manifests; then
               publish_changed=true
             fi
@@ -204,19 +191,6 @@ jobs:
 
       - name: Verify isolated network behavior and Engine API constraints
         run: python3 tests/net-e2e.py
-
-      - name: Verify utility policy and host protocol fixtures
-        run: |
-          # The test controller sets child identities/capabilities and inspects gate records.
-          docker run --rm --pull=never --network=none --read-only \
-            --user=0 --cap-drop=ALL --security-opt=no-new-privileges \
-            --cap-add=CHOWN --cap-add=DAC_OVERRIDE --cap-add=FSETID \
-            --cap-add=SETUID --cap-add=SETGID --cap-add=KILL --cap-add=SETPCAP \
-            --env TMPDIR=/tmp \
-            --tmpfs /tmp:rw,exec,nosuid,nodev,size=64m,mode=1777 \
-            --volume "$GITHUB_WORKSPACE:/workspace:ro" \
-            --workdir /workspace ci-base:test \
-            python3 -B -m unittest discover -s tests/utils -p 'test_*.py'
 
       - name: Verify non-root Compose fixtures and owned cleanup
         env:

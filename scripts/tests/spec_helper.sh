@@ -10,7 +10,7 @@ spec_helper_precheck() {
 	command -v shfmt >/dev/null 2>&1 ||
 		abort 'shfmt is required'
 
-	set -- ci-utils/install.sh ci-utils/bin/* tests/ci-utils/*.sh
+	set -- ci-utils/install.sh ci-utils/bin/* ci-utils/tests/*/*.sh
 	for source in "$@"; do
 		bash -n "$source" || abort "Bash syntax failed in $source"
 	done

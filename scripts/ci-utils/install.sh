@@ -108,7 +108,7 @@ done <"$work/$sums"
 	cd "$work"
 	printf '%s  %s\n' "$digest" "$archive" | "${checksum[@]}" --check --status || fail "checksum mismatch for $archive"
 	tar --no-same-owner -xzf "$archive"
-	[[ -f $base/lib/activate.py ]] || fail "archive does not contain the expected version $version and architecture $arch"
-	python3 -IB "$base/lib/activate.py" "$prefix" "$version" "$arch" "$digest" "${user_directory[@]}"
+	[[ -f $base/lib/installation/activate.py ]] || fail "archive does not contain the expected version $version and architecture $arch"
+	python3 -IB "$base/lib/installation/activate.py" "$prefix" "$version" "$arch" "$digest" "${user_directory[@]}"
 )
 CI_UTILS_INSTALL

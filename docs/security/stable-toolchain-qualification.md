@@ -6,7 +6,7 @@ PMem `task_000533` requalifies the accepted maintenance from `task_000524` at `d
 
 ## Dependency selection
 
-The audit covers all eight images, manifest tools and overrides, all five npm locks, the Go capability-helper module, both architectures' direct Debian package candidates, installed OS package upgrade plans, OCI parents, build infrastructure, six pinned actions, and the test-daemon image. The [manifest](../../manifests/versions.json) and locks contain exact pins.
+The audit covers the images in the assessed release, manifest tools and overrides, all five npm locks, the Go capability-helper module, both architectures' direct Debian package candidates, installed OS package upgrade plans, OCI parents, build infrastructure, six pinned actions, and the test-daemon image. The [manifest](../../manifests/versions.json) and locks contain exact pins.
 
 These updates are additional to the accepted PR 41 maintenance:
 
@@ -56,7 +56,7 @@ The checksum-guarded [braces mitigation][braces] remains in the Node image and h
 
 ## Verification
 
-All eight images were rebuilt and passed native ARM64 smoke checks for this assessment. The checks cover non-root identity, caches, protected Git settings, Go race execution, Goose SQLite migrations and rollback, sqlc/CEL behavior, npm replacements, Markdown math and depth guards, frontend commands and local tool precedence, Chromium launch, PostgreSQL/pgvector, and Docker/Compose offline behavior. The new npm Undici regressions pass inside the rebuilt Node image.
+All images in that release were rebuilt and passed native ARM64 smoke checks for this assessment. The checks cover non-root identity, caches, protected Git settings, Go race execution, Goose SQLite migrations and rollback, sqlc/CEL behavior, npm replacements, Markdown math and depth guards, frontend commands and local tool precedence, Chromium launch, PostgreSQL/pgvector, and Docker/Compose offline behavior. The new npm Undici regressions pass inside the rebuilt Node image.
 
 A separate frontend fixture passes Vitest `5.0.5` with its paired V8 coverage provider and 100% line coverage of the fixture, TypeScript checking, and a Vite production build. Static/release/publication/helper regressions, ShellCheck, shfmt, JavaScript syntax, and Markdown security checks pass. Utility unit tests pass 114 cases in Linux; image-resolution tests pass 16 cases; workflow tests pass 3 cases.
 
@@ -64,7 +64,7 @@ All image labels and final scans match manifest SHA-256:
 
 `ce41588a79b4a4771e6ad27740633f60d8544974e6fdb8174d73a52c24bd73fe`
 
-Trivy `0.76.0` scans all eight final images at all severities with vulnerability metadata updated at `2026-10-16T01:13:54Z`. The unchanged fixed HIGH/CRITICAL scan gate passes on every image. Baseline images for this assessment all match the accepted PR 41 manifest. The material fixed-version exception remains the legacy Buildx module described below.
+Trivy `0.76.0` scanned the final images in that release at all severities with vulnerability metadata updated at `2026-10-16T01:13:54Z`. The unchanged fixed HIGH/CRITICAL scan gate passes on every image. Baseline images for this assessment all match the accepted PR 41 manifest. The material fixed-version exception remains the legacy Buildx module described below.
 
 `govulncheck` `1.9.0` scans 30 distinct Go executables from the final images, including compiler tools, frontend native binaries, Buildx, the capability helper, and gosu. Its feed reports modification time `2026-10-08T22:31:09Z`. No finding has a recorded fixed version. Binary findings do not establish runtime exploitability or complete source-level reachability.
 
@@ -90,8 +90,8 @@ The Node runtime finding is established by direct reproduction and upstream advi
 
 | Finding | Package | Affected images |
 | --- | --- | --- |
-| [CVE-2026-40468][gawk-overflow] | `gawk` | All seven job images |
-| [CVE-2026-40469][gawk-32bit] | `gawk` | All seven job images |
+| [CVE-2026-40468][gawk-overflow] | `gawk` | Job images in the assessed release |
+| [CVE-2026-40469][gawk-32bit] | `gawk` | Job images in the assessed release |
 | [CVE-2026-6653][libxml2] | `libxml2` | Go, Playwright, PostgreSQL |
 | CVE-2026-43185 | `linux-libc-dev` | Go |
 
