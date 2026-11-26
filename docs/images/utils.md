@@ -107,13 +107,11 @@ CI_UTILS_IMAGE=ghcr.io/myflow-xyz/ci-utils:latest
 docker run --detach --name ci-utils --init --restart unless-stopped \
   --pull=never \
   --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock,readonly \
-  --mount type=bind,src=/etc/ci-utils/cleanup.json,dst=/etc/ci-utils/cleanup.json,readonly \
   --group-add "$(stat -c %g /var/run/docker.sock)" \
   --tmpfs /var/tmp:mode=1777 \
   "$CI_UTILS_IMAGE" sleep infinity
 
 docker exec ci-utils ci-utils-list
-docker exec ci-utils ci-remove-images
 ```
 
 If the repositories require authentication, set `GHCR_USER` and load `GHCR_TOKEN` from your runner's secret store. Log in before the refresh and again after a container restart, which clears the temporary credentials.
@@ -124,15 +122,32 @@ printf '%s\n' "$GHCR_TOKEN" |
     login ghcr.io --username "$GHCR_USER" --password-stdin
 ```
 
-Scope the credential directory to login and refresh. Retirement and cleanup previews reject an inherited `DOCKER_CONFIG`. The policy must be readable by the container user and select its mounted socket.
+Scope the credential directory to login and refresh. Catalog and refresh work with just the socket mount.
 
 ```bash
 docker exec --env DOCKER_CONFIG=/var/tmp/ghcr ci-utils ci-upgrade-images
 ```
 
-Reuse `docker exec` for catalog, help, and image retirement previews. Docker cleanup plans need the selected socket and a policy, and cleanup apply uses the [guarded host adapter](../maintenance.md). Go and pnpm commands use [selected cache mounts](#reset-shared-go-and-pnpm-caches). Add those mounts when creating the container for cache maintenance.
-
 Recreate the named container from the new utility tag or digest to use a newer helper version. Until the old container is removed, it keeps its original image in use.
+
+### Enable retirement previews
+
+For a named container that also previews retirement, use this launch when creating or replacing it. The policy must exist on the daemon host, be readable by the container user and select its mounted socket. Retirement and cleanup previews reject an inherited `DOCKER_CONFIG`.
+
+```bash
+CI_UTILS_IMAGE=ghcr.io/myflow-xyz/ci-utils:latest
+docker run --detach --name ci-utils --init --restart unless-stopped \
+  --pull=never \
+  --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock,readonly \
+  --mount type=bind,src=/etc/ci-utils/cleanup.json,dst=/etc/ci-utils/cleanup.json,readonly \
+  --group-add "$(stat -c %g /var/run/docker.sock)" \
+  --tmpfs /var/tmp:mode=1777 \
+  "$CI_UTILS_IMAGE" sleep infinity
+
+docker exec ci-utils ci-remove-images
+```
+
+Images with `org.myflow.ci.utils-image-maintenance=1` support the automatic preview above. On earlier images, pass an explicit selection such as `--versions 0.0.1`. Cleanup apply uses the [guarded host adapter](../maintenance.md). For Go or pnpm cache maintenance, add the [selected cache mounts](#reset-shared-go-and-pnpm-caches) when creating the container.
 
 ## Remove local suite versions
 
