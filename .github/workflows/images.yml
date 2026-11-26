@@ -76,7 +76,7 @@ jobs:
             "$GITHUB_WORKSPACE/images/node/markdownlint"
           images/node/markdownlint/node_modules/.bin/markdownlint-cli2 \
             README.md \
-            "docs/**/*.md"
+            "docs/**/*.md" scripts/ci-utils/README.md "scripts/docs/ci-utils/*.md"
 
       - name: Verify manual utility workflow boundaries and image resolution
         run: |

@@ -78,3 +78,27 @@ class BundleTests(unittest.TestCase):
         result = self.package(self.root / "output")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("amd64", result.stderr)
+
+    def test_every_release_command_has_a_spec_and_an_indexed_reference(self):
+        dest = self.root / "inventory"
+        result = self.package(dest)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        with tarfile.open(dest / f"ci-utils_{VERSION}_linux_arm64.tar.gz") as archive:
+            commands = {
+                Path(member.name).name for member in archive if "/bin/" in member.name
+            }
+        self.assertEqual(len(commands), 8)
+        expected = commands | {"install", "ci-buildkit-probe"}
+        specs = ROOT / "scripts/tests/ci-utils"
+        docs = ROOT / "scripts/docs/ci-utils"
+        self.assertEqual(
+            {p.name.removesuffix("_spec.sh") for p in specs.glob("*_spec.sh")}, expected
+        )
+        self.assertEqual({p.stem for p in docs.glob("*.md")}, expected)
+        index = (ROOT / "scripts/ci-utils/README.md").read_text()
+        for name in expected:
+            self.assertIn(f"../docs/ci-utils/{name}.md)", index)
+            self.assertIn(
+                f"shellspec tests/ci-utils/{name}_spec.sh",
+                (docs / f"{name}.md").read_text(),
+            )
