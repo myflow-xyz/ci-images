@@ -19,7 +19,15 @@ classic) snapshotter=false ;;
 esac
 fixture="ci-utils-e2e-$(python3 -c 'import uuid; print(uuid.uuid4().hex)')"
 socket=unix:///run/ci-utils-test/docker.sock
-image_id=$(docker image inspect "${CI_UTILS_TEST_IMAGE:-ci-utils:test}" --format '{{.Id}}')
+assets=
+daemon_args=()
+if [[ ${1:-} == --native ]]; then
+	assets=$(cd "${2:?native release directory is required}" && pwd -P)
+	version=${3:?native release version is required}
+	shift 3
+else
+	image_id=$(docker image inspect "${CI_UTILS_TEST_IMAGE:-ci-utils:test}" --format '{{.Id}}')
+fi
 outer_daemon=$(docker info --format '{{.ID}}')
 
 cleanup() {
@@ -30,10 +38,25 @@ cleanup() {
 	fi
 	docker rm --force "${fixture}-controller" "$fixture" >/dev/null 2>&1 || true
 	docker volume rm "${fixture}-run" "${fixture}-data" >/dev/null 2>&1 || true
-	docker image rm "${fixture}:fixture" >/dev/null 2>&1 || true
+	if [[ -n $assets ]]; then
+		rm -rf -- "$certs"
+	else
+		docker image rm "${fixture}:fixture" >/dev/null 2>&1 || true
+	fi
 	exit "$status"
 }
+if [[ -n $assets ]]; then
+	certs=$(mktemp -d)
+fi
 trap cleanup EXIT
+
+if [[ -n $assets ]]; then
+	openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj '/CN=ci-utils-fixture' \
+		-addext 'subjectAltName=DNS:ghcr.io,DNS:api.github.com' \
+		-keyout "$certs/key.pem" -out "$certs/ca.crt" 2>/dev/null
+	daemon_args+=(--add-host ghcr.io:127.0.0.1 --add-host api.github.com:127.0.0.1
+		--mount "type=bind,src=$certs/ca.crt,dst=/etc/docker/certs.d/ghcr.io/ca.crt,readonly")
+fi
 
 if ! docker image inspect "$dind_image" >/dev/null 2>&1; then
 	docker pull --quiet "$dind_image" >/dev/null
@@ -43,6 +66,7 @@ docker volume create "${fixture}-data" >/dev/null
 # Privilege is confined to the test daemon. No host socket, root, or PID namespace
 # is mounted. The production maintenance child retains its hardened profile.
 docker run --detach --pull=never --privileged --network=none \
+	"${daemon_args[@]}" \
 	--name "$fixture" --label xyz.myflow.cleanup.protect=true \
 	--env DOCKER_TLS_CERTDIR= \
 	--mount "type=volume,src=${fixture}-run,dst=/run/ci-utils-test" \
@@ -61,6 +85,29 @@ done
 	printf 'disposable Docker daemon did not become ready\n' >&2
 	exit 1
 }
+if [[ -n $assets ]]; then
+	docker run --rm --init --network="container:$fixture" --user=0 \
+		--name "${fixture}-controller" \
+		--mount "type=volume,src=${fixture}-run,dst=/run/ci-utils-test" \
+		--mount "type=volume,src=${fixture}-data,dst=/var/lib/docker,readonly" \
+		--mount "type=bind,src=${repository_root},dst=/workspace,readonly" \
+		--mount "type=bind,src=${assets},dst=/assets,readonly" \
+		--mount "type=bind,src=${certs},dst=/fixture-tls,readonly" \
+		--env "CI_UTILS_TEST_FIXTURE=${fixture}" --env "CI_UTILS_OUTER_DAEMON=${outer_daemon}" \
+		--env SSL_CERT_FILE=/fixture-tls/ca.crt \
+		"${CI_UTILS_NATIVE_CONTROLLER:-ci-base:test}" bash -ec '
+			/workspace/scripts/ci-utils/install.sh "$1" --from-dir /assets
+			if command -v shellspec >/dev/null; then
+				cd /workspace/scripts
+				export CI_UTILS_BIN=/usr/local/bin CI_UTILS_PROBE_ENDPOINT=unix:///run/ci-utils-test/docker.sock
+				CI_UTILS_DAEMON_ID=$(docker --host "$CI_UTILS_PROBE_ENDPOINT" info --format "{{.ID}}")
+				export CI_UTILS_DAEMON_ID
+				shellspec tests/ci-utils
+			fi
+			exec python3 -B /workspace/tests/utils/native_docker_e2e.py
+		' bash "$version"
+	exit
+fi
 docker image tag "$image_id" "${fixture}:fixture"
 docker image save "${fixture}:fixture" | docker exec --interactive "$fixture" docker --host "$socket" image load >/dev/null
 imported_image=$(docker exec "$fixture" docker --host "$socket" image inspect "${fixture}:fixture" --format '{{.Id}}')
