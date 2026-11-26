@@ -36,6 +36,8 @@ class DockerE2E(unittest.TestCase):
                 "cleanup requires the fresh, explicitly identified disposable daemon"
             )
         cls.daemon = info["ID"]
+        labels = Engine(SOCKET).inspect("images", IMAGE)["Config"].get("Labels") or {}
+        cls.image_maintenance = labels.get("org.myflow.ci.utils-image-maintenance") == "1"
         cls.containerd_store = any(
             row == ["driver-type", "io.containerd.snapshotter.v1"]
             for row in info["DriverStatus"]
@@ -135,16 +137,17 @@ class DockerE2E(unittest.TestCase):
 
     def test_documented_named_container_starts_without_a_policy(self):
         catalog = self.run_named_example("## Keep a utility container running")
-        self.assertIn("ci-upgrade-images", catalog)
+        self.assertIn("ci-utils-list", catalog)
         mounts = Engine(SOCKET).inspect("containers", "ci-utils")["Mounts"]
         self.assertNotIn("/etc/ci-utils/cleanup.json", {m["Destination"] for m in mounts})
-        result = json.loads(docker("exec", "--env", "DOCKER_CONFIG=/var/tmp/ghcr", "ci-utils",
-                                   "ci-upgrade-images").splitlines()[-1])
-        self.assertEqual((result["exit_code"], result["mutation_started"]), (0, False))
+        if self.image_maintenance:
+            self.assertIn("ci-upgrade-images", catalog)
+            result = json.loads(docker("exec", "--env", "DOCKER_CONFIG=/var/tmp/ghcr", "ci-utils",
+                                       "ci-upgrade-images").splitlines()[-1])
+            self.assertEqual((result["exit_code"], result["mutation_started"]), (0, False))
 
     def test_documented_named_container_previews_with_the_default_policy(self):
-        labels = Engine(SOCKET).inspect("images", IMAGE)["Config"].get("Labels") or {}
-        if labels.get("org.myflow.ci.utils-image-maintenance") != "1":
+        if not self.image_maintenance:
             self.skipTest("selected image supports explicit-version retirement only")
         (self.root / "preview.json").write_text(json.dumps({**self.policy, "endpoint": "unix:///var/run/docker.sock"}))
         preview = self.run_named_example("### Enable retirement previews")

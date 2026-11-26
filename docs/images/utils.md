@@ -122,7 +122,7 @@ printf '%s\n' "$GHCR_TOKEN" |
     login ghcr.io --username "$GHCR_USER" --password-stdin
 ```
 
-Scope the credential directory to login and refresh. Catalog and refresh work with just the socket mount.
+Scope the credential directory to login and refresh. The catalog works with just the socket mount. On images that list `ci-upgrade-images`, run the refresh with the same mount.
 
 ```bash
 docker exec --env DOCKER_CONFIG=/var/tmp/ghcr ci-utils ci-upgrade-images
