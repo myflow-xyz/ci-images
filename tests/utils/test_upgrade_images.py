@@ -11,7 +11,7 @@ import unittest
 from types import SimpleNamespace
 from unittest import mock
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "images/utils"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "scripts/ci-utils/lib"))
 
 from ci_utils.engine import Failure
 from ci_utils.upgrade_images import (

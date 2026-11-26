@@ -6,7 +6,8 @@ import sys
 
 sys.dont_write_bytecode = True
 here = pathlib.Path(__file__).resolve().parent
-sys.path[:0] = [str(here), str(here.parent / "images/utils")]
+library = here / "ci-utils/lib"
+sys.path[:0] = [str(here), str(library), str(library / "ci_utils")]
 
 from ci_docker_maintenance import main
 

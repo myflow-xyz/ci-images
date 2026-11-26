@@ -15,7 +15,7 @@ import time
 import unittest
 import uuid
 
-sys.path.insert(0, "/workspace/images/utils")
+sys.path.insert(0, "/workspace/scripts/ci-utils/lib")
 from ci_utils.engine import Engine, UnixConnection
 from service_fixture import service_command
 
@@ -841,7 +841,7 @@ os.kill(os.getppid(), signal.SIGKILL)
         self.host("init", umask=0o077)
         code = """
 import sys
-sys.path[:0] = ['/workspace/scripts', '/workspace/images/utils']
+sys.path[:0] = ['/workspace/scripts/ci-utils/lib/ci_utils', '/workspace/scripts/ci-utils/lib']
 from ci_docker_gate import Gate
 from ci_utils.engine import Engine
 with Gate(sys.argv[1]).job(participant='fixture', daemon_id=sys.argv[3]) as lease:
@@ -873,7 +873,7 @@ with Gate(sys.argv[1]).job(participant='fixture', daemon_id=sys.argv[3]) as leas
         candidate = self.create("--label", OWNED)
         code = """
 import signal, sys
-sys.path[:0] = ['/workspace/scripts', '/workspace/images/utils']
+sys.path[:0] = ['/workspace/scripts/ci-utils/lib/ci_utils', '/workspace/scripts/ci-utils/lib']
 from ci_docker_gate import Gate
 from ci_utils.engine import Engine
 with Gate(sys.argv[1]).job(participant='fixture', daemon_id=sys.argv[3]):

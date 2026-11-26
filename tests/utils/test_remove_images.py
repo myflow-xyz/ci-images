@@ -15,7 +15,7 @@ from test_apply_cli import StatefulAPI
 from test_policy import CID, IID, container, image
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-sys.path[:0] = [str(ROOT / "scripts"), str(ROOT / "images/utils")]
+sys.path[:0] = [str(ROOT / "scripts/ci-utils/lib/ci_utils"), str(ROOT / "scripts/ci-utils/lib")]
 PREFIX = "ghcr.io/myflow-xyz/ci-"
 REF = PREFIX + "go:0.0.1"
 ALIAS = "example.test/retained:latest"

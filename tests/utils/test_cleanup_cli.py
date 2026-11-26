@@ -49,7 +49,7 @@ class CleanupCLITests(unittest.TestCase):
                 for key in ("PATH", "HOME", "TMPDIR")
                 if key in os.environ
             }
-            environment["PYTHONPATH"] = str(ROOT / "images/utils")
+            environment["PYTHONPATH"] = str(ROOT / "scripts/ci-utils/lib")
             environment.update(env or {})
             result = subprocess.run(
                 [

@@ -10,7 +10,7 @@ import tempfile
 import time
 import unittest
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "scripts"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "scripts/ci-utils/lib/ci_utils"))
 
 from ci_docker_gate import Gate, GateError
 
@@ -30,7 +30,7 @@ class GateTests(unittest.TestCase):
         pathlib.Path(self.root.name).chmod(0o755)
         # Participant UIDs may not be able to traverse the runner's checkout.
         source = (
-            pathlib.Path(__file__).resolve().parents[2] / "scripts/ci_docker_gate.py"
+            pathlib.Path(__file__).resolve().parents[2] / "scripts/ci-utils/lib/ci_utils/ci_docker_gate.py"
         )
         module = pathlib.Path(self.root.name) / source.name
         module.write_bytes(source.read_bytes())
@@ -118,7 +118,7 @@ with context:
             env={
                 **os.environ,
                 "PYTHONPATH": str(
-                    pathlib.Path(__file__).resolve().parents[2] / "scripts"
+                    pathlib.Path(__file__).resolve().parents[2] / "scripts/ci-utils/lib/ci_utils"
                 ),
             },
             stdout=subprocess.PIPE,

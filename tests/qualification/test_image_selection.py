@@ -480,8 +480,8 @@ sys.exit(86)
         scripts.mkdir(parents=True)
         shutil.copy2(CLI, scripts / CLI.name)
         shutil.copytree(
-            ROOT / "images/utils/ci_utils",
-            checkout / "images/utils/ci_utils",
+            ROOT / "scripts/ci-utils/lib/ci_utils",
+            checkout / "scripts/ci-utils/lib/ci_utils",
             ignore=shutil.ignore_patterns("__pycache__"),
         )
 

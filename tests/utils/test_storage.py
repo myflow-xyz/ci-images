@@ -6,7 +6,7 @@ import pathlib
 import sys
 import unittest
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "images/utils"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "scripts/ci-utils/lib"))
 
 from ci_utils.storage import evaluate
 from test_policy import NOW, configured

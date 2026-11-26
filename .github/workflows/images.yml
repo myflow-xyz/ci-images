@@ -150,6 +150,8 @@ jobs:
               .github/workflows/images.yml \
               .github/workflows/publish-image.yml \
               images \
+              scripts/ci-utils/buildkit-probe \
+              scripts/ci-utils/lib \
               manifests; then
               publish_changed=true
             fi
@@ -159,7 +161,6 @@ jobs:
                 .github/scripts \
                 .github/workflows \
                 scripts/ci-docker-maintenance \
-                'scripts/ci_docker_*.py' \
                 scripts/examples/ci-utils \
                 tests; then
               smoke_changed=true

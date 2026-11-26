@@ -15,7 +15,7 @@ ENV GOCACHE=/var/cache/go/build \
     GOPATH=/var/lib/go \
     GOTOOLCHAIN=local
 
-COPY images/utils/buildkit-probe/ /var/tmp/buildkit-probe/
+COPY scripts/ci-utils/buildkit-probe/ /var/tmp/buildkit-probe/
 
 RUN --mount=type=cache,target=/var/cache/go/mod,sharing=locked \
     --mount=type=cache,target=/var/cache/go/build,sharing=locked \
@@ -38,7 +38,7 @@ ARG BUILD_REVISION=unknown
 ARG MANIFEST_SHA=unknown
 
 COPY --from=utils-tools-builder /out/ /opt/ci-tools/
-COPY images/utils/ci_utils/ /opt/ci-tools/ci-utils/ci_utils/
+COPY scripts/ci-utils/lib/ci_utils/ /opt/ci-tools/ci-utils/ci_utils/
 COPY images/utils/bin/ /opt/ci-tools/ci-utils/bin/
 
 RUN set -eu; \

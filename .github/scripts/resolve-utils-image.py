@@ -13,7 +13,7 @@ import urllib.parse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "images/utils"))
+sys.path.insert(0, str(ROOT / "scripts/ci-utils/lib"))
 from ci_utils.engine import UnixConnection
 
 REPOSITORY = "ghcr.io/myflow-xyz/ci-utils"

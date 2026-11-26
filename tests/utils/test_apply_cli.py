@@ -14,7 +14,7 @@ import unittest
 import urllib.parse
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-sys.path[:0] = [str(ROOT / "scripts"), str(ROOT / "images/utils")]
+sys.path[:0] = [str(ROOT / "scripts/ci-utils/lib/ci_utils"), str(ROOT / "scripts/ci-utils/lib")]
 
 from api_fixture import APIFixture, daemon_routes
 from cache_fixture import CacheTools

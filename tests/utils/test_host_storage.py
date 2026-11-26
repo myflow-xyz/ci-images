@@ -6,7 +6,7 @@ import sys
 import tempfile
 import unittest
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "scripts"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "scripts/ci-utils/lib/ci_utils"))
 
 from ci_docker_gate import GateError
 from ci_docker_storage import measure

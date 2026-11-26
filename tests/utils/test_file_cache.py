@@ -14,7 +14,7 @@ import unittest
 from unittest import mock
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "images/utils"))
+sys.path.insert(0, str(ROOT / "scripts/ci-utils/lib"))
 
 from ci_utils import file_cache
 

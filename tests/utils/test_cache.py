@@ -9,7 +9,7 @@ import sys
 import unittest
 from unittest.mock import patch
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "images/utils"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "scripts/ci-utils/lib"))
 
 from api_fixture import APIFixture, daemon_routes
 from cache_fixture import CacheTools

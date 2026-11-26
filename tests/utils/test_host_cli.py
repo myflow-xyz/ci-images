@@ -16,7 +16,7 @@ from host_fixture import HostDocker
 from service_fixture import service_command
 from test_apply_cli import DIGEST, ROOT, StatefulAPI
 
-sys.path[:0] = [str(ROOT / "scripts"), str(ROOT / "images/utils")]
+sys.path[:0] = [str(ROOT / "scripts/ci-utils/lib/ci_utils"), str(ROOT / "scripts/ci-utils/lib")]
 from ci_docker_gate import Gate, GateError
 
 
@@ -486,9 +486,9 @@ class HostCLITests(unittest.TestCase):
         # The installed service cannot rely on access to a private checkout.
         adapter = self.root / "adapter"
         adapter.mkdir()
-        for source in [self.launcher, *(ROOT / "scripts").glob("ci_docker_*.py")]:
+        for source in [self.launcher, *(ROOT / "scripts/ci-utils/lib/ci_utils").glob("ci_docker_*.py")]:
             shutil.copyfile(source, adapter / source.name)
-        shutil.copytree(ROOT / "images/utils/ci_utils", adapter / "ci_utils")
+        shutil.copytree(ROOT / "scripts/ci-utils/lib/ci_utils", adapter / "ci_utils")
         self.launcher = adapter / self.launcher.name
         self.api.path.parent.chmod(0o755)
         os.chown(self.api.path, -1, 2001)

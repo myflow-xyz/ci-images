@@ -17,8 +17,8 @@ Install from the same reviewed revision as the image. The following commands are
 ```sh
 sudo install -d -m 0755 /usr/local/libexec/ci-utils /etc/ci-utils /var/lib/ci-utils
 sudo install -m 0755 scripts/ci-docker-maintenance /usr/local/libexec/ci-utils/
-sudo install -m 0644 scripts/ci_docker_*.py /usr/local/libexec/ci-utils/
-sudo cp -R images/utils/ci_utils /usr/local/libexec/ci-utils/
+sudo install -m 0644 scripts/ci-utils/lib/ci_utils/ci_docker_*.py /usr/local/libexec/ci-utils/
+sudo cp -R scripts/ci-utils/lib/ci_utils /usr/local/libexec/ci-utils/
 sudo chmod -R go-w /usr/local/libexec/ci-utils
 ```
 

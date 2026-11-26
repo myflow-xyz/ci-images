@@ -8,7 +8,7 @@ import time
 import unittest
 import urllib.parse
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "images/utils"))
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "scripts/ci-utils/lib"))
 
 from api_fixture import APIFixture, daemon_routes
 from ci_utils.engine import APIError, Engine, Failure

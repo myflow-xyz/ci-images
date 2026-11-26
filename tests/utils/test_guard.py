@@ -10,7 +10,7 @@ import time
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-sys.path[:0] = [str(ROOT / "scripts"), str(ROOT / "images/utils")]
+sys.path[:0] = [str(ROOT / "scripts/ci-utils/lib/ci_utils"), str(ROOT / "scripts/ci-utils/lib")]
 
 from ci_docker_gate import Gate, LeaseServer
 from ci_utils.engine import Engine, Failure
@@ -129,7 +129,7 @@ except Failure as error:
                     "daily",
                     DIGEST,
                 ],
-                env={**os.environ, "PYTHONPATH": str(ROOT / "images/utils")},
+                env={**os.environ, "PYTHONPATH": str(ROOT / "scripts/ci-utils/lib")},
                 capture_output=True,
                 text=True,
                 timeout=5,
