@@ -1,6 +1,18 @@
 """Offline catalog shared by the utility image's discovery commands."""
 
 import argparse
+import sys
+
+MACOS_CATALOG = """Supported maintenance commands:
+  ci-utils               Show command help or the installed release (--version).
+  ci-utils-list          List the macOS client commands.
+  ci-upgrade-images      Refresh cached suite images on the selected Linux Docker daemon.
+    [--prune-old-versions] (default: keep old versions)
+
+Examples:
+  ci-utils --version
+  ci-upgrade-images --help
+"""
 
 CATALOG = """Supported maintenance commands:
   ci-utils               Show this catalog and command help.
@@ -39,6 +51,8 @@ def main(prog="ci-utils", argv=None, *, native=False):
         tools="Docker tools" if native else "Included Docker tools",
         image_note="" if native else "The image also includes the tools inherited from ci-base.\n",
     )
+    if native and sys.platform == "darwin":
+        catalog = MACOS_CATALOG
     parser = argparse.ArgumentParser(
         prog=prog,
         description="Reusable CI operations tools. Invoke each command directly.",

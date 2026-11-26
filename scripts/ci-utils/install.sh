@@ -46,19 +46,23 @@ command -v python3 >/dev/null || fail 'requires Python >= 3.9 (detected: missing
 python3 -Ic 'import sys; sys.exit(sys.version_info < (3, 9))' ||
 	fail "requires Python >= 3.9 (detected: $(python3 --version 2>&1))"
 [[ -x /usr/bin/env ]] || fail 'requires executable /usr/bin/env (detected: missing)'
-for tool in uname readlink docker curl sha256sum tar gzip mktemp cp rm; do
+for tool in uname readlink docker curl tar gzip mktemp cp rm; do
 	command -v "$tool" >/dev/null || fail "requires executable $tool (detected: missing)"
 done
-[[ $(uname -s) == Linux ]] || fail "requires Linux (detected: $(uname -s))"
-case "$(uname -m)" in
-x86_64) arch=amd64 ;;
-aarch64 | arm64) arch=arm64 ;;
-*) fail "requires Linux amd64 or arm64 (detected: $(uname -m))" ;;
+runner="$(uname -s)/$(uname -m)"
+case "$runner" in
+Linux/x86_64) system=linux arch=amd64 ;;
+Linux/aarch64 | Linux/arm64) system=linux arch=arm64 ;;
+Darwin/arm64) system=darwin arch=arm64 ;;
+*) fail "requires Linux amd64/arm64 or macOS arm64 (detected: $runner)" ;;
 esac
+checksum=(sha256sum)
+if [[ $system == darwin ]]; then checksum=(shasum -a 256); fi
+command -v "${checksum[0]}" >/dev/null || fail "requires executable ${checksum[0]} (detected: missing)"
 readlink -f / >/dev/null || fail 'requires readlink -f (detected: unsupported)'
 user_directory=()
 if [[ -z $prefix ]]; then
-	if ((EUID == 0)); then
+	if [[ $system == linux ]] && ((EUID == 0)); then
 		prefix=/usr/local
 	else
 		[[ ${HOME:-} == /* ]] || fail 'per-user installation requires an absolute HOME'
@@ -69,13 +73,18 @@ if [[ -z $prefix ]]; then
 	fi
 fi
 python3 -Ic 'import fcntl, hashlib, http.client, json, pathlib, socketserver, ssl, subprocess, urllib.request' ||
-	fail 'requires the Python standard library with Linux, HTTPS and SHA-256 support (detected: incomplete)'
+	fail 'requires the Python standard library with Unix, HTTPS and SHA-256 support (detected: incomplete)'
 docker --version >/dev/null || fail 'requires a working Docker CLI (detected: unusable)'
 work=$(mktemp -d)
 trap 'rm -rf -- "$work"' EXIT
-docker --config "$work" buildx version >/dev/null 2>&1 ||
-	fail 'requires Docker Buildx (detected: missing or unusable with a clean Docker configuration)'
-base="ci-utils_${version}_linux_${arch}"
+if [[ $system == linux ]]; then
+	docker --config "$work" buildx version >/dev/null 2>&1 ||
+		fail 'requires Docker Buildx (detected: missing or unusable with a clean Docker configuration)'
+else
+	docker buildx version >/dev/null 2>&1 ||
+		fail 'requires Docker Buildx (detected: missing or unusable in the runner account)'
+fi
+base="ci-utils_${version}_${system}_${arch}"
 archive="$base.tar.gz"
 sums="ci-utils_${version}_SHA256SUMS"
 fetch() {
@@ -97,7 +106,7 @@ done <"$work/$sums"
 [[ -n $digest ]] || fail "release checksum missing for $archive"
 (
 	cd "$work"
-	printf '%s  %s\n' "$digest" "$archive" | sha256sum --check --status || fail "checksum mismatch for $archive"
+	printf '%s  %s\n' "$digest" "$archive" | "${checksum[@]}" --check --status || fail "checksum mismatch for $archive"
 	tar --no-same-owner -xzf "$archive"
 	[[ -f $base/lib/activate.py ]] || fail "archive does not contain the expected version $version and architecture $arch"
 	python3 -IB "$base/lib/activate.py" "$prefix" "$version" "$arch" "$digest" "${user_directory[@]}"

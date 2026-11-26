@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shlex
 import shutil
 import sys
 import tempfile
@@ -14,18 +15,26 @@ def verify_probe(path, arch):
     with path.open("rb") as probe:
         header = probe.read(20)
     machine = {"amd64": 62, "arm64": 183}[arch]
-    if header[:6] != b"\x7fELF\x02\x01" or int.from_bytes(header[18:20], "little") != machine:
-        sys.exit(f"ci-utils: expected a Linux {arch} probe, detected a different binary")
+    if (
+        header[:6] != b"\x7fELF\x02\x01"
+        or int.from_bytes(header[18:20], "little") != machine
+    ):
+        sys.exit(
+            f"ci-utils: expected a Linux {arch} probe, detected a different binary"
+        )
 
 
 def activate(prefix, version, arch, digest, user_directory=None):
     bundle = Path(__file__).resolve().parents[1]
     build = json.loads((bundle / "lib/build.json").read_text())
-    if (build["version"], build["arch"]) != (version, arch) or not re.fullmatch(
-        r"[a-f0-9]{40}", build["revision"]
-    ):
-        sys.exit("ci-utils: release version, revision or architecture mismatch")
-    verify_probe(bundle / "lib/ci-buildkit-probe", arch)
+    if (build.get("os", "linux"), build["version"], build["arch"]) != (
+        sys.platform,
+        version,
+        arch,
+    ) or not re.fullmatch(r"[a-f0-9]{40}", build["revision"]):
+        sys.exit("ci-utils: release OS, version, revision or architecture mismatch")
+    if sys.platform == "linux":
+        verify_probe(bundle / "lib/ci-buildkit-probe", arch)
 
     public = prefix / "bin"
     private = Path(user_directory) if user_directory else prefix / "libexec/ci-utils"
@@ -45,10 +54,14 @@ def activate(prefix, version, arch, digest, user_directory=None):
                 (tree / "lib/archive.sha256").write_text(digest + "\n")
                 tree.rename(release)
             current_bin = Path(os.path.relpath(private / "current/bin", public))
-            links = {public / cmd.name: current_bin / cmd.name for cmd in (release / "bin").iterdir()}
-            links[private / "ci-docker-maintenance"] = Path(
-                "current/bin/ci-docker-maintenance"
-            )
+            links = {
+                public / cmd.name: current_bin / cmd.name
+                for cmd in (release / "bin").iterdir()
+            }
+            if sys.platform == "linux":
+                links[private / "ci-docker-maintenance"] = Path(
+                    "current/bin/ci-docker-maintenance"
+                )
             for link, target in links.items():
                 if link.is_symlink() and os.readlink(link) == str(target):
                     continue
@@ -68,8 +81,13 @@ def activate(prefix, version, arch, digest, user_directory=None):
     finally:
         os.close(lock)
     print(
-        f"Installed ci-utils {version} ({arch}, revision {build['revision']}) in {prefix}"
+        f"Installed ci-utils {version} ({sys.platform}/{arch}, revision {build['revision']}) in {public}"
     )
+    if sys.platform == "darwin" and str(public) not in os.get_exec_path():
+        print(
+            "Add this line to your shell startup file and run it in your current shell."
+        )
+        print(f'export PATH={shlex.quote(str(public))}:"$PATH"')
 
 
 if __name__ == "__main__":

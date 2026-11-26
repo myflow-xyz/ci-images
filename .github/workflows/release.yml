@@ -95,7 +95,7 @@ jobs:
           .github/scripts/release-images.sh "$GIT_TAG" "$OUTPUT_FILE"
           printf 'images=%s\n' "$(jq -c . "$OUTPUT_FILE")" >>"$GITHUB_OUTPUT"
 
-      - name: Package native utilities from the verified image index
+      - name: Package runner utilities and verified Linux probes
         env:
           GIT_TAG: ${{ steps.release.outputs.git_tag }}
         run: |

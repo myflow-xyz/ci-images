@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Package the two CI-built Linux probes with the native command suite."""
+"""Package the Linux maintenance suite and the macOS runner client."""
 
 import argparse
 import gzip
@@ -17,25 +17,37 @@ SUITE = ROOT / "scripts/ci-utils"
 sys.path.insert(0, str(SUITE / "lib"))
 from activate import verify_probe
 
+PLATFORMS = ("linux/amd64", "linux/arm64", "darwin/arm64")
+MACOS_COMMANDS = ("bin/ci-utils", "bin/ci-utils-list", "bin/ci-upgrade-images")
 
-def package(version, revision, probes, output):
+
+def package(version, revision, probes, output, platforms=PLATFORMS):
     epoch = int(os.environ.get("SOURCE_DATE_EPOCH", "0"))
     output.mkdir(parents=True, exist_ok=True)
     checksums = []
-    for arch in ("amd64", "arm64"):
-        verify_probe(probes / f"probe-{arch}", arch)
-        base = f"ci-utils_{version}_linux_{arch}"
+    for platform in platforms:
+        system, arch = platform.split("/")
+        base = f"ci-utils_{version}_{system}_{arch}"
         path = output / (base + ".tar.gz")
+        commands = ("bin/ci-*",) if system == "linux" else MACOS_COMMANDS
         files = {
             str(source.relative_to(SUITE)): source.read_bytes()
-            for pattern in ("bin/ci-*", "lib/*.py", "lib/ci_utils/*.py")
+            for pattern in (*commands, "lib/*.py", "lib/ci_utils/*.py")
             for source in SUITE.glob(pattern)
+            if system == "linux"
+            or not (
+                source.name.startswith("ci_docker_") or source.name == "file_cache.py"
+            )
         }
         files["LICENSE"] = (ROOT / "LICENSE").read_bytes()
-        files["lib/ci-buildkit-probe"] = (probes / f"probe-{arch}").read_bytes()
+        if system == "linux":
+            probe = probes / f"probe-{arch}"
+            verify_probe(probe, arch)
+            files["lib/ci-buildkit-probe"] = probe.read_bytes()
         files["lib/build.json"] = (
             json.dumps(
-                dict(version=version, revision=revision, arch=arch), sort_keys=True
+                dict(version=version, revision=revision, os=system, arch=arch),
+                sort_keys=True,
             )
             + "\n"
         ).encode()
@@ -68,9 +80,18 @@ if __name__ == "__main__":
     parser.add_argument("revision")
     parser.add_argument("probes", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument(
+        "--platform", choices=PLATFORMS, help="package only this qualification target"
+    )
     args = parser.parse_args()
     if not re.fullmatch(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)", args.version):
         parser.error("expected a pinned X.Y.Z version")
     if not re.fullmatch(r"[0-9a-f]{40}", args.revision):
         parser.error("expected a full source commit")
-    package(args.version, args.revision, args.probes, args.output)
+    package(
+        args.version,
+        args.revision,
+        args.probes,
+        args.output,
+        (args.platform,) if args.platform else PLATFORMS,
+    )

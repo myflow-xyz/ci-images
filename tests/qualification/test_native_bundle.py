@@ -24,7 +24,7 @@ class BundleTests(unittest.TestCase):
                 b"\x7fELF\x02\x01" + bytes(12) + machine.to_bytes(2, "little")
             )
 
-    def package(self, dest):
+    def package(self, dest, *options):
         return subprocess.run(
             [
                 sys.executable,
@@ -33,6 +33,7 @@ class BundleTests(unittest.TestCase):
                 REVISION,
                 self.root,
                 dest,
+                *options,
             ],
             capture_output=True,
             text=True,
@@ -51,24 +52,28 @@ class BundleTests(unittest.TestCase):
             path = first / name
             names.add(name)
             self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), digest)
-            arch = name.split("_")[-1].split(".")[0]
             base = name.removesuffix(".tar.gz")
+            system, arch = base.split("_")[-2:]
             with tarfile.open(path) as tar:
                 self.assertEqual(
                     json.load(tar.extractfile(f"{base}/lib/build.json")),
-                    dict(version=VERSION, revision=REVISION, arch=arch),
+                    dict(version=VERSION, revision=REVISION, os=system, arch=arch),
                 )
-                self.assertEqual(
-                    tar.extractfile(f"{base}/lib/ci-buildkit-probe").read(),
-                    (self.root / f"probe-{arch}").read_bytes(),
-                )
+                if system == "linux":
+                    self.assertEqual(
+                        tar.extractfile(f"{base}/lib/ci-buildkit-probe").read(),
+                        (self.root / f"probe-{arch}").read_bytes(),
+                    )
                 for member in tar:
                     self.assertTrue(
                         member.isfile() and member.name.startswith(base + "/")
                     )
         self.assertEqual(
             names,
-            {f"ci-utils_{VERSION}_linux_{arch}.tar.gz" for arch in ("amd64", "arm64")},
+            {
+                f"ci-utils_{VERSION}_{target}.tar.gz"
+                for target in ("linux_amd64", "linux_arm64", "darwin_arm64")
+            },
         )
 
     def test_rejects_a_probe_built_for_the_wrong_architecture(self):
@@ -78,6 +83,30 @@ class BundleTests(unittest.TestCase):
         result = self.package(self.root / "output")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("amd64", result.stderr)
+
+    def test_darwin_archive_ships_the_script_client(self):
+        dest = self.root / "assets"
+        result = self.package(dest)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        name = f"ci-utils_{VERSION}_darwin_arm64"
+        path = dest / (name + ".tar.gz")
+        self.assertTrue(path.is_file(), "release lacks the native macOS client")
+        smoke = self.root / "macos-only"
+        result = self.package(smoke, "--platform", "darwin/arm64")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(path.read_bytes(), (smoke / path.name).read_bytes())
+        self.assertIn(
+            f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}",
+            (dest / f"ci-utils_{VERSION}_SHA256SUMS").read_text().splitlines(),
+        )
+        with tarfile.open(path) as archive:
+            commands = {
+                Path(entry.name).name for entry in archive if "/bin/" in entry.name
+            }
+            self.assertEqual(
+                commands, {"ci-utils", "ci-utils-list", "ci-upgrade-images"}
+            )
+            self.assertNotIn(f"{name}/lib/ci-buildkit-probe", archive.getnames())
 
     def test_every_release_command_has_a_spec_and_an_indexed_reference(self):
         dest = self.root / "inventory"
