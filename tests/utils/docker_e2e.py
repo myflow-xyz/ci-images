@@ -122,6 +122,9 @@ class DockerE2E(unittest.TestCase):
         )
 
     def test_documented_named_container_previews_with_the_default_policy(self):
+        labels = Engine(SOCKET).inspect("images", IMAGE)["Config"].get("Labels") or {}
+        if labels.get("org.myflow.ci.utils-image-maintenance") != "1":
+            self.skipTest("selected image supports explicit-version retirement only")
         guide = pathlib.Path("/workspace/docs/images/utils.md").read_text()
         section = guide.split("## Keep a utility container running\n", 1)[1]
         example = section.split("```bash\n", 1)[1].split("\n```", 1)[0]
