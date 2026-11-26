@@ -100,6 +100,20 @@ class NativeDocker(unittest.TestCase):
     def save(self):
         self.config.write_text(json.dumps(self.policy))
 
+    def test_operator_bootstrap_downloads_the_pinned_release(self):
+        guide = Path("/workspace/scripts/docs/ci-utils/install.md").read_text()
+        example = guide.split("```bash\n", 1)[1].split("\n```", 1)[0]
+        version = json.loads(command(["ci-docker-cleanup", "version"]))["version"]
+        with ReleaseServer(self.engine.version["Arch"], version):
+            output = command(
+                ["bash", "-ec", example.replace("v=0.0.31;", f"v={version};")],
+                env={**os.environ, "CURL_CA_BUNDLE": "/fixture-tls/ca.crt"},
+            )
+        self.assertIn(f"Installed ci-utils {version}", output)
+        self.assertEqual(
+            json.loads(command(["ci-docker-cleanup", "version"]))["version"], version
+        )
+
     def test_refresh_and_digest_mismatch(self):
         old = REPO + ":0.0.1"
         seed(old)

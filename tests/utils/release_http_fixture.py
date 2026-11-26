@@ -5,6 +5,7 @@ import hashlib
 import http.server
 import io
 import json
+from pathlib import Path
 import ssl
 import tarfile
 import threading
@@ -14,9 +15,24 @@ VERSION = "2.3.4"
 
 
 class ReleaseServer:
-    def __init__(self, arch):
+    def __init__(self, arch, bundle_version=None):
         routes = {}
         prefix = "/v2/myflow-xyz/ci-go"
+        if bundle_version:
+            project = "/myflow-xyz/ci-images"
+            tag = "v" + bundle_version
+            installer = Path("/workspace/scripts/ci-utils/install.sh")
+            routes[f"{project}/{tag}/scripts/ci-utils/install.sh"] = (
+                "text/plain",
+                installer.read_bytes(),
+                None,
+            )
+            for asset in Path("/assets").glob(f"ci-utils_{bundle_version}_*"):
+                routes[f"{project}/releases/download/{tag}/{asset.name}"] = (
+                    "application/octet-stream",
+                    asset.read_bytes(),
+                    None,
+                )
 
         def store(kind, data, collection):
             if not isinstance(data, bytes):

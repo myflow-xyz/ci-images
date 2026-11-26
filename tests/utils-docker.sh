@@ -52,9 +52,10 @@ trap cleanup EXIT
 
 if [[ -n $assets ]]; then
 	openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj '/CN=ci-utils-fixture' \
-		-addext 'subjectAltName=DNS:ghcr.io,DNS:api.github.com' \
+		-addext 'subjectAltName=DNS:ghcr.io,DNS:api.github.com,DNS:github.com,DNS:raw.githubusercontent.com' \
 		-keyout "$certs/key.pem" -out "$certs/ca.crt" 2>/dev/null
 	daemon_args+=(--add-host ghcr.io:127.0.0.1 --add-host api.github.com:127.0.0.1
+		--add-host github.com:127.0.0.1 --add-host raw.githubusercontent.com:127.0.0.1
 		--mount "type=bind,src=$certs/ca.crt,dst=/etc/docker/certs.d/ghcr.io/ca.crt,readonly")
 fi
 
