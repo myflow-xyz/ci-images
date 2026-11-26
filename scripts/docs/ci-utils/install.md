@@ -48,8 +48,12 @@ The installer accepts `X.Y.Z [--prefix ABSOLUTE_PATH] [--from-dir TRUSTED_RELEAS
 
 Install success prints the version, architecture, source revision and prefix and exits 0. Usage and preflight failures exit 2. Download, extraction and filesystem errors return nonzero. A failed prerequisite, download or checksum leaves the active release usable. Repeat installation of the same archive reuses its release directory. To upgrade or select a previous verified native release, run its pinned bootstrap. Existing configuration, job records and reconciliation evidence survive activation.
 
+If you used the legacy named container, remove the `ci-upgrade-images` alias that calls `docker exec` from your Bash startup file (such as `~/.bashrc` or `~/.bash_profile`). Clear the active alias in each existing shell. Verify that `type -a` lists the installed executable first.
+
 ```bash
 command -v ci-utils
+if alias ci-upgrade-images >/dev/null 2>&1; then unalias ci-upgrade-images; fi
+type -a ci-upgrade-images
 ci-docker-cleanup version
 ci-utils-list
 ```

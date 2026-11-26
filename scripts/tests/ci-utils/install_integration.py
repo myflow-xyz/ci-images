@@ -123,6 +123,13 @@ def qualify(root, assets, version, upgrade):
     compat.write_text("# deployed adapter\n")
     install(version)
     before = active(version)
+    guide = (INSTALL.parents[1] / "docs/ci-utils/install.md").read_text()
+    checks = next(block.split("\n```", 1)[0] for block in guide.split("```bash\n")
+                  if block.startswith("command -v ci-utils\n"))
+    old_alias = "alias ci-upgrade-images='docker exec -i ci-utils ci-upgrade-images'"
+    output = run("bash", "-O", "expand_aliases", "-ec",
+                 f"{old_alias}\n{checks}\ncommand -v ci-upgrade-images", env=cli)
+    assert output.splitlines()[-1] == str(prefix / "bin/ci-upgrade-images"), output
     # The release never owns operator settings or persistent gate records.
     config = Path("/etc/ci-utils/cleanup.json")
     gate = Path("/var/lib/ci-utils/gate/maintenance.json")
