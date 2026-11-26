@@ -26,6 +26,8 @@ The workflow derives the stable image tag by removing the Git tag's single leadi
 
 One version always covers `ci-base`, `ci-go`, `ci-node`, `ci-vite`, `ci-playwright`, `ci-postgres`, `ci-utils`, and `ci-net`. Individual image versions do not advance independently.
 
+The `ci-utils` image is deprecated for runner maintenance. The release still publishes its verified index for existing image consumers and extracts the BuildKit probes from it for both native Linux archives. [Migrate to native ci-utils](../scripts/docs/ci-utils/install.md)
+
 ## Release transaction
 
 The workflow:

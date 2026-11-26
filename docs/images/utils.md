@@ -1,8 +1,8 @@
 # CI utilities image
 
-`ghcr.io/myflow-xyz/ci-utils` packages reusable scripts and tools for runner maintenance. It inherits the shared tools from [`ci-base`](base.md#included-tools), including Docker CLI, Compose, and Buildx.
+**The `ghcr.io/myflow-xyz/ci-utils` image is deprecated for runner maintenance.** Choose a release with a native archive for your runner. Linux receives the maintenance suite. Apple Silicon macOS receives discovery and image refresh. Existing container deployments can use their pinned image during migration. [Installation and migration](../../scripts/docs/ci-utils/install.md)
 
-This page covers existing deployments that run the utility image. For runner installation and direct CLI examples, use the native guide. [Native ci-utils commands](../../scripts/ci-utils/README.md)
+The following instructions cover those container deployments. The image inherits Docker CLI, Compose and Buildx from its base image. [Base image tools](base.md#included-tools)
 
 ## Included tools
 

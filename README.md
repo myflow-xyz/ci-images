@@ -22,7 +22,7 @@ pgvector/pgvector:0.8.7-pg18-trixie@<digest>
 
 - `ghcr.io/myflow-xyz/ci-base`: operating-system utilities, Python 3.15.2 standard-library scripting, Docker CLI with Compose and Buildx, and shared policy tools including OSV-Scanner and Trivy.
 - `ghcr.io/myflow-xyz/ci-go`: Go toolchain, native race-test prerequisites, and reusable Go CI executables.
-- `ghcr.io/myflow-xyz/ci-utils`: runner image refresh, guarded Docker cleanup, and explicit Go and pnpm cache resets. Its runtime inherits `ci-base`.
+- `ghcr.io/myflow-xyz/ci-utils` is deprecated for runner maintenance. Use native ci-utils from a release with runner archives. [Install ci-utils](scripts/docs/ci-utils/install.md)
 - `ghcr.io/myflow-xyz/ci-net`: network diagnostics and isolated network tests, with explicit namespace and capability constraints in its [image contract](docs/images/net.md).
 - `ghcr.io/myflow-xyz/ci-node`: generic Node.js, Markdown, and OpenAPI jobs that do not require a frontend toolchain.
 - `ghcr.io/myflow-xyz/ci-vite`: TypeScript, Vite, Vitest, Oxlint, and Oxfmt quality and build jobs.

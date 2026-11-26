@@ -22,7 +22,7 @@ The [repository README](../README.md) owns the project overview, image hierarchy
 - [`ci-vite`](images/vite.md)
 - [`ci-playwright`](images/playwright.md)
 - [`ci-postgres`](images/postgres.md)
-- [`ci-utils`](images/utils.md)
+- [`ci-utils` (deprecated for runner maintenance)](images/utils.md)
 
 ## Source authorities
 
