@@ -60,6 +60,8 @@ def network():
 def image():
     return {
         "Id": IID,
+        "Os": "linux",
+        "Architecture": "amd64",
         "Created": OLD,
         "Config": {"Labels": {}},
         "RepoTags": ["ci.example/fixture:old"],

@@ -1,6 +1,6 @@
 # ci-upgrade-images
 
-Refresh MyFlow suite images already cached on the selected runner. The command reads the GitHub release digest table, verifies each numeric tag and pulls the approved OCI index by digest. It updates the local numeric and `:latest` tags. It runs immediately and retains older versions by default.
+Refresh MyFlow suite images already cached on the selected daemon. The command reads the GitHub release digest table and pulls the approved index by digest for the Linux platform reported by that daemon. It checks the local image OS and architecture before updating the numeric and `:latest` tags. A runner's cross-build setting for `DOCKER_DEFAULT_PLATFORM` does not change this selection. Refresh runs immediately and retains older versions by default.
 
 ```bash
 ci-upgrade-images --endpoint unix:///var/run/docker.sock

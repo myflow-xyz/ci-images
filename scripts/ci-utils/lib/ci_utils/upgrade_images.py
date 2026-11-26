@@ -29,6 +29,7 @@ def docker_command(engine, arguments, operation, *, capture=False):
     for key in (
         "DOCKER_HOST",
         "DOCKER_CONTEXT",
+        "DOCKER_DEFAULT_PLATFORM",
         "DOCKER_API_VERSION",
         "DOCKER_TLS",
         "DOCKER_TLS_VERIFY",
@@ -70,8 +71,11 @@ def docker_command(engine, arguments, operation, *, capture=False):
     return result.stdout
 
 
-def pull_image(engine, reference):
-    docker_command(engine, ["image", "pull", reference], f"Docker pull for {reference}")
+def pull_image(engine, reference, platform):
+    docker_command(
+        engine, ["image", "pull", "--platform", platform, reference],
+        f"Docker pull for {reference}",
+    )
 
 
 def tag_image(engine, source, reference):
@@ -156,7 +160,7 @@ def published_version_tags(engine, digests):
     return versions
 
 
-def local_image_id(engine, reference, *, allow_missing=False):
+def local_image_id(engine, reference, platform, *, allow_missing=False):
     try:
         item = engine.inspect("images", reference)
     except APIError as error:
@@ -166,6 +170,10 @@ def local_image_id(engine, reference, *, allow_missing=False):
     identifier = item.get("Id") if isinstance(item, dict) else None
     if not isinstance(identifier, str) or not IMAGE_ID.fullmatch(identifier):
         raise Failure(5, f"cannot verify the local image for {reference}")
+    if f"{item.get('Os')}/{item.get('Architecture')}" != platform:
+        raise Failure(
+            5, f"local image {reference} does not match daemon platform {platform}"
+        )
     return identifier
 
 
@@ -203,22 +211,25 @@ def refresh_images(inventory, report):
             raise Failure(5, f"{reference} does not match its published image index")
 
         engine.preflight(daemon_id)
+        platform = f"{engine.version.get('Os')}/{engine.version.get('Arch')}"
+        if platform not in ("linux/amd64", "linux/arm64"):
+            raise Failure(2, f"unsupported Docker daemon platform: {platform}")
         engine.mutation_started = True
-        pull_image(engine, pinned)
+        pull_image(engine, pinned, platform)
         if registry_index_digest(engine, latest) != digest:
             raise Failure(5, f"{latest} changed during refresh")
 
         engine.preflight(daemon_id)
-        identifier = local_image_id(engine, pinned)
-        existing = local_image_id(engine, reference, allow_missing=True)
+        identifier = local_image_id(engine, pinned, platform)
+        existing = local_image_id(engine, reference, platform, allow_missing=True)
         if existing is not None and existing != identifier:
             raise Failure(5, f"local tag {reference} points to a different image")
         if existing is None:
             tag_image(engine, pinned, reference)
         tag_image(engine, pinned, latest)
         if (
-            local_image_id(engine, reference) != identifier
-            or local_image_id(engine, latest) != identifier
+            local_image_id(engine, reference, platform) != identifier
+            or local_image_id(engine, latest, platform) != identifier
         ):
             raise Failure(5, f"cannot verify refreshed tags {reference} and {latest}")
         refreshed[repository] = identifier

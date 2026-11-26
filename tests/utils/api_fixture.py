@@ -96,7 +96,7 @@ def daemon_routes():
     return {
         ("GET", "/version"): (
             200,
-            {"Version": "29.4.0", "ApiVersion": "1.54", "MinAPIVersion": "1.44"},
+            {"Version": "29.4.0", "ApiVersion": "1.54", "MinAPIVersion": "1.44", "Os": "linux", "Arch": "amd64"},
         ),
         ("GET", "/v1.48/info"): (
             200,

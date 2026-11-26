@@ -15,7 +15,7 @@ VERSION = "2.3.4"
 
 
 class ReleaseServer:
-    def __init__(self, arch, bundle_version=None):
+    def __init__(self, bundle_version=None):
         routes = {}
         prefix = "/v2/myflow-xyz/ci-go"
         if bundle_version:
@@ -48,30 +48,35 @@ class ReleaseServer:
         blob = store(
             "application/vnd.oci.image.layer.v1.tar+gzip", gzip.compress(data), "blobs"
         )
-        config = store(
-            "application/vnd.oci.image.config.v1+json",
-            dict(
-                architecture=arch,
-                os="linux",
-                config={},
-                rootfs=dict(
-                    type="layers",
-                    diff_ids=["sha256:" + hashlib.sha256(data).hexdigest()],
+        manifests = []
+        for arch in ("amd64", "arm64"):
+            config = store(
+                "application/vnd.oci.image.config.v1+json",
+                dict(
+                    architecture=arch,
+                    os="linux",
+                    config={},
+                    rootfs=dict(
+                        type="layers",
+                        diff_ids=["sha256:" + hashlib.sha256(data).hexdigest()],
+                    ),
                 ),
-            ),
-            "blobs",
-        )
-        kind = "application/vnd.oci.image.manifest.v1+json"
-        manifest = store(
-            kind,
-            dict(schemaVersion=2, mediaType=kind, config=config, layers=[blob]),
-            "manifests",
-        )
+                "blobs",
+            )
+            kind = "application/vnd.oci.image.manifest.v1+json"
+            manifest = store(
+                kind,
+                dict(schemaVersion=2, mediaType=kind, config=config, layers=[blob]),
+                "manifests",
+            )
+            manifests.append(
+                dict(**manifest, platform=dict(os="linux", architecture=arch))
+            )
         kind = "application/vnd.oci.image.index.v1+json"
         index = dict(
             schemaVersion=2,
             mediaType=kind,
-            manifests=[dict(**manifest, platform=dict(os="linux", architecture=arch))],
+            manifests=manifests,
         )
         self.digest = store(kind, index, "manifests")["digest"]
         good = routes[f"{prefix}/manifests/{self.digest}"]

@@ -104,7 +104,7 @@ class NativeDocker(unittest.TestCase):
         guide = Path("/workspace/scripts/docs/ci-utils/install.md").read_text()
         example = guide.split("```bash\n", 1)[1].split("\n```", 1)[0]
         version = json.loads(command(["ci-docker-cleanup", "version"]))["version"]
-        with ReleaseServer(self.engine.version["Arch"], version):
+        with ReleaseServer(version):
             output = command(
                 ["bash", "-ec", example.replace("v=0.0.31;", f"v={version};")],
                 env={**os.environ, "CURL_CA_BUNDLE": "/fixture-tls/ca.crt"},
@@ -118,16 +118,21 @@ class NativeDocker(unittest.TestCase):
         old = REPO + ":0.0.1"
         seed(old)
         args = ["ci-upgrade-images", "--config", str(self.config)]
-        with ReleaseServer(self.engine.version["Arch"]) as registry:
-            result = events(args)
+        arch = self.engine.version["Arch"]
+        other = "arm64" if arch == "amd64" else "amd64"
+        with ReleaseServer() as registry:
+            result = events(
+                args, env={**os.environ, "DOCKER_DEFAULT_PLATFORM": f"linux/{other}"}
+            )
             pulled = next(e for e in result if e["event"] == "pulled")
             self.assertEqual(
                 (pulled["id"], pulled["digest"]), (f"{REPO}:{VERSION}", registry.digest)
             )
             for tag in ("latest", VERSION):
+                image = self.engine.inspect("images", f"{REPO}:{tag}")
                 self.assertEqual(
-                    self.engine.inspect("images", f"{REPO}:{tag}")["Id"],
-                    pulled["image_id"],
+                    (image["Os"], image["Architecture"], image["Id"]),
+                    ("linux", arch, pulled["image_id"]),
                 )
             registry.mismatch()
             result = events([*args, "--prune-old-versions"], expected=5)

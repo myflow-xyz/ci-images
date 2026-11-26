@@ -108,13 +108,13 @@ class UpgradeImagesTests(unittest.TestCase):
             api.objects["images"][IID]["RepoDigests"] = [PREFIX + "vite@" + IID]
             requests = []
 
-            def fetch(engine, reference):
-                requests.append(reference)
+            def fetch(engine, reference, platform):
+                requests.append((reference, platform))
                 add_pulled_digest(api, reference)
 
             code, events = self.invoke(api, fetch)
             self.assertEqual(code, 0, events)
-            self.assertEqual(requests, [GO_PINNED, VITE_PINNED])
+            self.assertEqual(requests, [(GO_PINNED, "linux/amd64"), (VITE_PINNED, "linux/amd64")])
             self.assertEqual(api.objects["images"][IID]["RepoTags"], [REF, other])
             self.assertEqual(
                 api.objects["images"][NEW_ID]["RepoTags"],
@@ -133,7 +133,7 @@ class UpgradeImagesTests(unittest.TestCase):
     def test_prunes_only_after_success_and_preserves_latest_alias(self):
         with VersionAPI([REF, ALIAS], {NEW_ID: []}) as api:
 
-            def fetch(engine, reference):
+            def fetch(engine, reference, platform):
                 self.assertEqual(reference, GO_PINNED)
                 add_pulled_digest(api, reference)
 
@@ -150,7 +150,7 @@ class UpgradeImagesTests(unittest.TestCase):
     def test_failed_pull_keeps_versions_even_if_another_pull_succeeded(self):
         old_vite = PREFIX + "vite:0.0.1"
         with VersionAPI([REF, old_vite], {NEW_ID: [ALIAS]}) as api:
-            def fetch(engine, reference):
+            def fetch(engine, reference, platform):
                 if reference == VITE_PINNED:
                     raise Failure(5, "fixture pull failed")
                 add_pulled_digest(api, reference)
@@ -171,7 +171,7 @@ class UpgradeImagesTests(unittest.TestCase):
             api.before_inspect = move_latest
             code, events = self.invoke(
                 api,
-                lambda _, pinned: add_pulled_digest(api, pinned),
+                lambda _, pinned, _platform: add_pulled_digest(api, pinned),
                 "--prune-old-versions",
             )
             self.assertEqual(code, 0, events)
@@ -191,7 +191,7 @@ class UpgradeImagesTests(unittest.TestCase):
             api.before_inspect = change_daemon
             code, events = self.invoke(
                 api,
-                lambda _, pinned: add_pulled_digest(api, pinned),
+                lambda _, pinned, _platform: add_pulled_digest(api, pinned),
                 "--prune-old-versions",
             )
             self.assertEqual(code, 3, events)
@@ -209,7 +209,7 @@ class UpgradeImagesTests(unittest.TestCase):
         with VersionAPI([REF], {NEW_ID: [GO_VERSION, GO_LATEST]}) as api:
             for _ in range(2):
                 code, events = self.invoke(
-                    api, lambda _, pinned: add_pulled_digest(api, pinned)
+                    api, lambda _, pinned, _platform: add_pulled_digest(api, pinned)
                 )
                 self.assertEqual(code, 0, events)
             self.assertEqual(
@@ -244,7 +244,7 @@ class UpgradeImagesTests(unittest.TestCase):
         with VersionAPI([REF, GO_LATEST], {NEW_ID: []}) as api:
             indexes = dict(INDEXES)
 
-            def fetch(_engine, pinned):
+            def fetch(_engine, pinned, _platform):
                 add_pulled_digest(api, pinned)
                 indexes[GO_LATEST] = VITE_INDEX
 
@@ -257,7 +257,7 @@ class UpgradeImagesTests(unittest.TestCase):
     def test_conflicting_local_version_is_preserved(self):
         with VersionAPI([REF, GO_LATEST, GO_VERSION], {NEW_ID: []}) as api:
             code, events = self.invoke(
-                api, lambda _, pinned: add_pulled_digest(api, pinned), "--prune-old-versions"
+                api, lambda _, pinned, _platform: add_pulled_digest(api, pinned), "--prune-old-versions"
             )
             self.assertEqual(code, 5, events)
             self.assertIn("points to a different image", events[0]["message"])
@@ -266,6 +266,28 @@ class UpgradeImagesTests(unittest.TestCase):
                 api.objects["images"][IID]["RepoTags"], [REF, GO_LATEST, GO_VERSION]
             )
 
+    def test_foreign_platform_pull_preserves_both_tags_and_old_versions(self):
+        with VersionAPI([REF, GO_LATEST], {NEW_ID: []}) as api:
+            api.objects["images"][NEW_ID].update(Os="linux", Architecture="arm64")
+            code, events = self.invoke(
+                api, lambda _, pinned, _platform: add_pulled_digest(api, pinned), "--prune-old-versions"
+            )
+            self.assertEqual(code, 5, events)
+            self.assertIn("linux/amd64", next(e["message"] for e in events if e["event"] == "error"))
+            self.assertEqual(api.objects["images"][IID]["RepoTags"], [REF, GO_LATEST])
+            self.assertEqual(api.objects["images"][NEW_ID]["RepoTags"], [])
+            self.assertFalse(any(method == "DELETE" for method, _ in api.requests))
+
+    def test_unsupported_daemon_architecture_fails_before_pull(self):
+        with VersionAPI([REF, GO_LATEST]) as api:
+            api.routes[("GET", "/version")][1]["Arch"] = "riscv64"
+            pull = mock.Mock()
+            code, events = self.invoke(api, pull, "--prune-old-versions")
+            self.assertEqual(code, 2, events)
+            pull.assert_not_called()
+            self.assertFalse(events[-1]["mutation_started"])
+            self.assertEqual(api.objects["images"][IID]["RepoTags"], [REF, GO_LATEST])
+
     def test_docker_client_uses_explicit_socket_and_local_registry_config(self):
         engine = SimpleNamespace(
             endpoint="unix:///runner/docker.sock", deadline=time.monotonic() + 10
@@ -273,13 +295,14 @@ class UpgradeImagesTests(unittest.TestCase):
         environment = {
             "DOCKER_HOST": "tcp://remote:2375",
             "DOCKER_CONFIG": "/fixture/docker",
+            "DOCKER_DEFAULT_PLATFORM": "linux/amd64",
         }
         with (
             mock.patch.dict(os.environ, environment, clear=True),
             mock.patch("ci_utils.upgrade_images.subprocess.run") as run,
         ):
             run.return_value.returncode = 0
-            pull_image(engine, GO_LATEST)
+            pull_image(engine, GO_LATEST, "linux/arm64")
         self.assertEqual(
             run.call_args.args[0],
             [
@@ -290,10 +313,13 @@ class UpgradeImagesTests(unittest.TestCase):
                 engine.endpoint,
                 "image",
                 "pull",
+                "--platform",
+                "linux/arm64",
                 GO_LATEST,
             ],
         )
         self.assertNotIn("DOCKER_HOST", run.call_args.kwargs["env"])
+        self.assertNotIn("DOCKER_DEFAULT_PLATFORM", run.call_args.kwargs["env"])
 
 
 class ReleaseLookupTests(unittest.TestCase):
