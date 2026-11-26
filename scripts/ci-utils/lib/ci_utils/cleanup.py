@@ -53,6 +53,8 @@ def load_policy(path, environ, overrides):
         value = json.loads(
             data, object_pairs_hook=strict_object, parse_constant=reject_constant
         )
+    except FileNotFoundError as error:
+        raise InvalidPolicy(f"cleanup policy not found: {path}") from error
     except (OSError, ValueError, UnicodeError) as error:
         raise InvalidPolicy("cannot read a valid JSON policy") from error
     return configuration(value, environ, overrides)
