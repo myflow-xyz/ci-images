@@ -63,7 +63,7 @@ def load_policy(path, environ, overrides):
 def build_metadata():
     try:
         value = json.loads(
-            pathlib.Path("/opt/ci-tools/ci-utils/build.json").read_text()
+            (pathlib.Path(__file__).resolve().parents[1] / "build.json").read_text()
         )
         return {
             key: str(value.get(key, "unknown"))[:128] for key in ("revision", "version")
