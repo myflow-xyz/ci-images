@@ -9,10 +9,13 @@ import json
 import os
 from pathlib import Path
 import re
+import sys
 import tarfile
 
 ROOT = Path(__file__).resolve().parents[2]
 SUITE = ROOT / "scripts/ci-utils"
+sys.path.insert(0, str(SUITE / "lib"))
+from activate import verify_probe
 
 
 def package(version, revision, probes, output):
@@ -20,6 +23,7 @@ def package(version, revision, probes, output):
     output.mkdir(parents=True, exist_ok=True)
     checksums = []
     for arch in ("amd64", "arm64"):
+        verify_probe(probes / f"probe-{arch}", arch)
         base = f"ci-utils_{version}_linux_{arch}"
         path = output / (base + ".tar.gz")
         files = {
@@ -29,19 +33,32 @@ def package(version, revision, probes, output):
         }
         files["LICENSE"] = (ROOT / "LICENSE").read_bytes()
         files["lib/ci-buildkit-probe"] = (probes / f"probe-{arch}").read_bytes()
-        files["lib/build.json"] = (json.dumps(
-            dict(version=version, revision=revision, arch=arch), sort_keys=True
-        ) + "\n").encode()
-        with path.open("wb") as raw, gzip.GzipFile(
-            filename="", fileobj=raw, mode="wb", mtime=epoch
-        ) as compressed, tarfile.open(fileobj=compressed, mode="w|") as archive:
+        files["lib/build.json"] = (
+            json.dumps(
+                dict(version=version, revision=revision, arch=arch), sort_keys=True
+            )
+            + "\n"
+        ).encode()
+        with (
+            path.open("wb") as raw,
+            gzip.GzipFile(
+                filename="", fileobj=raw, mode="wb", mtime=epoch
+            ) as compressed,
+            tarfile.open(fileobj=compressed, mode="w|") as archive,
+        ):
             for name, data in sorted(files.items()):
                 member = tarfile.TarInfo(f"{base}/{name}")
                 member.size = len(data)
                 member.mtime = epoch
-                member.mode = 0o755 if name.startswith("bin/") or name == "lib/ci-buildkit-probe" else 0o644
+                member.mode = (
+                    0o755
+                    if name.startswith("bin/") or name == "lib/ci-buildkit-probe"
+                    else 0o644
+                )
                 archive.addfile(member, io.BytesIO(data))
-        checksums.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n")
+        checksums.append(
+            f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n"
+        )
     (output / f"ci-utils_{version}_SHA256SUMS").write_text("".join(checksums))
 
 

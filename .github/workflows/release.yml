@@ -95,6 +95,25 @@ jobs:
           .github/scripts/release-images.sh "$GIT_TAG" "$OUTPUT_FILE"
           printf 'images=%s\n' "$(jq -c . "$OUTPUT_FILE")" >>"$GITHUB_OUTPUT"
 
+      - name: Package native utilities from the verified image index
+        env:
+          GIT_TAG: ${{ steps.release.outputs.git_tag }}
+        run: |
+          utils=$(jq -er '.[] | select(.name == "utils") | .image + "@" + .digest' "$RUNNER_TEMP/released-images.json")
+          for arch in amd64 arm64; do
+            container=$(docker create --pull=always --platform "linux/$arch" "$utils")
+            trap 'docker rm "$container" >/dev/null' EXIT
+            revision=$(docker inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$container")
+            test "$revision" = "$GITHUB_SHA"
+            docker cp "$container:/opt/ci-tools/ci-utils/ci-buildkit-probe" "$RUNNER_TEMP/probe-$arch"
+            docker rm "$container" >/dev/null
+            trap - EXIT
+          done
+          export SOURCE_DATE_EPOCH
+          SOURCE_DATE_EPOCH=$(git show -s --format=%ct "$GITHUB_SHA")
+          python3 .github/scripts/package-ci-utils.py "${GIT_TAG#v}" "$GITHUB_SHA" "$RUNNER_TEMP" "$RUNNER_TEMP/native"
+          (cd "$RUNNER_TEMP/native" && sha256sum --check "ci-utils_${GIT_TAG#v}_SHA256SUMS")
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -115,7 +134,7 @@ jobs:
           } >"$RELEASE_NOTES"
 
           release_url=$(
-            gh release create "$GIT_TAG" \
+            gh release create "$GIT_TAG" "$RUNNER_TEMP/native/"* \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
               --title "$GIT_TAG" \

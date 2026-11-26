@@ -10,6 +10,14 @@ import sys
 import tempfile
 
 
+def verify_probe(path, arch):
+    with path.open("rb") as probe:
+        header = probe.read(20)
+    machine = {"amd64": 62, "arm64": 183}[arch]
+    if header[:6] != b"\x7fELF\x02\x01" or int.from_bytes(header[18:20], "little") != machine:
+        sys.exit(f"ci-utils: expected a Linux {arch} probe, detected a different binary")
+
+
 def activate(prefix, version, arch, digest):
     bundle = Path(__file__).resolve().parents[1]
     build = json.loads((bundle / "lib/build.json").read_text())
@@ -17,12 +25,7 @@ def activate(prefix, version, arch, digest):
         r"[a-f0-9]{40}", build["revision"]
     ):
         sys.exit("ci-utils: release version, revision or architecture mismatch")
-    with (bundle / "lib/ci-buildkit-probe").open("rb") as probe:
-        header = probe.read(20)
-    if header[:6] != b"\x7fELF\x02\x01" or int.from_bytes(header[18:20], "little") != {
-        "amd64": 62, "arm64": 183,
-    }[arch]:
-        sys.exit(f"ci-utils: expected a Linux {arch} probe, detected a different binary")
+    verify_probe(bundle / "lib/ci-buildkit-probe", arch)
 
     public = prefix / "bin"
     private = prefix / "libexec/ci-utils"
@@ -45,13 +48,18 @@ def activate(prefix, version, arch, digest):
                 public / cmd.name: Path("../libexec/ci-utils/current/bin") / cmd.name
                 for cmd in (release / "bin").iterdir()
             }
-            links[private / "ci-docker-maintenance"] = Path("current/bin/ci-docker-maintenance")
+            links[private / "ci-docker-maintenance"] = Path(
+                "current/bin/ci-docker-maintenance"
+            )
             for link, target in links.items():
                 if link.is_symlink() and os.readlink(link) == str(target):
                     continue
                 if link.parent == public and os.path.lexists(link):
                     sys.exit(f"ci-utils: public command path already in use: {link}")
-            for link, target in [(private / "current", release.relative_to(private)), *links.items()]:
+            for link, target in [
+                (private / "current", release.relative_to(private)),
+                *links.items(),
+            ]:
                 if link.is_symlink() and os.readlink(link) == str(target):
                     continue
                 # The bin directory may be on a different filesystem than libexec.
@@ -61,7 +69,9 @@ def activate(prefix, version, arch, digest):
                     os.replace(pending, link)
     finally:
         os.close(lock)
-    print(f"Installed ci-utils {version} ({arch}, revision {build['revision']}) in {prefix}")
+    print(
+        f"Installed ci-utils {version} ({arch}, revision {build['revision']}) in {prefix}"
+    )
 
 
 if __name__ == "__main__":
