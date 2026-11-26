@@ -1,10 +1,6 @@
 *
 !images/
 !images/**
-!scripts/
-!scripts/ci-utils/
-!scripts/ci-utils/buildkit-probe/**
-!scripts/ci-utils/lib/**
 **/__pycache__/
 !manifests/
 !manifests/**

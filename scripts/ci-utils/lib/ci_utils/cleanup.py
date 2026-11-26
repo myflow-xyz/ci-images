@@ -544,7 +544,7 @@ def main(argv=None, *, probe=None):
         if args.operation == "version":
             metadata = build_metadata()
             report.emit("version", **metadata, policy_schema=1,
-                        host_protocol=2 if "archive_digest" in metadata else 1)
+                        host_protocol=2)
             return 0
         if args.run_id is not None:
             if not re.fullmatch(r"[a-f0-9]{32}", args.run_id):
@@ -554,7 +554,6 @@ def main(argv=None, *, probe=None):
             "mode": args.operation,
             "profile": args.profile,
             **build_metadata(),
-            "image_digest": os.environ.get("CI_UTILS_IMAGE_DIGEST"),
         }
         overrides = {
             key: value
@@ -602,8 +601,7 @@ def main(argv=None, *, probe=None):
             info["ID"],
             policy_hash,
             args.profile,
-            report.context["image_digest"],
-            archive_digest=report.context.get("archive_digest"),
+            report.context.get("archive_digest"),
         )
         if args.operation == "apply":
             guard.check()

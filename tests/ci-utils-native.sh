@@ -30,5 +30,6 @@ for runtime in "$minimum" "$current"; do
 			/workspace/scripts/ci-utils/install.sh 0.0.31 --from-dir /assets
 			python3 -B /workspace/tests/utils/native_api_e2e.py
 		'
-	CI_UTILS_NATIVE_CONTROLLER="$runtime" tests/utils-docker.sh --native "$work/assets" 0.0.31
 done
+CI_UTILS_NATIVE_CONTROLLER="$minimum" CI_UTILS_TEST_IMAGE_STORE=classic tests/utils-docker.sh "$work/assets" 0.0.31
+CI_UTILS_NATIVE_CONTROLLER="$current" CI_UTILS_TEST_IMAGE_STORE=containerd tests/utils-docker.sh "$work/assets" 0.0.31

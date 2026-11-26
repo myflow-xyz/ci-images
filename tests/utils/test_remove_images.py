@@ -77,7 +77,7 @@ class VersionAPI(StatefulAPI):
 class RemoveImagesTests(unittest.TestCase):
     def invoke(self, api, *args, config=None, trusted=False, env=None):
         self.assertTrue(
-            (ROOT / "images/utils/bin/ci-remove-images").is_file(),
+            (ROOT / "scripts/ci-utils/bin/ci-remove-images").is_file(),
             "ci-utils does not yet provide its version removal command",
         )
         from ci_utils.remove_images import main
@@ -117,12 +117,12 @@ class RemoveImagesTests(unittest.TestCase):
                 "vite",
                 "playwright",
                 "postgres",
-                "utils",
                 "net",
             )
         ] + [PREFIX + "go:v0.0.2"]
         excluded = [
             ALIAS,
+            PREFIX + "retired:0.0.1",
             PREFIX + "go:0.0.10",
             PREFIX + "other:0.0.1",
             "example.test/ci-go:0.0.1",

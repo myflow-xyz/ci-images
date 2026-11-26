@@ -22,14 +22,12 @@ command -v jq >/dev/null 2>&1 || fail 'jq is required'
 
 required_files=(
 	.github/scripts/collect-published-images.sh
-	.github/scripts/resolve-utils-image.py
 	.github/scripts/merge-image.sh
 	.github/scripts/next-version.sh
 	.github/scripts/promote-latest.sh
 	.github/scripts/publish-image.sh
 	.github/scripts/release-images.sh
 	.github/workflows/images.yml
-	.github/workflows/utils-test.yml
 	.github/workflows/publish-image.yml
 	.github/workflows/release.yml
 	README.md
@@ -44,7 +42,6 @@ required_files=(
 	docs/images/vite.md
 	docs/images/playwright.md
 	docs/images/postgres.md
-	docs/images/utils.md
 	docs/maintenance.md
 	images/base/Dockerfile
 	images/base/bash-5.3-patches.sha256
@@ -75,7 +72,6 @@ required_files=(
 	images/postgres/Dockerfile
 	images/postgres/debian-packages.amd64.lock
 	images/postgres/debian-packages.arm64.lock
-	images/utils/Dockerfile
 	manifests/versions.json
 	tests/docker-integration.sh
 	tests/docker-integration_spec.sh
@@ -86,7 +82,6 @@ required_files=(
 	tests/scan-local-image.sh
 	tests/scan-local-image_spec.sh
 	tests/net-helpers_spec.sh
-	tests/utils-workflow.mjs
 )
 
 for relative_path in "${required_files[@]}"; do
@@ -219,13 +214,11 @@ jq --exit-status '
     "ghcr.io/myflow-xyz/ci-node",
     "ghcr.io/myflow-xyz/ci-playwright",
     "ghcr.io/myflow-xyz/ci-postgres",
-    "ghcr.io/myflow-xyz/ci-utils",
     "ghcr.io/myflow-xyz/ci-vite"
   ] | sort) and
   .images.base.parent == "upstream_images.debian" and
   .images.go.parent == "images.base" and
   .images.net.parent == "images.base" and
-  .images.utils.parent == "images.base" and
   (.tools.base.buildx as $buildx |
     ($buildx.commit | test("^[0-9a-f]{40}$")) and
     ($buildx.module_sum | test("^h1:[A-Za-z0-9+/]{43}=$")) and

@@ -35,7 +35,6 @@ jq --exit-status '
 		"node",
 		"playwright",
 		"postgres",
-		"utils",
 		"vite"
 	] and
 	([.images[].name] | sort) == [
@@ -45,7 +44,6 @@ jq --exit-status '
 		"ghcr.io/myflow-xyz/ci-node",
 		"ghcr.io/myflow-xyz/ci-playwright",
 		"ghcr.io/myflow-xyz/ci-postgres",
-		"ghcr.io/myflow-xyz/ci-utils",
 		"ghcr.io/myflow-xyz/ci-vite"
 	]
 ' "$manifest" >/dev/null

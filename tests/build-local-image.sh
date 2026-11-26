@@ -7,10 +7,10 @@ manifest="${repository_root}/manifests/versions.json"
 target=${1:-all}
 
 case "$target" in
-all | base | go | node | vite | playwright | postgres | utils | net) ;;
+all | base | go | node | vite | playwright | postgres | net) ;;
 *)
 	printf \
-		'usage: %s [all|base|go|node|vite|playwright|postgres|utils|net]\n' \
+		'usage: %s [all|base|go|node|vite|playwright|postgres|net]\n' \
 		"$0" \
 		>&2
 	exit 64
@@ -227,16 +227,6 @@ build_net() {
 		"$repository_root"
 }
 
-build_utils() {
-	build_image "${repository_root}/images/utils/Dockerfile" \
-		--load --tag ci-utils:test \
-		"${common_labels[@]}" \
-		--build-arg BASE_IMAGE=ci-base:test \
-		--build-arg GO_IMAGE=ci-go:test \
-		--build-arg "GO_VERSION=$(json '.tools.go.runtime')" \
-		"$repository_root"
-}
-
 build_go() {
 	build_image "${repository_root}/images/go/Dockerfile" \
 		--load \
@@ -433,7 +423,7 @@ build_postgres() {
 }
 
 if [[ $target == all || $target == base || $target == go ||
-	$target == node || $target == vite || $target == playwright || $target == utils || $target == net ]]; then
+	$target == node || $target == vite || $target == playwright || $target == net ]]; then
 	build_base
 fi
 
@@ -441,12 +431,8 @@ if [[ $target == all || $target == net ]]; then
 	build_net
 fi
 
-if [[ $target == all || $target == go || $target == utils ]]; then
+if [[ $target == all || $target == go ]]; then
 	build_go
-fi
-
-if [[ $target == all || $target == utils ]]; then
-	build_utils
 fi
 
 if [[ $target == all || $target == node ||

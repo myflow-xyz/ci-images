@@ -12,7 +12,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 class CatalogTests(unittest.TestCase):
     def invoke(self, command, *args):
         result = subprocess.run(
-            [sys.executable, "-B", str(ROOT / "images/utils/bin" / command), *args],
+            [sys.executable, "-IB", str(ROOT / "scripts/ci-utils/lib/run.py"), command, *args],
             env={**os.environ, "PATH": "", "DOCKER_HOST": "invalid-for-discovery"},
             capture_output=True,
             text=True,
@@ -23,6 +23,7 @@ class CatalogTests(unittest.TestCase):
         self.assertEqual(result.stderr, "")
         return result.stdout
 
+    @unittest.skipUnless(sys.platform == "linux", "Linux maintenance inventory")
     def test_list_describes_supported_commands_and_operations(self):
         catalog = self.invoke("ci-utils-list")
         for text in (
@@ -43,8 +44,6 @@ class CatalogTests(unittest.TestCase):
             "ci-buildkit-probe",
             "Internal capability checker",
             "full reset",
-            "container image is deprecated",
-            "Install native ci-utils",
         ):
             with self.subTest(text=text):
                 self.assertIn(text, catalog)
@@ -81,8 +80,7 @@ class CatalogTests(unittest.TestCase):
                 output = self.invoke(command, "-h")
                 self.assertIn(f"usage: {command}", output)
                 self.assertIn("Examples:", output)
-                self.assertIn("ci-go-cleanup -h", output)
-                self.assertIn("ci-pnpm-cleanup -h", output)
+                self.assertIn("ci-upgrade-images", output)
 
 
 if __name__ == "__main__":

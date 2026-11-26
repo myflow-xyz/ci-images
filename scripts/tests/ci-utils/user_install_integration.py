@@ -63,7 +63,6 @@ def qualify(assets, version, upgrade):
                     f"ci-utils {tag} (revision {build['revision']})"
                 )
                 catalog = run(public / "ci-utils-list", env=env)
-                assert "container image is deprecated" not in catalog
                 for name in commands:
                     assert f"  {name} " in catalog
                 if macos:

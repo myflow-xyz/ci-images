@@ -50,10 +50,6 @@
       "name": "ghcr.io/myflow-xyz/ci-postgres",
       "parent": "upstream_images.pgvector"
     },
-    "utils": {
-      "name": "ghcr.io/myflow-xyz/ci-utils",
-      "parent": "images.base"
-    },
     "net": {
       "name": "ghcr.io/myflow-xyz/ci-net",
       "parent": "images.base"

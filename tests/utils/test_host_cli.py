@@ -12,7 +12,7 @@ import sys
 import tempfile
 import unittest
 
-from host_fixture import HostDocker
+from host_fixture import stage_release
 from service_fixture import service_command
 from test_apply_cli import DIGEST, ROOT, StatefulAPI
 
@@ -29,9 +29,8 @@ class HostCLITests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory(prefix="cu-host-", dir="/tmp")
         self.addCleanup(self.temporary.cleanup)
         self.root = pathlib.Path(self.temporary.name)
-        self.launcher = ROOT / "scripts/ci-docker-maintenance"
+        self.launcher = stage_release(self.root)
         self.api = self.enterContext(StatefulAPI())
-        self.docker = self.enterContext(HostDocker(self.root, self.api.endpoint))
         (self.root / "docker-data").mkdir()
         self.api.routes[("GET", "/v1.48/info")][1].update(
             Driver="overlay2",
@@ -49,12 +48,11 @@ class HostCLITests(unittest.TestCase):
         self.settings = {
             "schema_version": 1,
             "policy_path": str(self.root / "policy.json"),
-            "image": DIGEST,
             "gate_directory": str(self.root / "gate"),
             "job_gid": 0,
             "participants": ["test-runner"],
             "admission_evidence": "fixture-only-lifecycle-adapter",
-            "docker_cli": str(self.docker.path),
+            "docker_cli": str(pathlib.Path(shutil.which("true")).resolve()),
             "storage": {
                 "docker": str(self.root / "docker-data"),
                 "containerd": None,
@@ -76,6 +74,7 @@ class HostCLITests(unittest.TestCase):
             sys.executable,
             "-B",
             str(self.launcher),
+            "ci-docker-maintenance",
             "--config",
             str(self.root / "host.json"),
             *args,
@@ -92,50 +91,30 @@ class HostCLITests(unittest.TestCase):
         )
         return result, [json.loads(line) for line in result.stdout.splitlines()]
 
-    def test_success_has_hardened_launch_and_releases_only_after_final_result(self):
+    def test_apply_releases_after_verified_terminal_result(self):
         result, events = self.invoke("apply", "--profile", "weekly")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIsNone(Gate(self.root / "gate").status()["maintenance"])
-        for flag in (
-            "--pull=never",
-            "--network=none",
-            "--read-only",
-            "--user=1001:2001",
-            "--cap-drop=ALL",
-            "--security-opt=no-new-privileges",
-            "--group-add=0",
-        ):
-            self.assertIn(flag, self.docker.create)
-        self.assertEqual(
-            [e["phase"] for e in events if e["event"] == "host_observations"],
-            ["before", "after"],
-        )
+        self.assertEqual([e["phase"] for e in events if e["event"] == "host_observations"], ["before", "after"])
         self.assertTrue(events[-1]["completion_known"])
-        self.assertEqual(self.docker.calls[-1][0], "rm")
-        self.assertFalse(
-            any(
-                call[0] in ("pull", "build", "stop", "kill")
-                for call in self.docker.calls
-            )
-        )
+        self.assertEqual(events[-1]["archive_digest"], DIGEST)
 
-    def test_launcher_failure_before_start_is_distinct_and_can_release(self):
-        self.docker.mode = "create-error"
-        result, events = self.invoke("apply")
-        self.assertEqual(result.returncode, 7, result.stdout + result.stderr)
-        self.assertEqual(events[-1]["exit_code"], 7)
-        self.assertIsNone(Gate(self.root / "gate").status()["maintenance"])
-        self.assertFalse(any(method == "DELETE" for method, _ in self.api.requests))
+    def worker_fault(self, statement):
+        original = self.launcher.read_text()
+        self.launcher.write_text(
+            'import sys\nif sys.argv[1] in ("ci-remove-images", "ci-docker-cleanup"):\n    '
+            + statement + "\n" + original
+        )
+        return original
 
     def version_fixture(self, **images):
         from test_remove_images import VersionAPI
 
         self.api = self.enterContext(VersionAPI(**images))
-        self.docker.endpoint = self.api.endpoint
         self.policy["endpoint"] = self.api.endpoint
         self.save()
 
-    def test_version_removal_uses_hardened_host_and_preserves_other_tags(self):
+    def test_version_removal_preserves_other_tags(self):
         from test_remove_images import ALIAS, IID
 
         self.version_fixture()
@@ -148,9 +127,6 @@ class HostCLITests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(self.api.objects["images"][IID]["RepoTags"], [ALIAS])
-        self.assertEqual(self.docker.entrypoint, "ci-remove-images")
-        self.assertIn("--network=none", self.docker.create)
-        self.assertIn("--user=1001:2001", self.docker.create)
         self.assertIsNone(Gate(self.root / "gate").status()["maintenance"])
 
     def test_omitted_versions_use_the_guarded_retirement_command(self):
@@ -160,14 +136,12 @@ class HostCLITests(unittest.TestCase):
         result, events = self.invoke("remove-images", "--apply")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(self.api.objects["images"][IID]["RepoTags"], [ALIAS])
-        self.assertEqual(self.docker.entrypoint, "ci-remove-images")
-        self.assertNotIn("--versions", self.docker.application_args)
         self.assertTrue(any(e["event"] == "removed" for e in events))
         self.assertIsNone(Gate(self.root / "gate").status()["maintenance"])
 
     def test_version_lease_rejects_changed_selection(self):
         self.version_fixture()
-        self.docker.mode = "wrong-versions"
+        self.worker_fault('sys.argv[sys.argv.index("--versions") + 1] = "9.9.9"')
         result, _ = self.invoke(
             "remove-images", "--versions", "0.0.1", "--apply"
         )
@@ -179,7 +153,7 @@ class HostCLITests(unittest.TestCase):
 
     def test_version_removal_lost_report_retains_admission_block(self):
         self.version_fixture()
-        self.docker.mode = "lost-report"
+        self.worker_fault("sys.exit(0)")
         result, _ = self.invoke(
             "remove-images", "--versions", "0.0.1", "--apply"
         )
@@ -188,37 +162,25 @@ class HostCLITests(unittest.TestCase):
             Gate(self.root / "gate").status()["maintenance"]["phase"], "uncertain"
         )
 
-    def test_unknown_start_or_lost_terminal_report_preserves_admission_block(self):
+    def test_lost_terminal_report_preserves_admission_block(self):
         # Separate cases need separate provisioned gates; no test reset conceals uncertainty.
-        self.docker.mode = "lost-report"
+        self.worker_fault("sys.exit(0)")
         result, _ = self.invoke("apply")
         self.assertEqual(result.returncode, 6, result.stdout + result.stderr)
         gate = Gate(self.root / "gate")
         self.assertEqual(gate.status()["maintenance"]["phase"], "uncertain")
         with self.assertRaises(GateError), gate.job(wait_seconds=0.02):
             self.fail("lost terminal report reopened admission")
-        self.assertFalse(
-            any(call[0] in ("rm", "stop", "kill") for call in self.docker.calls)
-        )
 
-    def test_failed_start_reply_retains_unknown_state_without_forcing_a_stop(self):
-        self.docker.mode = "start-error"
-        result, _ = self.invoke("apply")
-        self.assertEqual(result.returncode, 7, result.stdout + result.stderr)
-        self.assertEqual(
-            Gate(self.root / "gate").status()["maintenance"]["phase"], "uncertain"
-        )
-        self.assertFalse(
-            any(call[0] in ("rm", "stop", "kill") for call in self.docker.calls)
-        )
+    def test_report_for_another_daemon_is_rejected(self):
+        from ci_docker_maintenance import terminal_result
 
-    def test_report_for_another_daemon_cannot_release_the_host_lease(self):
-        self.docker.mode = "wrong-report-daemon"
-        result, _ = self.invoke("apply")
-        self.assertEqual(result.returncode, 6, result.stdout + result.stderr)
-        self.assertEqual(
-            Gate(self.root / "gate").status()["maintenance"]["phase"], "uncertain"
-        )
+        event = {"event": "result", "run_id": "run", "mode": "apply", "profile": "weekly",
+                 "archive_digest": DIGEST, "exit_code": 0, "completion_known": True,
+                 "mutation_started": True, "policy_hash": "policy", "daemon_id": "different"}
+        with self.assertRaises(GateError):
+            terminal_result(json.dumps(event), 0, "run", "policy", {"archive_digest": DIGEST},
+                            "apply", "weekly", "fixture-daemon")
 
     def test_stale_or_mismatched_reconciliation_does_not_clear_records(self):
         record, path = self.reconciliation_evidence()
@@ -239,12 +201,14 @@ class HostCLITests(unittest.TestCase):
                     Gate(self.root / "gate").status()["maintenance"]["id"], record["id"]
                 )
 
-    def test_unqualified_image_and_mutable_settings_fail_before_launch(self):
-        self.docker.mode = "wrong-image"
+    def test_unverified_archive_and_mutable_settings_fail_before_launch(self):
+        metadata = self.launcher.parent / "archive.sha256"
+        checksum = metadata.read_text()
+        metadata.write_text("invalid")
         result, _ = self.invoke("apply")
         self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
-        self.assertFalse(any(call[0] == "create" for call in self.docker.calls))
         self.assertIsNone(Gate(self.root / "gate").status()["maintenance"])
+        metadata.write_text(checksum)
         (self.root / "host.json").chmod(0o666)
         result, _ = self.invoke("apply")
         self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
@@ -259,7 +223,7 @@ class HostCLITests(unittest.TestCase):
                     else ""
                 ),
                 (
-                    f"subprocess.run([sys.executable, '-B', {str(ROOT / 'scripts/ci-docker-maintenance')!r}, 'job-complete'], check=True)"
+                    f"subprocess.run([sys.executable, '-B', {str(self.launcher)!r}, 'ci-docker-maintenance', 'job-complete'], check=True)"
                     if complete
                     else ""
                 ),
@@ -344,7 +308,8 @@ class HostCLITests(unittest.TestCase):
                     "-B",
                     str(ROOT / "tests/utils/interrupt_job_launch.py"),
                     str(pid_path),
-                    str(ROOT / "scripts/ci-docker-maintenance"),
+                    str(self.launcher),
+                    "ci-docker-maintenance",
                     "--config",
                     str(self.root / "host.json"),
                     "job",
@@ -407,8 +372,9 @@ class HostCLITests(unittest.TestCase):
         self.assertEqual(Gate(self.root / "gate").status()["jobs"], [])
 
     def reconciliation_evidence(self):
-        self.docker.mode = "lost-report"
+        original = self.worker_fault("sys.exit(0)")
         result, _ = self.invoke("apply")
+        self.launcher.write_text(original)
         self.assertEqual(result.returncode, 6, result.stdout + result.stderr)
         record = Gate(self.root / "gate").status()["maintenance"]
         proof = {
@@ -443,8 +409,10 @@ class HostCLITests(unittest.TestCase):
             json.loads(audits[0].read_text())["evidence"]["record_id"], record["id"]
         )
 
-    def test_reconciliation_cannot_override_a_running_cleanup_container(self):
+    def test_reconciliation_cannot_override_a_running_recorded_container(self):
         record, path = self.reconciliation_evidence()
+        record["container_id"] = "f" * 64
+        (self.root / "gate/maintenance.json").write_text(json.dumps(record))
         self.api.routes[
             ("GET", "/v1.48/containers/" + record["container_id"] + "/json")
         ] = (200, {"Id": record["container_id"], "State": {"Running": True}})
@@ -483,13 +451,6 @@ class HostCLITests(unittest.TestCase):
 
     def test_service_recovery_reads_non_root_participant_records(self):
         self.root.chmod(0o755)
-        # The installed service cannot rely on access to a private checkout.
-        adapter = self.root / "adapter"
-        adapter.mkdir()
-        for source in [self.launcher, *(ROOT / "scripts/ci-utils/lib/ci_utils").glob("ci_docker_*.py")]:
-            shutil.copyfile(source, adapter / source.name)
-        shutil.copytree(ROOT / "scripts/ci-utils/lib/ci_utils", adapter / "ci_utils")
-        self.launcher = adapter / self.launcher.name
         self.api.path.parent.chmod(0o755)
         os.chown(self.api.path, -1, 2001)
         self.api.path.chmod(0o660)

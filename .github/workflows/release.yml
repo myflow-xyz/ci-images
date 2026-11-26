@@ -128,8 +128,6 @@ jobs:
               '.[] | "| \(.release_ref) | \(.digest) |"' \
               "$OUTPUT_FILE"
             printf '\nConsumers should pin the recorded OCI index digest.\n'
-            printf '\nThe ci-utils container image is deprecated for runner maintenance. [Install native ci-utils from this release](%s/%s/blob/%s/scripts/docs/ci-utils/install.md).\n' \
-              "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GIT_TAG"
           } >"$RELEASE_NOTES"
 
           release_url=$(
@@ -198,5 +196,5 @@ jobs:
         run: |
           printf '%s\n' "$RELEASED_IMAGES" >"$OUTPUT_FILE"
           .github/scripts/promote-latest.sh "$OUTPUT_FILE"
-          printf 'All eight latest tags match the published release digests.\n' \
+          printf 'All seven latest tags match the published release digests.\n' \
             >>"$GITHUB_STEP_SUMMARY"

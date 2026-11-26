@@ -12,7 +12,7 @@ from functools import partial
 from .cleanup import Inventory, Parser, Report, load_policy
 from .engine import APIError, Engine, Failure
 from .policy import IMAGE_ID, InvalidPolicy, configuration, duration
-from .remove_images import CI_REPOSITORY, VERSION, remove_versions
+from .remove_images import REPOSITORIES, VERSION, remove_versions
 
 PROFILE = "upgrade-images"
 DEFAULT_ENDPOINT = "unix:///var/run/docker.sock"
@@ -192,7 +192,7 @@ def refresh_images(inventory, report):
                 raise Failure(5, "cannot establish local image aliases")
             for reference in aliases:
                 repository, _, _ = reference.rpartition(separator)
-                if CI_REPOSITORY.fullmatch(repository):
+                if repository in REPOSITORIES:
                     repositories.add(repository)
     report.counts["repositories.matched"] = len(repositories)
 

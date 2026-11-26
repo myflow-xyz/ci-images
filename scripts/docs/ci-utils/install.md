@@ -18,7 +18,7 @@ The bootstrap uses the runner's OS and CPU to select `linux_amd64`, `linux_arm64
 | Runner utilities | `uname`, `readlink -f`, `mktemp -d`, `cp`, `rm` | Select the platform, resolve installed entry points, stage files and remove temporary data. |
 | Docker CLI with Buildx | `docker --version` and `docker buildx version` must succeed | Linux maintenance needs Buildx with an empty Docker configuration. The macOS client checks Buildx in the runner account's configuration, which it also uses for refresh. |
 
-Python 3.9 is both the source lower bound and the qualified minimum for this package. Linux qualification exercised Bash 5.0.3 with Python 3.9.23 and Bash 5.3.20 with Python 3.15.2. It also exercised rejection of Bash 4.4 and Python 3.8. The probe is a static Go binary. Runners need no Go compiler, pip packages or utility container.
+Python 3.9 is both the source lower bound and the qualified minimum for this package. Linux qualification exercised Bash 5.0.3 with Python 3.9.23 and Bash 5.3.20 with Python 3.15.2. It also exercised rejection of Bash 4.4 and Python 3.8. The probe is a static Go binary. The release supplies the binary. The Python commands use the standard library.
 
 Preflight runs before installation writes. It checks the Docker CLI and Buildx versions and can run with the daemon stopped. For example, `requires Docker Buildx (detected: missing or unusable with a clean Docker configuration)` means the plugin could not report its version without personal Docker settings. Install the system-wide Docker Buildx CLI plugin on Linux and repeat the pinned command. The installed catalog and filesystem cache commands work offline. Image and Docker resource operations check the selected daemon when invoked.
 
@@ -54,7 +54,7 @@ export PATH="$HOME/.local/bin:$PATH"
 
 Install success prints the version, architecture, source revision and prefix and exits 0. Usage and preflight failures exit 2. Download, extraction and filesystem errors return nonzero. A failed prerequisite, download or checksum leaves the active release usable. Repeat installation of the same archive reuses its release directory. To upgrade or select a previous verified native release, run its pinned bootstrap. Existing configuration, job records and reconciliation evidence survive activation.
 
-If you used the legacy named container, remove the `ci-upgrade-images` alias that calls `docker exec` from your Bash startup file (such as `~/.bashrc` or `~/.bash_profile`). Clear the active alias in each existing shell. Verify that `type -a` lists the installed executable first.
+Remove any `ci-upgrade-images` alias from your Bash startup file (such as `~/.bashrc` or `~/.bash_profile`). Clear the active alias in each existing shell. Verify that `type -a` lists the installed executable first.
 
 ```bash
 command -v ci-utils
@@ -64,6 +64,6 @@ ci-utils --version
 ci-utils-list
 ```
 
-Compare the reported version and revision with the selected release. The active release stores its verified checksum in `current/lib/archive.sha256`. On Linux, `ci-docker-cleanup version` also reports the digest in JSON. For a new Linux maintenance host, review the policy, host settings, service, timers and job wrapper before provisioning the gate. On an existing host, drain participants, resolve outstanding maintenance and record the active release before switching. The installer replaces the old absolute adapter entry point. Its native replacement accepts the deployed `image` setting and authorizes the installed release by archive digest. Keep the existing gate and run `status`, `check` and `plan` before the first apply. [Configuration and service examples](../../examples/ci-utils/) · [Maintenance and recovery](../../../docs/maintenance.md)
+Compare the reported version and revision with the selected release. The active release stores its verified checksum in `current/lib/archive.sha256`. On Linux, `ci-docker-cleanup version` also reports the digest in JSON. For a new Linux maintenance host, review the policy, host settings, service, timers and job wrapper before provisioning the gate. On an existing host, drain participants, resolve outstanding maintenance and record the active release before switching. The installer replaces the old absolute adapter entry point. The adapter authorizes the installed release by archive digest. Keep the existing gate and run `status`, `check` and `plan` before the first apply. [Configuration and service examples](../../examples/ci-utils/) · [Maintenance and recovery](../../../docs/maintenance.md)
 
 From the repository root, run `(cd scripts && shellspec tests/ci-utils/install_spec.sh)`. The Linux installation and daemon qualification entry point is `tests/ci-utils-native.sh`.

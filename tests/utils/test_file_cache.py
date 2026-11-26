@@ -35,8 +35,7 @@ class FileCacheTests(unittest.TestCase):
         result = subprocess.run(
             [
                 sys.executable,
-                "-B",
-                str(ROOT / f"images/utils/bin/ci-{tool}-cleanup"),
+                "-IB", str(ROOT / "scripts/ci-utils/lib/run.py"), f"ci-{tool}-cleanup",
                 *map(str, args),
             ],
             capture_output=True,

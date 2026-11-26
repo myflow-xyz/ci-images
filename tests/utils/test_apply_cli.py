@@ -23,7 +23,7 @@ from ci_utils.policy import configuration
 from test_policy import CID, IID, NID, container, image, network
 from test_storage import observation
 
-DIGEST = "sha256:" + "a" * 64
+from host_fixture import DIGEST, stage_release
 DANGLING = "sha256:" + "4" * 64
 
 
@@ -120,6 +120,8 @@ class ApplyCLITests(unittest.TestCase):
             json.dumps(policy, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
         with tempfile.TemporaryDirectory(prefix="cu-apply-", dir="/tmp") as root:
+            tools_path = (environ or {}).get("PATH")
+            dispatch = stage_release(root, pathlib.Path(tools_path) / "ci-buildkit-probe" if tools_path else None)
             gate = Gate(pathlib.Path(root) / "gate")
             gate.initialize()
             path = pathlib.Path(root) / "policy.json"
@@ -143,8 +145,7 @@ class ApplyCLITests(unittest.TestCase):
                     process = subprocess.Popen(
                         [
                             sys.executable,
-                            "-B",
-                            str(ROOT / "images/utils/bin/ci-docker-cleanup"),
+                            "-IB", str(dispatch), "ci-docker-cleanup",
                             "apply",
                             "--profile",
                             profile,
@@ -159,7 +160,6 @@ class ApplyCLITests(unittest.TestCase):
                         env={
                             "PATH": os.environ["PATH"],
                             "TMPDIR": "/tmp",
-                            "CI_UTILS_IMAGE_DIGEST": DIGEST,
                             **(environ or {}),
                         },
                         text=True,

@@ -1,4 +1,4 @@
-"""Offline catalog shared by the utility image's discovery commands."""
+"""Offline catalog of the commands installed for this runner."""
 
 import argparse
 import sys
@@ -28,8 +28,8 @@ CATALOG = """Supported maintenance commands:
     Default: preview both mfci Go caches; cache flags select individual caches.
   ci-pnpm-cleanup        Preview or reset a pnpm store.
     [--store-dir [PATH]] [--apply] (default: preview the mfci pnpm store)
-{adapter}
-{tools}:
+  ci-docker-maintenance  Coordinate jobs, guarded apply and recovery.
+Docker tools:
   docker buildx         Docker Buildx CLI.
   ci-buildkit-probe     Internal capability checker used by Docker cleanup.
 
@@ -42,29 +42,18 @@ Examples:
   ci-upgrade-images -h
 
 Go and pnpm apply performs a full reset; stop all cache consumers first.
-{image_note}"""
+"""
 
 
-def main(prog="ci-utils", argv=None, *, native=False):
-    catalog = CATALOG.format(
-        adapter="  ci-docker-maintenance  Coordinate jobs, guarded apply and recovery.\n" if native else "",
-        tools="Docker tools" if native else "Included Docker tools",
-        image_note="" if native else (
-            "The image also includes the tools inherited from ci-base.\n"
-            "The ci-utils container image is deprecated for runner maintenance.\n"
-            "Install native ci-utils from a release with runner archives.\n"
-            "https://github.com/myflow-xyz/ci-images/releases\n"
-        ),
-    )
-    if native and sys.platform == "darwin":
-        catalog = MACOS_CATALOG
+def main(prog="ci-utils", argv=None):
+    catalog = MACOS_CATALOG if sys.platform == "darwin" else CATALOG
     parser = argparse.ArgumentParser(
         prog=prog,
         description="Reusable CI operations tools. Invoke each command directly.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=catalog,
     )
-    if native and prog == "ci-utils":
+    if prog == "ci-utils":
         from .cleanup import build_metadata
 
         build = build_metadata()

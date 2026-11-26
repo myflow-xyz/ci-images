@@ -22,9 +22,6 @@ from .policy import IMAGE_ID, InvalidPolicy, duration, image_safety
 
 PROFILE = "remove-images"
 VERSION = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)")
-CI_REPOSITORY = re.compile(
-    r"ghcr\.io/myflow-xyz/ci-+[a-z0-9]+(?:(?:\.|__?|-+)[a-z0-9]+)*"
-)
 REPOSITORIES = tuple(
     "ghcr.io/myflow-xyz/ci-" + name
     for name in (
@@ -34,7 +31,6 @@ REPOSITORIES = tuple(
         "vite",
         "playwright",
         "postgres",
-        "utils",
         "net",
     )
 )
@@ -269,7 +265,6 @@ def main(argv=None):
             "profile": PROFILE,
             "versions": selected,
             **build_metadata(),
-            "image_digest": os.environ.get("CI_UTILS_IMAGE_DIGEST"),
         }
         policy = load_policy(
             args.config,
@@ -300,8 +295,7 @@ def main(argv=None):
             info["ID"],
             report.context["policy_hash"],
             PROFILE,
-            report.context["image_digest"],
-            archive_digest=report.context.get("archive_digest"),
+            report.context.get("archive_digest"),
         )
         if args.apply:
             guard.check()

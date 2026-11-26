@@ -10,6 +10,7 @@ import unittest
 
 from api_fixture import APIFixture, daemon_routes
 from cache_fixture import CacheTools
+from host_fixture import stage_release
 from test_policy import CID, IID, NID, container, image, network
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -49,13 +50,13 @@ class CleanupCLITests(unittest.TestCase):
                 for key in ("PATH", "HOME", "TMPDIR")
                 if key in os.environ
             }
-            environment["PYTHONPATH"] = str(ROOT / "scripts/ci-utils/lib")
+            tools_path = (env or {}).get("PATH")
+            dispatch = stage_release(root, pathlib.Path(tools_path) / "ci-buildkit-probe" if tools_path else None)
             environment.update(env or {})
             result = subprocess.run(
                 [
                     sys.executable,
-                    "-B",
-                    str(ROOT / "images/utils/bin/ci-docker-cleanup"),
+                    "-IB", str(dispatch), "ci-docker-cleanup",
                     *args,
                     "--config",
                     str(path),

@@ -11,7 +11,7 @@ sys.argv[0] = command
 if command in ("ci-utils", "ci-utils-list"):
     from ci_utils.catalog import main
 
-    raise SystemExit(main(command, native=True))
+    raise SystemExit(main(command))
 if command in ("ci-go-cleanup", "ci-pnpm-cleanup"):
     from ci_utils.file_cache import main
 
@@ -19,7 +19,7 @@ if command in ("ci-go-cleanup", "ci-pnpm-cleanup"):
 if command == "ci-docker-maintenance":
     from ci_docker_maintenance import main
 
-    raise SystemExit(main(native=True))
+    raise SystemExit(main())
 if command == "ci-docker-cleanup":
     from ci_utils.cleanup import main
 

@@ -15,4 +15,5 @@ COPY --from=python38 /usr/local/lib/python3.8/ /opt/below/lib/python3.8/
 COPY --from=python38 /usr/local/lib/libpython3.8.so.1.0 /usr/local/lib/
 COPY --from=cli /usr/local/bin/docker /usr/local/bin/docker
 COPY --from=cli /usr/local/libexec/docker/cli-plugins/docker-buildx /usr/local/libexec/docker/cli-plugins/docker-buildx
+COPY --from=cli /usr/local/libexec/docker/cli-plugins/docker-compose /usr/local/libexec/docker/cli-plugins/docker-compose
 RUN ldconfig && bash --version && /opt/below/bin/bash --version && /opt/below/bin/python3 --version

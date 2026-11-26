@@ -198,7 +198,7 @@ class UpgradeImagesTests(unittest.TestCase):
             self.assertTrue(all(method == "GET" for method, _ in api.requests))
 
     def test_without_matching_images_prune_is_a_no_op(self):
-        with VersionAPI([ALIAS]) as api:
+        with VersionAPI([ALIAS, PREFIX + "retired:0.0.1"]) as api:
             pull = mock.Mock()
             code, events = self.invoke(api, pull, "--prune-old-versions")
             self.assertEqual(code, 0, events)

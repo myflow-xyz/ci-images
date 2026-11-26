@@ -1,10 +1,10 @@
 # Releasing the CI images
 
-A release assigns one semantic numeric version to the verified eight-image suite. Git tags and GitHub Releases use `vX.Y.Z`; stable OCI image tags use `X.Y.Z`. The workflow promotes existing OCI index digests; it does not rebuild or rescan images.
+A release assigns one semantic numeric version to the verified seven-image suite. Git tags and GitHub Releases use `vX.Y.Z`; stable OCI image tags use `X.Y.Z`. The workflow promotes existing OCI index digests; it does not rebuild or rescan images.
 
 ## Preconditions
 
-The release workflow accepts only the current `main` commit. The **Release / Build and Qualify CI Image Candidates [PR + Push + Manual]** workflow for that commit must have completed successfully and promoted all eight images to `sha-<full-commit>` tags for immutable source identity.
+The release workflow accepts only the current `main` commit. The **Release / Build and Qualify CI Image Candidates [PR + Push + Manual]** workflow for that commit must have completed successfully and promoted all seven images to `sha-<full-commit>` tags for immutable source identity.
 
 The immutable revision tags are the release inputs. The mutable `latest` tag identifies the most recent published stable release and is not a release precondition. A verified `main` build does not move `latest`.
 
@@ -24,9 +24,7 @@ Run the **Release** workflow on `main` and select one bump:
 
 The workflow derives the stable image tag by removing the Git tag's single leading `v`. This split starts with Git tag `v0.0.9` and image tag `0.0.9`. Earlier `v`-prefixed image tags remain immutable and do not receive unprefixed aliases.
 
-One version always covers `ci-base`, `ci-go`, `ci-node`, `ci-vite`, `ci-playwright`, `ci-postgres`, `ci-utils`, and `ci-net`. Individual image versions do not advance independently.
-
-The `ci-utils` image is deprecated for runner maintenance. The release still publishes its verified index for existing image consumers during migration. [Migrate to native ci-utils](../scripts/docs/ci-utils/install.md)
+One version always covers `ci-base`, `ci-go`, `ci-node`, `ci-vite`, `ci-playwright`, `ci-postgres`, and `ci-net`. Individual image versions do not advance independently.
 
 ## Release transaction
 
@@ -37,8 +35,8 @@ The workflow:
 3. resolves and validates every immutable revision tag;
 4. derives the `X.Y.Z` image tag and rejects it if it already identifies another digest;
 5. assigns the image tag to each verified OCI index and verifies the result;
-6. builds the Linux amd64 and arm64 probes from the release commit with the digest-pinned ci-go toolchain and packages them with the maintenance commands, packages the macOS arm64 script client and creates the `vX.Y.Z` Git tag and GitHub Release with all three archives, their SHA-256 file and the eight index digests;
-7. updates `latest` on all eight images to those same index digests in a separate job, after confirming that this is the current published stable release.
+6. builds the Linux amd64 and arm64 probes from the release commit with the digest-pinned ci-go toolchain and packages them with the maintenance commands, packages the macOS arm64 script client and creates the `vX.Y.Z` Git tag and GitHub Release with all three archives, their SHA-256 file and the seven index digests;
+7. updates `latest` on all seven images to those same index digests in a separate job, after confirming that this is the current published stable release.
 
 The Git tag is created only after registry promotion succeeds. A stable image tag that already identifies the expected digest is accepted so a partially completed registry promotion can be retried safely.
 
@@ -62,7 +60,7 @@ A release is successful only when:
 
 - the **Release** workflow completed successfully;
 - the GitHub Release and Git tag point to the intended `main` commit;
-- all eight unprefixed release tags exist in GHCR;
+- all seven unprefixed release tags exist in GHCR;
 - each release tag resolves to the digest recorded in the GitHub Release;
 - that digest also matches the commit's immutable revision tag;
 - for the most recent release, each `latest` tag resolves to the same digest as its versioned image tag.
@@ -79,7 +77,7 @@ If registry promotion stops after assigning only some stable image tags, rerun t
 
 If an existing stable image tag has a different digest, the workflow fails before promotion. Investigate the registry state; do not overwrite or delete the stable tag to force a release.
 
-If only **Promote released images to latest** fails, rerun failed jobs in the same workflow run. This retries the aliases without creating another version. The job validates all eight versioned image tags before moving any alias and rejects an old run if a newer stable release has been published. GHCR updates each image tag separately, so a partial failure can temporarily leave `latest` tags on different suite versions until the retry succeeds.
+If only **Promote released images to latest** fails, rerun failed jobs in the same workflow run. This retries the aliases without creating another version. The job validates all seven versioned image tags before moving any alias and rejects an old run if a newer stable release has been published. GHCR updates each image tag separately, so a partial failure can temporarily leave `latest` tags on different suite versions until the retry succeeds.
 
 Published versions are never moved. Roll back a consumer by restoring a previous recorded digest. Publish a new version for any corrected image suite.
 

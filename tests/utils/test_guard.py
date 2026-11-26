@@ -38,12 +38,12 @@ class GuardTests(unittest.TestCase):
             "daemon_id": "daemon",
             "policy_hash": POLICY,
             "profile": "daily",
-            "image_digest": DIGEST,
+            "archive_digest": DIGEST,
         }
         fields.update(changes)
         return LeaseGuard(self.engine, str(server.path), **fields)
 
-    def test_live_lease_binds_daemon_policy_profile_image_and_run(self):
+    def test_live_lease_binds_daemon_policy_profile_archive_and_run(self):
         with (
             self.gate.maintenance("daemon", POLICY) as lease,
             LeaseServer(
@@ -55,7 +55,7 @@ class GuardTests(unittest.TestCase):
                 {"daemon_id": "other"},
                 {"policy_hash": "c" * 64},
                 {"profile": "weekly"},
-                {"image_digest": "sha256:" + "d" * 64},
+                {"archive_digest": "sha256:" + "d" * 64},
                 {"run_id": "e" * 32},
             ]:
                 with self.subTest(change=change):

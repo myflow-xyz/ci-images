@@ -65,7 +65,6 @@ class NativeDocker(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        assert not docker("image", "ls", "--quiet", "ghcr.io/myflow-xyz/ci-utils")
         assert not docker("ps", "-aq", "--filter", "label=xyz.myflow.cleanup.run")
 
     def setUp(self):

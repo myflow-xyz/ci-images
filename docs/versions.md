@@ -2,10 +2,6 @@
 
 This page provides one view of the explicitly pinned runtimes and first-order tools owned by each image. Child-image sections do not repeat inherited tools. Direct Debian packages are listed; transitive packages resolved from the reviewed snapshots are intentionally omitted. The [version manifest](../manifests/versions.json) and its referenced lockfiles remain authoritative for source revisions, dependency overrides, package revisions, checksums, and upstream image digests.
 
-## `ci-utils`
-
-The runtime inherits the tools from `ci-base`. Its [maintenance commands and internal capability probe](images/utils.md#included-tools) are versioned with the suite source revision.
-
 ## `ci-base`
 
 | Component | Version |

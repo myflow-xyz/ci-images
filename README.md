@@ -8,7 +8,6 @@
 debian:trixie-slim@<digest>
 └── ci-base
     ├── ci-go
-    ├── ci-utils
     ├── ci-net
     └── ci-node
         └── ci-vite
@@ -22,14 +21,13 @@ pgvector/pgvector:0.8.7-pg18-trixie@<digest>
 
 - `ghcr.io/myflow-xyz/ci-base`: operating-system utilities, Python 3.15.2 standard-library scripting, Docker CLI with Compose and Buildx, and shared policy tools including OSV-Scanner and Trivy.
 - `ghcr.io/myflow-xyz/ci-go`: Go toolchain, native race-test prerequisites, and reusable Go CI executables.
-- `ghcr.io/myflow-xyz/ci-utils` is deprecated for runner maintenance. Use native ci-utils from a release with runner archives. [Install ci-utils](scripts/docs/ci-utils/install.md)
 - `ghcr.io/myflow-xyz/ci-net`: network diagnostics and isolated network tests, with explicit namespace and capability constraints in its [image contract](docs/images/net.md).
 - `ghcr.io/myflow-xyz/ci-node`: generic Node.js, Markdown, and OpenAPI jobs that do not require a frontend toolchain.
 - `ghcr.io/myflow-xyz/ci-vite`: TypeScript, Vite, Vitest, Oxlint, and Oxfmt quality and build jobs.
 - `ghcr.io/myflow-xyz/ci-playwright`: Vite jobs that also require a version-matched Chromium browser.
 - `ghcr.io/myflow-xyz/ci-postgres`: PostgreSQL 18 service jobs requiring pgvector and PostgreSQL contrib extensions.
 
-The seven job images support GitHub Actions `jobs.<job_id>.container`. `ci-postgres` is an independent service-image lineage and never inherits from a job image.
+The six job images support GitHub Actions `jobs.<job_id>.container`. `ci-postgres` is an independent service-image lineage and never inherits from a job image.
 
 Repository-owned Bash scripts require Bash 5.0 or newer. `ci-base` and its job image descendants provide Bash 5.3.20.
 
@@ -71,7 +69,7 @@ This refreshes cached MyFlow images on the local Linux Docker daemon and keeps o
 
 ## Local image verification
 
-After building a target with `tests/build-local-image.sh <target>`, use `tests/scan-local-image.sh <target>` to scan its local `ci-<target>:test` image before pushing. The helper requires Trivy in the developer environment, restricts the image source to the local Docker daemon, and applies the publish policy: fixed HIGH or CRITICAL operating-system and library vulnerabilities fail the scan. Use `all` to scan all eight local images. Local verification covers the host platform; CI remains responsible for both published architectures.
+After building a target with `tests/build-local-image.sh <target>`, use `tests/scan-local-image.sh <target>` to scan its local `ci-<target>:test` image before pushing. The helper requires Trivy in the developer environment, restricts the image source to the local Docker daemon, and applies the publish policy: fixed HIGH or CRITICAL operating-system and library vulnerabilities fail the scan. Use `all` to scan all seven local images. Local verification covers the host platform; CI remains responsible for both published architectures.
 
 ## Design boundaries
 

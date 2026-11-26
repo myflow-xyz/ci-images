@@ -5,6 +5,7 @@ import json
 import os
 import pathlib
 import select
+import shutil
 import signal
 import subprocess
 import sys
@@ -18,8 +19,8 @@ from service_fixture import service_command
 
 from docker_fixture import DOCKER, OWNED, PROTECTED, ROOT, SOCKET, DelayedDeleteProxy, command, docker, wait_for
 
-IMAGE = os.environ["CI_UTILS_TEST_IMAGE"]
-HOST = [sys.executable, "-B", "/workspace/scripts/ci-docker-maintenance"]
+IMAGE = os.environ["CI_UTILS_WORKLOAD_IMAGE"]
+HOST = ["ci-docker-maintenance"]
 
 
 class DockerE2E(unittest.TestCase):
@@ -36,8 +37,6 @@ class DockerE2E(unittest.TestCase):
                 "cleanup requires the fresh, explicitly identified disposable daemon"
             )
         cls.daemon = info["ID"]
-        labels = Engine(SOCKET).inspect("images", IMAGE)["Config"].get("Labels") or {}
-        cls.image_maintenance = labels.get("org.myflow.ci.utils-image-maintenance") == "1"
         cls.containerd_store = any(
             row == ["driver-type", "io.containerd.snapshotter.v1"]
             for row in info["DriverStatus"]
@@ -71,7 +70,6 @@ class DockerE2E(unittest.TestCase):
         self.settings = {
             "schema_version": 1,
             "policy_path": str(self.root / "policy.json"),
-            "image": IMAGE,
             "gate_directory": str(self.root / "gate"),
             "job_gid": 0,
             "participants": ["fixture"],
@@ -115,67 +113,12 @@ class DockerE2E(unittest.TestCase):
         )
         return result.returncode == 0
 
-    def test_image_and_daemon_platform_agree(self):
-        engine = Engine(SOCKET)
-        daemon = engine.get("/version")
-        image = engine.inspect("images", IMAGE)
-        self.assertEqual(
-            (image["Os"], image["Architecture"]), (daemon["Os"], daemon["Arch"])
-        )
-
-    def run_named_example(self, heading):
-        guide = pathlib.Path("/workspace/docs/images/utils.md").read_text()
-        section = guide.split(heading + "\n", 1)[1]
-        example = section.split("```bash\n", 1)[1].split("\n```", 1)[0]
-        # Substitute only the operator's source paths and verified image for this daemon.
-        example = example.replace("ghcr.io/myflow-xyz/ci-utils:latest", IMAGE)
-        example = example.replace("src=/var/run/docker.sock", "src=" + SOCKET[7:])
-        example = example.replace("stat -c %g /var/run/docker.sock", "stat -c %g " + SOCKET[7:])
-        example = example.replace("src=/etc/ci-utils/cleanup.json", "src=" + str(self.root / "preview.json"))
-        self.addCleanup(docker, "rm", "-f", "ci-utils")
-        return command(["bash", "-ec", example], env={**os.environ, "DOCKER_HOST": SOCKET})
-
-    def test_documented_named_container_starts_without_a_policy(self):
-        catalog = self.run_named_example("## Keep a utility container running")
-        self.assertIn("ci-utils-list", catalog)
-        mounts = Engine(SOCKET).inspect("containers", "ci-utils")["Mounts"]
-        self.assertNotIn("/etc/ci-utils/cleanup.json", {m["Destination"] for m in mounts})
-        if self.image_maintenance:
-            self.assertIn("ci-upgrade-images", catalog)
-            result = json.loads(docker("exec", "--env", "DOCKER_CONFIG=/var/tmp/ghcr", "ci-utils",
-                                       "ci-upgrade-images").splitlines()[-1])
-            self.assertEqual((result["exit_code"], result["mutation_started"]), (0, False))
-
-    def test_documented_named_container_previews_with_the_default_policy(self):
-        if not self.image_maintenance:
-            self.skipTest("selected image supports explicit-version retirement only")
-        (self.root / "preview.json").write_text(json.dumps({**self.policy, "endpoint": "unix:///var/run/docker.sock"}))
-        preview = self.run_named_example("### Enable retirement previews")
-        result = json.loads(preview.splitlines()[-1])
-        self.assertEqual((result["mode"], result["exit_code"], result["mutation_started"]), ("plan", 0, False))
-
-    def test_hardened_check_and_denied_socket(self):
+    def test_check_rejects_socket_access_or_identity_failure(self):
         events = self.host("check")
         self.assertTrue(events[-1]["completion_known"])
-        docker(
-            "run",
-            "--rm",
-            "--pull=never",
-            "--network=none",
-            "--read-only",
-            "--cap-drop=ALL",
-            "--security-opt=no-new-privileges",
-            "--user=1001:2001",
-            "--tmpfs",
-            "/var/tmp",
-            "--mount",
-            f"type=bind,src={SOCKET[7:]},dst={SOCKET[7:]},readonly",
-            "--mount",
-            f"type=bind,src={self.root}/policy.json,dst=/etc/ci-utils/cleanup.json,readonly",
-            IMAGE,
-            "ci-docker-cleanup",
-            "check",
-            expected=3,
+        command(
+            ["ci-docker-cleanup", "check", "--config", str(self.root / "policy.json")],
+            user=1001, group=2001, extra_groups=[], expected=3,
         )
         self.policy["expected_daemon_id"] = "wrong-daemon"
         self.save()
@@ -369,7 +312,7 @@ class DockerE2E(unittest.TestCase):
         for reference in selected + retained[1:]:
             docker("tag", original, reference)
         keep, _ = self.build("version-protected")
-        protected = "ghcr.io/myflow-xyz/ci-utils:0.0.1"
+        protected = "ghcr.io/myflow-xyz/ci-net:0.0.1"
         docker("tag", keep, protected)
         self.policy["protected"]["image_references"] = [keep]
         self.save()
@@ -414,7 +357,7 @@ class DockerE2E(unittest.TestCase):
 
     def test_explicit_version_preserves_images_used_by_all_container_states(self):
         # A derived executable image lets this test cover running and stopped
-        # containers without relying on the maintenance image's protection.
+        # containers independently of the protected workload fixture.
         context = self.root / "used-version"
         context.mkdir()
         (context / "Dockerfile").write_text(
@@ -653,7 +596,7 @@ subprocess.run([*command, 'up', '-d', '--pull', 'never'], check=True, stdout=sys
 marker.write_text(project)
 while not (root / (marker.name + '-release')).exists(): time.sleep(.05)
 subprocess.run([*command, 'down', '--volumes'], check=True, stdout=sys.stderr)
-subprocess.run([sys.executable, '-B', '/workspace/scripts/ci-docker-maintenance', 'job-complete'], check=True)
+subprocess.run(['ci-docker-maintenance', 'job-complete'], check=True)
 """
         markers = [self.root / str(i) for i in range(2)]
         jobs = [
@@ -870,6 +813,7 @@ time.sleep(60)
                     "-B",
                     "/workspace/tests/utils/interrupt_job_launch.py",
                     str(pid_path),
+                    str(pathlib.Path(shutil.which(HOST[0])).resolve().parents[1] / "lib/run.py"),
                     *self.host_args(
                         "job",
                         "--participant",
@@ -879,7 +823,7 @@ time.sleep(60)
                         "-c",
                         code,
                         str(marker),
-                    )[2:],
+                    ),
                 ],
                 expected=6,
             )
@@ -937,16 +881,7 @@ time.sleep(60)
                 proxy.replied.wait(5), "proxy deletion handler remains active"
             )
             record = json.loads((self.root / "gate/maintenance.json").read_text())
-            child = record["container_id"]
-            wait_for(
-                lambda: (
-                    docker("inspect", child, "--format", "{{.State.Running}}")
-                    == "false"
-                )
-            )
-            self.assertEqual(
-                docker("inspect", child, "--format", "{{.State.ExitCode}}"), "6"
-            )
+            self.assertIn("archive_digest", record)
             self.assertEqual(len(proxy.mutations), 1)
             self.assertEqual(sum(self.exists("container", c) for c in candidates), 2)
             self.host("apply", "--wait", "1s", expected=4)
@@ -960,7 +895,7 @@ time.sleep(60)
                         "daemon_id": self.daemon,
                         "observed_at": dt.datetime.now(dt.timezone.utc).isoformat(),
                         "observer": "isolated-test-controller",
-                        "evidence": "Proxy received the daemon deletion result; maintenance process exited 6 with PID 0; exactly one deletion completed and no daemon requests remain in flight.",
+                        "evidence": "The worker closed its report, the proxy received the daemon reply, and exactly one deletion completed.",
                         "participants_drained": True,
                         "daemon_operations_complete": True,
                     }
