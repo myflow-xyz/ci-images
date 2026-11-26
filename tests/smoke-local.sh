@@ -121,6 +121,8 @@ if [[ $target == all || $target == net ]]; then
 fi
 
 if [[ $target == all || $target == utils ]]; then
+	docker image inspect ci-utils:test --format '{{index .Config.Labels "org.opencontainers.image.description"}}' |
+		grep --fixed-strings --ignore-case deprecated >/dev/null
 	docker run --rm --pull=never --network=none --read-only \
 		--cap-drop=ALL --security-opt=no-new-privileges ci-utils:test |
 		grep --fixed-strings ci-docker-cleanup >/dev/null

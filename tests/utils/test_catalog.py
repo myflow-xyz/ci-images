@@ -43,6 +43,8 @@ class CatalogTests(unittest.TestCase):
             "ci-buildkit-probe",
             "Internal capability checker",
             "full reset",
+            "container image is deprecated",
+            "Install native ci-utils",
         ):
             with self.subTest(text=text):
                 self.assertIn(text, catalog)

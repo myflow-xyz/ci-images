@@ -55,7 +55,7 @@ RUN set -eu; \
     chmod -R go-w /opt/ci-tools/ci-utils
 
 LABEL org.opencontainers.image.created="${BUILD_CREATED}" \
-      org.opencontainers.image.description="Shared CI maintenance tools with guarded Docker cleanup" \
+      org.opencontainers.image.description="Deprecated ci-utils container image for runner maintenance. Install native ci-utils from a release with runner archives." \
       org.opencontainers.image.licenses="AGPL-3.0-only" \
       org.opencontainers.image.revision="${BUILD_REVISION}" \
       org.opencontainers.image.source="https://github.com/myflow-xyz/ci-images" \

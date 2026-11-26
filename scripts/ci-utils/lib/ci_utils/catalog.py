@@ -49,7 +49,12 @@ def main(prog="ci-utils", argv=None, *, native=False):
     catalog = CATALOG.format(
         adapter="  ci-docker-maintenance  Coordinate jobs, guarded apply and recovery.\n" if native else "",
         tools="Docker tools" if native else "Included Docker tools",
-        image_note="" if native else "The image also includes the tools inherited from ci-base.\n",
+        image_note="" if native else (
+            "The image also includes the tools inherited from ci-base.\n"
+            "The ci-utils container image is deprecated for runner maintenance.\n"
+            "Install native ci-utils from a release with runner archives.\n"
+            "https://github.com/myflow-xyz/ci-images/releases\n"
+        ),
     )
     if native and sys.platform == "darwin":
         catalog = MACOS_CATALOG
