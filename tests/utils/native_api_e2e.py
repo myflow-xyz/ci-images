@@ -109,6 +109,20 @@ class NativeAdmission(unittest.TestCase):
         )
         self.invoke("apply", "--wait", "1s", env=env)
 
+    def test_interruption_during_worker_creation_keeps_admission_blocked(self):
+        worker_pid = self.root / "worker.pid"
+        adapter = Path(shutil.which("ci-docker-maintenance")).resolve()
+        dispatch = adapter.parents[1] / "lib/run.py"
+        result = subprocess.run(
+            [sys.executable, "-IB", Path(__file__).with_name("interrupt_job_launch.py"),
+             worker_pid, dispatch, *self.host, "apply"],
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 6, result.stdout + result.stderr)
+        self.assertGreater(int(worker_pid.read_text()), 0)
+        self.assertEqual(self.invoke("status")[0]["maintenance"]["phase"], "uncertain")
+        self.invoke("apply", "--wait", "1s", status=4)
+
     def test_interrupted_delete_requires_reconciliation(self):
         deleted, resume = threading.Event(), threading.Event()
 
