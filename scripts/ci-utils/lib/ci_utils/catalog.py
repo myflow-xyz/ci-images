@@ -16,9 +16,8 @@ CATALOG = """Supported maintenance commands:
     Default: preview both mfci Go caches; cache flags select individual caches.
   ci-pnpm-cleanup        Preview or reset a pnpm store.
     [--store-dir [PATH]] [--apply] (default: preview the mfci pnpm store)
-
 {adapter}
-Docker tools:
+{tools}:
   docker buildx         Docker Buildx CLI.
   ci-buildkit-probe     Internal capability checker used by Docker cleanup.
 
@@ -37,6 +36,7 @@ Go and pnpm apply performs a full reset; stop all cache consumers first.
 def main(prog="ci-utils", argv=None, *, native=False):
     catalog = CATALOG.format(
         adapter="  ci-docker-maintenance  Coordinate jobs, guarded apply and recovery.\n" if native else "",
+        tools="Docker tools" if native else "Included Docker tools",
         image_note="" if native else "The image also includes the tools inherited from ci-base.\n",
     )
     parser = argparse.ArgumentParser(
