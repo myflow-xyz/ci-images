@@ -26,7 +26,7 @@ The workflow derives the stable image tag by removing the Git tag's single leadi
 
 One version always covers `ci-base`, `ci-go`, `ci-node`, `ci-vite`, `ci-playwright`, `ci-postgres`, `ci-utils`, and `ci-net`. Individual image versions do not advance independently.
 
-The `ci-utils` image is deprecated for runner maintenance. The release still publishes its verified index for existing image consumers and extracts the BuildKit probes from it for both native Linux archives. [Migrate to native ci-utils](../scripts/docs/ci-utils/install.md)
+The `ci-utils` image is deprecated for runner maintenance. The release still publishes its verified index for existing image consumers during migration. [Migrate to native ci-utils](../scripts/docs/ci-utils/install.md)
 
 ## Release transaction
 
@@ -37,7 +37,7 @@ The workflow:
 3. resolves and validates every immutable revision tag;
 4. derives the `X.Y.Z` image tag and rejects it if it already identifies another digest;
 5. assigns the image tag to each verified OCI index and verifies the result;
-6. packages the prebuilt Linux amd64 and arm64 probes from the verified utility index with the maintenance commands, packages the macOS arm64 script client and creates the `vX.Y.Z` Git tag and GitHub Release with all three archives, their SHA-256 file and the eight index digests;
+6. builds the Linux amd64 and arm64 probes from the release commit with the digest-pinned ci-go toolchain and packages them with the maintenance commands, packages the macOS arm64 script client and creates the `vX.Y.Z` Git tag and GitHub Release with all three archives, their SHA-256 file and the eight index digests;
 7. updates `latest` on all eight images to those same index digests in a separate job, after confirming that this is the current published stable release.
 
 The Git tag is created only after registry promotion succeeds. A stable image tag that already identifies the expected digest is accepted so a partially completed registry promotion can be retried safely.

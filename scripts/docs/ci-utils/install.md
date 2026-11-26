@@ -6,7 +6,7 @@ Use a published Git tag with the archive for your runner and its checksum file. 
 (set -eu; v=0.0.31; f=$(mktemp); trap 'rm -f "$f"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' "https://raw.githubusercontent.com/myflow-xyz/ci-images/v$v/scripts/ci-utils/install.sh" -o "$f"; sh "$f" "$v")
 ```
 
-The bootstrap uses the runner's OS and CPU to select `linux_amd64`, `linux_arm64` or `darwin_arm64`. It downloads `ci-utils_<version>_SHA256SUMS` and the selected `.tar.gz` over HTTPS from the pinned GitHub release. It requires one matching SHA-256 entry and verifies the archive before extraction. Activation checks the embedded OS, architecture, version and source revision. Linux archives include a probe from the verified utility image index and activation checks its ELF machine type. The macOS archive contains the Bash and Python client for catalog and refresh.
+The bootstrap uses the runner's OS and CPU to select `linux_amd64`, `linux_arm64` or `darwin_arm64`. It downloads `ci-utils_<version>_SHA256SUMS` and the selected `.tar.gz` over HTTPS from the pinned GitHub release. It requires one matching SHA-256 entry and verifies the archive before extraction. Activation checks the embedded OS, architecture, version and source revision. Linux archives include a probe built from the release source for the selected CPU and activation checks its ELF machine type. The macOS archive contains the Bash and Python client for catalog and refresh.
 
 ## Dependencies
 
