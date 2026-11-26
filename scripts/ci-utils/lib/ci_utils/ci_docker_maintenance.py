@@ -370,36 +370,22 @@ def snapshot(path, value):
     path.chmod(0o444)
 
 
-def run_native(entry, settings, root, run_id, operation, profile, selected, lease, server, timeout):
-    args = worker_command(operation, profile, selected, root / "storage.json")
-    args += ["--config", str(root / "policy.json"), "--run-id", run_id]
-    if server:
-        args += ["--lease-socket", str(server.path)]
-    interpreter = trusted_path(pathlib.Path(sys.executable).resolve())
-    with tempfile.TemporaryFile(dir=root) as output:
-        child = subprocess.Popen(
-            [str(interpreter), "-IB", str(entry), *args], cwd=root,
-            stdin=subprocess.DEVNULL, stdout=output,
-            env={"PATH": "/usr/local/bin:/usr/bin:/bin", "TMPDIR": str(root),
-                 "HOME": str(root), "CI_UTILS_DOCKER_CLI": settings["docker_cli"]},
-            # A surviving worker holds the exclusive activity lock through parent loss.
-            pass_fds=(lease.descriptor,) if lease else (),
-        )
-        try:
-            if server:
-                server.bind_client(child.pid)
-            code = child.wait(timeout=timeout)
-        except subprocess.TimeoutExpired as error:
-            raise GateError(6, "native maintenance timed out; reconcile the run") from error
-        finally:
-            if child.poll() is None:
-                child.kill()
-                child.wait()
-        output.seek(0)
-        raw = output.read(16 * 1024 * 1024 + 1)
-        if len(raw) > 16 * 1024 * 1024:
-            raise GateError(6, "native maintenance report exceeds the limit")
-        return raw.decode(), code
+def native_result(child, output, server, timeout):
+    try:
+        if server:
+            server.bind_client(child.pid)
+        code = child.wait(timeout=timeout)
+    except subprocess.TimeoutExpired as error:
+        raise GateError(6, "native maintenance timed out; reconcile the run") from error
+    finally:
+        if child.poll() is None:
+            child.kill()
+            child.wait()
+    output.seek(0)
+    raw = output.read(16 * 1024 * 1024 + 1)
+    if len(raw) > 16 * 1024 * 1024:
+        raise GateError(6, "native maintenance report exceeds the limit")
+    return raw.decode(), code
 
 
 def maintain(settings, policy, operation, profile, wait_seconds, selected=None, *, native=False):
@@ -486,12 +472,25 @@ def maintain(settings, policy, operation, profile, wait_seconds, selected=None, 
                             lease.record.update(archive_digest=digest, profile=profile, operation=operation)
                             with gate._admission(gate._deadline(5)):
                                 gate._write(gate.directory / "maintenance.json", lease.record)
-                        # Cancellation can occur after Popen creates the child.
-                        started = True
-                        logs, exit_code = run_native(
-                            entry, settings, root, run_id, operation, profile, selected,
-                            lease, server, duration(policy["timeouts"]["run"]) + 30,
-                        )
+                        interpreter = trusted_path(pathlib.Path(sys.executable).resolve())
+                        args = worker_command(operation, profile, selected, root / "storage.json")
+                        args += ["--config", str(root / "policy.json"), "--run-id", run_id]
+                        if server:
+                            args += ["--lease-socket", str(server.path)]
+                        with tempfile.TemporaryFile(dir=root) as output:
+                            # A signal during Popen can arrive after the child exists.
+                            started = True
+                            child = subprocess.Popen(
+                                [str(interpreter), "-IB", str(entry), *args], cwd=root,
+                                stdin=subprocess.DEVNULL, stdout=output,
+                                env={"PATH": "/usr/local/bin:/usr/bin:/bin", "TMPDIR": str(root),
+                                     "HOME": str(root), "CI_UTILS_DOCKER_CLI": settings["docker_cli"]},
+                                # The worker retains exclusive activity through coordinator loss.
+                                pass_fds=(lease.descriptor,) if lease else (),
+                            )
+                            logs, exit_code = native_result(
+                                child, output, server, duration(policy["timeouts"]["run"]) + 30,
+                            )
                     else:
                         identifier = docker.call(
                             *launch_args(

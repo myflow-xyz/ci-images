@@ -7,6 +7,7 @@ from pathlib import Path
 import shutil
 import signal
 import subprocess
+import sys
 import tempfile
 import threading
 import unittest
@@ -55,9 +56,9 @@ class NativeAdmission(unittest.TestCase):
         self.host = ["ci-docker-maintenance", "--config", str(host)]
         self.invoke("init")
 
-    def invoke(self, *args, status=0):
+    def invoke(self, *args, status=0, env=None):
         result = subprocess.run(
-            [*self.host, *args], capture_output=True, timeout=15, text=True
+            [*self.host, *args], capture_output=True, timeout=15, text=True, env=env
         )
         self.assertEqual(result.returncode, status, result.stdout + result.stderr)
         return [json.loads(line) for line in result.stdout.splitlines()]
@@ -80,6 +81,33 @@ class NativeAdmission(unittest.TestCase):
         self.assertIn("archive_digest", events[-1])
         self.assertNotIn(CID, self.api.objects["containers"])
         self.assertIsNone(self.invoke("status")[0]["maintenance"])
+
+    def test_setup_refusal_releases_admission_without_worker_requests(self):
+        interpreter = self.root / "python3"
+        shutil.copy2(sys.executable, interpreter)
+        interpreter.chmod(0o775)
+        env = {**os.environ, "PATH": f"{self.root}:{os.environ['PATH']}"}
+        refusal = self.invoke("apply", status=2, env=env)
+        self.assertIn("must not be writable", refusal[-1]["message"])
+        self.assertFalse(any(method != "GET" for method, _ in self.api.requests))
+        self.assertIsNone(self.invoke("status")[0]["maintenance"])
+
+        interpreter.chmod(0o755)
+        policy = json.loads(self.policy.read_text())
+        policy["pressure"] = {"reserve_bytes": 1}
+        self.policy.write_text(json.dumps(policy))
+        self.invoke(
+            "job",
+            "--participant",
+            "test",
+            "--wait",
+            "1s",
+            "--",
+            "ci-docker-maintenance",
+            "job-complete",
+            env=env,
+        )
+        self.invoke("apply", "--wait", "1s", env=env)
 
     def test_interrupted_delete_requires_reconciliation(self):
         deleted, resume = threading.Event(), threading.Event()
