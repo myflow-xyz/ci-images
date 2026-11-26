@@ -217,6 +217,8 @@ class ContainerTests(unittest.TestCase):
         for created, eligible in [
             ("2026-09-30T00:00:00Z", False),
             ("2026-09-29T23:59:59Z", True),
+            ("2026-09-29T23:59:59.999999999Z", True),
+            ("2026-09-30T00:00:00.000000001Z", False),
             ("2026-09-30T00:00:01Z", False),
             ("2026-09-30T01:00:00+01:00", False),
             ("2026-09-30T00:00:00", False),

@@ -263,6 +263,9 @@ def configuration(value, environ=None, overrides=None):
 def timestamp(value):
     if not isinstance(value, str):
         return None
+    # Docker emits RFC 3339 nanoseconds. Python 3.9 accepts 3 or 6 fractional digits.
+    value = re.sub(r"(?<=:\d\d)\.(\d{1,9})(?=Z|[+-])",
+                   lambda match: "." + match[1][:6].ljust(6, "0"), value)
     try:
         result = dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
         return result.astimezone(dt.timezone.utc) if result.tzinfo is not None else None
