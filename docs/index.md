@@ -9,6 +9,7 @@ The [repository README](../README.md) owns the project overview, image hierarchy
 - [Using the CI images](usage.md), including [self-hosted bind-mount permissions](usage.md#self-hosted-bind-mount-permissions)
 - [Releasing the CI images](release.md)
 - [Guarded Docker maintenance and recovery](maintenance.md)
+- [Install native ci-utils and run the maintenance commands](../scripts/ci-utils/README.md)
 
 [security]: security/stable-toolchain-qualification.md
 

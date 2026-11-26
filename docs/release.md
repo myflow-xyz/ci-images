@@ -35,7 +35,7 @@ The workflow:
 3. resolves and validates every immutable revision tag;
 4. derives the `X.Y.Z` image tag and rejects it if it already identifies another digest;
 5. assigns the image tag to each verified OCI index and verifies the result;
-6. creates the `vX.Y.Z` Git tag and GitHub Release at the source revision, including the eight index digests;
+6. packages the prebuilt Linux amd64 and arm64 probes from the verified utility index with the native commands, and creates the `vX.Y.Z` Git tag and GitHub Release with both archives, their SHA-256 file and the eight index digests;
 7. updates `latest` on all eight images to those same index digests in a separate job, after confirming that this is the current published stable release.
 
 The Git tag is created only after registry promotion succeeds. A stable image tag that already identifies the expected digest is accepted so a partially completed registry promotion can be retried safely.

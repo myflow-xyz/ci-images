@@ -55,6 +55,10 @@ Browse [the documentation index](docs/index.md) for detailed image contracts. Us
 
 ## Upgrade runner images
 
+On Linux runners with the native suite installed, run `ci-upgrade-images`. The command reports the verified release digest and retains old versions by default. [Native installation and command guide](scripts/ci-utils/README.md)
+
+### Legacy utility image
+
 On the Linux runner, set `CI_UTILS_IMAGE` to a locally cached utility image that includes the version-aware upgrade helper. Use its numeric tag or digest if available. Omit registry credentials for publicly readable images. For private packages, set `GHCR_USER` and a classic `GHCR_TOKEN` with `read:packages` access.
 
 ```bash

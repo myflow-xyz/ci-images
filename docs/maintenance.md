@@ -1,28 +1,18 @@
 # Guarded Docker maintenance
 
-Use `ci-utils` as a one-shot maintenance image. The native Linux host adapter owns admission, storage observations, container launch, and recovery. Docker socket access grants administrative control of the selected daemon; non-root execution inside the container does not remove that authority.
+The installed Linux adapter coordinates jobs, measures daemon storage and runs the verified maintenance worker on the runner. Docker socket access grants administrative control of the selected daemon. [Native installation and command guide](../scripts/ci-utils/README.md)
 
 ## Deployment inputs
 
-Review the [example policy and host settings](../scripts/examples/ci-utils/). Replace all placeholders. Supply the expected daemon ID, local Unix socket, verified pre-pulled image digest, trusted Docker CLI path, participant group, complete daemon-user inventory, protected references, actual storage paths, and job capacity reserve. Keep these files root-owned and outside job workspaces.
+Review the cleanup policy, host settings, job wrapper and service templates. Replace the placeholders with the expected daemon ID, local Unix socket, trusted Docker CLI path, participant group, complete daemon-user inventory, protected references, actual storage paths and job capacity reserve. Keep the files root-owned and outside job workspaces. [Configuration examples](../scripts/examples/ci-utils/)
 
 The reference adapter uses shared job leases and exclusive maintenance leases. Every daemon user must participate, including native/containerized jobs, pulls, builds, finalizers, manual tools, and background clients. The `participants` list and `admission_evidence` record the reviewed deployment; they do not enforce an external runner's lifecycle by themselves. Unadapted participants prevent apply qualification. A cleanup-only lock or an idle snapshot is insufficient.
 
-The host must share the Docker daemon's PID namespace so the lease can bind the actual cleanup process returned by container inspection. The adapter has been tested with Python 3.14.8. Qualify the intended host Python and service manager before rollout. No host service is installed or enabled by building the image.
-
 ## Install the reviewed adapter
 
-Install from the same reviewed revision as the image. The following commands are operator steps, not actions performed by the image:
+Install the pinned native release. The public adapter and the existing absolute service and job-hook path select the same installed worker. The issuer checks its Linux peer PID and release identity. The installation guide covers prerequisites, release verification and migration. [Install or upgrade ci-utils](../scripts/docs/ci-utils/install.md)
 
-```sh
-sudo install -d -m 0755 /usr/local/libexec/ci-utils /etc/ci-utils /var/lib/ci-utils
-sudo install -m 0755 scripts/ci-docker-maintenance /usr/local/libexec/ci-utils/
-sudo install -m 0644 scripts/ci-utils/lib/ci_utils/ci_docker_*.py /usr/local/libexec/ci-utils/
-sudo cp -R scripts/ci-utils/lib/ci_utils /usr/local/libexec/ci-utils/
-sudo chmod -R go-w /usr/local/libexec/ci-utils
-```
-
-Install the reviewed `host.json` and `cleanup.json` into `/etc/ci-utils` as root-owned regular files, mode `0644` or stricter. The Docker CLI path must also be root-owned. The adapter rejects mutable configuration and symlinked trusted paths. Pull and verify the approved utility image digest before guarded cleanup and retirement. Their utility container uses the pre-pulled digest and an offline configuration.
+Create `/etc/ci-utils` and `/var/lib/ci-utils` as root-owned directories. Install the reviewed `host.json` and `cleanup.json` into `/etc/ci-utils` as root-owned regular files, mode `0644` or stricter. The Docker CLI path must also be root-owned. The adapter rejects mutable configuration and symlinked trusted paths. Existing native installations can retain the legacy `image` field. For a legacy container launcher, that field must contain its verified, pre-pulled image digest.
 
 Provision the gate once:
 
@@ -69,7 +59,7 @@ Shared Go and pnpm filesystem caches use separate [cache reset commands](images/
 
 ## Schedule and run maintenance
 
-`tests/utils-docker.sh` qualifies the packaged utility against a fresh, digest-pinned Docker daemon. It checks guarded deletion, retained volume contents, cache behavior, concurrent Compose projects, and explicit recovery. It uses the selected daemon's native platform and ignores an inherited `DOCKER_DEFAULT_PLATFORM` override. The harness creates and removes its own test containers and volumes. Only the test daemon is privileged; it receives no host Docker socket or host-root mount. These tests do not replace qualification of the runner's complete job lifecycle.
+`tests/ci-utils-native.sh` qualifies installation, upgrade and native operation on a disposable daemon. The legacy image suite in `tests/utils-docker.sh` qualifies the packaged utility against a fresh, digest-pinned Docker daemon. It checks guarded deletion, retained volume contents, cache behavior, concurrent Compose projects, and explicit recovery. It uses the selected daemon's native platform and ignores an inherited `DOCKER_DEFAULT_PLATFORM` override. The harness creates and removes its own test containers and volumes. Only the test daemon is privileged; it receives no host Docker socket or host-root mount. These tests do not replace qualification of the runner's complete job lifecycle.
 
 CI runs both the default containerd image store and `CI_UTILS_TEST_IMAGE_STORE=classic`. The dangling-image fixture uses classic `overlay2`: the containerd store removes the fixture's old image metadata during tag replacement, before cleanup runs. Other cases run against both stores.
 
@@ -148,21 +138,21 @@ sudo /usr/local/libexec/ci-utils/ci-docker-maintenance apply --profile daily
 sudo /usr/local/libexec/ci-utils/ci-docker-maintenance apply --profile weekly
 ```
 
-The launcher passes a read-only policy snapshot and host observation, the selected socket, and a narrowly scoped lease socket. It uses a non-root identity, actual socket group, no network, read-only root, bounded scratch space, dropped capabilities, and no-new-privileges. It removes its stopped container after known completion without removing volumes. On uncertain completion it retains the container identity for investigation. It never changes socket permissions, relabels host paths, stops workloads, resets a builder, or restarts Docker.
+The native launcher passes a read-only policy snapshot, storage observations and the selected Unix socket to the installed process. Apply also receives a process-bound lease. The adapter checks the worker's terminal JSON result before releasing admission. A lost result retains the gate record for reconciliation.
 
 ## Refresh cached CI images
 
-For a one-time refresh, use the [runner command](../README.md#upgrade-runner-images). For routine refreshes, schedule the same command from cron or a systemd timer during the runner's maintenance window. Set the utility image to a verified, cached numeric tag or digest. Supply credentials for private packages from the runner's secret store and allow the utility container to reach the release metadata and the registry over HTTPS.
+Run `ci-upgrade-images` during the runner's maintenance window. Allow HTTPS access to the release metadata and registry. Supply Docker credentials for restricted packages. [Refresh options and output](../scripts/docs/ci-utils/ci-upgrade-images.md)
 
 Keep the exact references in the JSON Lines log. Use the final result and exit status to detect failure. Investigate a failed refresh and keep existing job pins until a successful retry. Update version- or digest-pinned job references separately using the [release digests](usage.md#pulling-and-pinning).
 
 The default keeps old versions. To retire eligible tags after refresh, add `--prune-old-versions` after pausing job admission and waiting for active jobs to finish. The host adapter coordinates job admission for lease-gated Docker cleanup and standalone version retirement.
 
-For frequent interactive calls, use the [named utility container](images/utils.md#keep-a-utility-container-running). A scheduled run can invoke the same helper with `docker exec` when that container is already running and authenticated.
+For legacy image delivery, use the [named utility container](images/utils.md#keep-a-utility-container-running).
 
 ## Remove local suite versions
 
-Use the same installed adapter, trusted configuration, pre-pulled utility image, and participant integration for version retirement. Omit `--versions` to retain the local latest image in each suite repository. Preview before applying:
+Use the same installed adapter, trusted configuration and participant integration for version retirement. Omit `--versions` to retain the local latest image in each suite repository. Preview before applying:
 
 ```sh
 sudo /usr/local/libexec/ci-utils/ci-docker-maintenance \
@@ -175,7 +165,7 @@ sudo /usr/local/libexec/ci-utils/ci-docker-maintenance \
   --config /etc/ci-utils/host.json remove-images --versions 0.0.1,0.0.2,0.0.3 --apply
 ```
 
-The adapter launches `ci-remove-images` in its protected utility container. Apply waits for the exclusive maintenance lease (`--wait 15m` by default), bound to the selected daemon, policy, image digest, and retirement selection. It removes only eligible exact suite tags, preserves images referenced by any container or protected through any alias, and leaves unselected tags intact. Retirement selects versions independently of age and disk pressure. See the [command contract](images/utils.md#remove-local-suite-versions). Unknown completion retains the admission block and requires the recovery below.
+The adapter launches the installed `ci-remove-images` worker. Apply waits for the exclusive maintenance lease (`--wait 15m` by default), bound to the selected daemon, policy, archive digest, process and retirement selection. It removes only eligible exact suite tags, preserves images referenced by any container or protected through any alias, and leaves unselected tags intact. Retirement selects versions independently of age and disk pressure. See the [command contract](images/utils.md#remove-local-suite-versions). Unknown completion retains the admission block and requires the recovery below.
 
 ## Reconcile uncertain completion
 
@@ -211,4 +201,4 @@ Start with plan-only runs on a representative runner. Review ownership-label ado
 
 Fixtures do not qualify a production runner. Native AMD64/ARM64 build, smoke, vulnerability, SBOM/provenance, isolated real-daemon E2E, and representative-runner rollout evidence are release/deployment gates. Rootless, remapped, SELinux-specific, custom-builder, remote, and VM-host adapters remain separate qualification work.
 
-To disable, stop the timers and dispatch path. Preserve any unresolved admission block until reconciliation. Roll back to a previously verified pre-pulled digest and compatible host adapter/configuration after reviewing protocol/schema compatibility. Rollback changes future behavior; it cannot restore deleted data.
+To disable, stop the timers and dispatch path. Preserve any unresolved admission block until reconciliation. Reinstall a previously verified native release after reviewing protocol and configuration compatibility. For legacy image delivery, select the matching pre-pulled digest and compatible host adapter. Rollback changes future behavior; it cannot restore deleted data.
