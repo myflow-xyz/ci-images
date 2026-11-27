@@ -300,11 +300,16 @@ class Gate:
                 4, "gate state is indeterminate; admission remains blocked"
             ) from error
 
+    def worker_report(self, identifier):
+        return self.directory / f"worker-{identifier}.jsonl"
+
     def _remove(self, path, identifier):
         record = self._read(path)
         if record is None or record["id"] != identifier:
             raise GateError(4, "gate record changed; reconciliation is required")
         path.unlink()
+        if path == self.directory / "maintenance.json":
+            self.worker_report(identifier).unlink(missing_ok=True)
         self._sync_directory(path.parent)
 
     @staticmethod

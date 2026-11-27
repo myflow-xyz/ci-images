@@ -306,7 +306,12 @@ def maintain(settings, policy, operation, profile, wait_seconds, selected=None):
                     args += ["--config", str(root / "policy.json"), "--run-id", run_id]
                     if server:
                         args += ["--lease-socket", str(server.path)]
-                    with tempfile.TemporaryFile(dir=root) as output:
+                    if lease:
+                        fd = os.open(gate.worker_report(run_id), os.O_CREAT | os.O_EXCL | os.O_RDWR, 0o600)
+                        report = os.fdopen(fd, "w+b")
+                    else:
+                        report = tempfile.TemporaryFile(dir=root)
+                    with report as output:
                         # A signal during Popen can arrive after the child exists.
                         started = True
                         try:

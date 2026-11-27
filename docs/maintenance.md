@@ -103,6 +103,8 @@ The adapter launches the installed `ci-remove-images` worker. Apply waits for th
 
 Disable new dispatch through every participant and inspect `status` plus the retained job/maintenance record and logs. Establish that the selected daemon has finished the relevant work. Backend pruning or builds can continue after the worker exits and its locks are released. Keep admission blocked if completion is unknown.
 
+For a native apply, read `worker-<record-id>.jsonl` in the configured gate directory as root. It contains the events the worker emitted before interruption, including confirmed removals. Save a copy if needed for your incident record. The gate removes the report after verified completion or accepted reconciliation.
+
 When completion is established, the administrator supplies a root-owned JSON file containing current evidence for one exact record:
 
 ```json

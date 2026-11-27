@@ -12,7 +12,7 @@ import tempfile
 import threading
 import unittest
 
-from tests.maintenance.test_apply_cli import StatefulAPI
+from tests.maintenance.test_apply_cli import DANGLING, StatefulAPI
 from tests.maintenance.test_policy import CID
 
 
@@ -81,6 +81,7 @@ class NativeAdmission(unittest.TestCase):
         self.assertIn("archive_digest", events[-1])
         self.assertNotIn(CID, self.api.objects["containers"])
         self.assertIsNone(self.invoke("status")[0]["maintenance"])
+        self.assertFalse(list((self.root / "gate").glob("worker-*.jsonl")))
 
     def test_setup_refusal_releases_admission_without_worker_requests(self):
         interpreter = self.root / "python3"
@@ -177,6 +178,33 @@ runpy.run_path(sys.argv[0], run_name="__main__")
         self.assertIsNotNone(record)
         self.invoke("apply", "--wait", "1s", status=4)
         self.assertEqual(sum(m == "DELETE" for m, _ in self.api.requests), 1)
+        self.reconcile(record, "worker exited and fixture completed the only DELETE")
+        self.assertIsNone(self.invoke("status")[0]["maintenance"])
+
+    def test_uncertain_apply_retains_completed_actions_until_reconciliation(self):
+        policy = json.loads(self.policy.read_text())
+        policy["image_scope"] = {"ids": [DANGLING]}
+        self.policy.write_text(json.dumps(policy))
+        self.api.errors["images", DANGLING] = lambda: (200, {"unknown": True})
+        self.invoke("apply", "--profile", "weekly", status=6)
+        record = self.invoke("status")[0]["maintenance"]
+        self.assertEqual(record["phase"], "uncertain")
+        report = self.root / "gate" / f"worker-{record['id']}.jsonl"
+        metadata = report.stat()
+        self.assertEqual((metadata.st_uid, metadata.st_mode & 0o777), (0, 0o600))
+        events = [json.loads(line) for line in report.read_text().splitlines()]
+        self.assertTrue(all(e["run_id"] == record["id"] for e in events))
+        self.assertTrue(any(e["event"] == "removed" and e["id"] == CID for e in events))
+        self.assertNotIn(CID, self.api.objects["containers"])
+        self.assertFalse(events[-1]["completion_known"])
+        self.reconcile(record, "worker and daemon fixture drained", drained=False, status=2)
+        self.assertTrue(report.is_file())
+        self.invoke("apply", "--wait", "1s", status=4)
+        self.reconcile(record, "worker and daemon fixture drained")
+        self.assertFalse(report.exists())
+        self.assertIsNone(self.invoke("status")[0]["maintenance"])
+
+    def reconcile(self, record, observation, drained=True, status=0):
         evidence = self.root / "proof.json"
         evidence.write_text(
             json.dumps(
@@ -186,16 +214,15 @@ runpy.run_path(sys.argv[0], run_name="__main__")
                     daemon_id="fixture-daemon",
                     observed_at=dt.datetime.now(dt.timezone.utc).isoformat(),
                     observer="fixture",
-                    evidence="worker exited and fixture completed the only DELETE",
-                    participants_drained=True,
+                    evidence=observation,
+                    participants_drained=drained,
                     daemon_operations_complete=True,
                 )
             )
         )
         self.invoke(
-            "reconcile", "--record-id", record["id"], "--evidence", str(evidence)
+            "reconcile", "--record-id", record["id"], "--evidence", str(evidence), status=status
         )
-        self.assertIsNone(self.invoke("status")[0]["maintenance"])
 
 
 if __name__ == "__main__":
