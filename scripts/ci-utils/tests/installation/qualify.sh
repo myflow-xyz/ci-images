@@ -5,9 +5,10 @@ set -euo pipefail
 repo=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)
 cd "$repo"
 work=$(mktemp -d)
-minimum="ci-utils-runtime:${work##*/}"
+minimum="ci-utils-runtime:${work##*/}-minimum"
+current="ci-utils-runtime:${work##*/}-current"
 cleanup() {
-	docker image rm "$minimum" >/dev/null 2>&1 || true
+	docker image rm "$minimum" "$current" >/dev/null 2>&1 || true
 	rm -rf -- "$work"
 }
 trap cleanup EXIT
@@ -16,8 +17,10 @@ revision=$(git rev-parse HEAD)
 for version in 0.0.31 0.0.32; do
 	python3 .github/scripts/package-ci-utils.py "$version" "$revision" "$work" "$work/assets"
 done
-docker buildx build --load -t "$minimum" - <scripts/ci-utils/tests/installation/native-runtime.Dockerfile
-current=${CI_UTILS_NATIVE_CONTROLLER:-ci-base:test}
+for target in minimum current; do
+	docker buildx build --load --target "$target" -t "ci-utils-runtime:${work##*/}-$target" \
+		- <scripts/ci-utils/tests/installation/native-runtime.Dockerfile
+done
 docker run --rm --network none --user 0 -w /workspace/scripts/ci-utils \
 	-v "$repo:/workspace:ro" "$current" python3 -B -m unittest discover -s tests -t .
 for runtime in "$minimum" "$current"; do

@@ -25,9 +25,6 @@ jobs:
     name: ci/ci-utils/native (platform=${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 30
-    permissions:
-      contents: read
-      packages: read
     strategy:
       fail-fast: false
       matrix:
@@ -41,15 +38,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Log in to GHCR
-        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Qualify installed archives and guarded maintenance
-        env:
-          CI_UTILS_NATIVE_CONTROLLER: ghcr.io/myflow-xyz/ci-base:0.0.30@sha256:2728dbdfbf4b1103aee5467a81201808aec41e8430cfed95893608ba03d97305
         run: scripts/ci-utils/tests/installation/qualify.sh
 
   macos-client:
@@ -132,6 +121,9 @@ jobs:
           sed -i "s|/usr/local/libexec/ci-utils/ci-docker-maintenance|$GITHUB_WORKSPACE/scripts/ci-utils/bin/ci-docker-maintenance|" \
             "$unit_directory/ci-docker-maintenance@.service"
           systemd-analyze verify "$unit_directory"/*.service "$unit_directory"/*.timer
+
+      - name: Verify native workflow contracts
+        run: ruby scripts/ci-utils/tests/installation/workflow_contract.rb
 
       - name: Verify CLI contract
         run: |
