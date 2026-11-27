@@ -25,8 +25,14 @@ env:
   BUILDX_VERSION: v0.39.1
 
 jobs:
+  qualify:
+    uses: ./.github/workflows/runner-helper.yml
+    with:
+      native_only: true
+
   release:
     name: Promote final CI images
+    needs: qualify
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:

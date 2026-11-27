@@ -6,6 +6,8 @@ A release assigns one semantic numeric version to the verified seven-image suite
 
 The release workflow accepts only the current `main` commit. The **Release / Build and Qualify CI Image Candidates [PR + Push + Manual]** workflow for that commit must have completed successfully and promoted all seven images to `sha-<full-commit>` tags for immutable source identity.
 
+Release runs the existing native qualification on Linux amd64, Linux arm64 and macOS arm64 for the dispatched commit. All three must pass before promotion starts.
+
 The immutable revision tags are the release inputs. The mutable `latest` tag identifies the most recent published stable release and is not a release precondition. A verified `main` build does not move `latest`.
 
 If the automatic workflow skipped image publication because the commit did not change image inputs, dispatch the image-candidate workflow manually from `main`. Manual publication creates the required immutable revision tags without moving `latest`.

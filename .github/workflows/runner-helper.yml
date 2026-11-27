@@ -7,12 +7,16 @@ on:
       - develop
       - main
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      native_only:
+        type: boolean
 
 permissions:
   contents: read
 
 concurrency:
-  group: runner-helper-${{ github.ref }}
+  group: runner-helper-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
@@ -72,6 +76,7 @@ jobs:
 
   contract:
     name: ci/runner-helpers/contract
+    if: ${{ !inputs.native_only }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
