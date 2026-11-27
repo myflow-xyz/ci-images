@@ -92,30 +92,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Promote verified digests
+      - name: Package native archives and promote verified digests
         id: promote
         env:
           GIT_TAG: ${{ steps.release.outputs.git_tag }}
           OUTPUT_FILE: ${{ runner.temp }}/released-images.json
         run: |
-          .github/scripts/release-images.sh "$GIT_TAG" "$OUTPUT_FILE"
-          printf 'images=%s\n' "$(jq -c . "$OUTPUT_FILE")" >>"$GITHUB_OUTPUT"
-
-      - name: Build Linux probes and package native runner utilities
-        env:
-          GIT_TAG: ${{ steps.release.outputs.git_tag }}
-        run: |
-          go_image=$(jq -er '.[] | select(.name == "go") | .image + "@" + .digest' "$RUNNER_TEMP/released-images.json")
-          probes=$(mktemp -d "$RUNNER_TEMP/probes.XXXXXX")
-          docker run --rm --user "$(id -u):$(id -g)" --workdir /src \
-            --env HOME=/tmp --env GOPATH=/tmp/go --env GOMODCACHE=/tmp/go/pkg/mod \
-            --env GOCACHE=/tmp/go-build --env GOTMPDIR=/tmp \
-            --volume "$GITHUB_WORKSPACE:/src:ro" --volume "$probes:/out" \
-            "$go_image" .github/scripts/build-ci-utils-probes.sh /out
           export SOURCE_DATE_EPOCH
           SOURCE_DATE_EPOCH=$(git show -s --format=%ct "$GITHUB_SHA")
-          python3 .github/scripts/package-ci-utils.py "${GIT_TAG#v}" "$GITHUB_SHA" "$probes" "$RUNNER_TEMP/native"
-          (cd "$RUNNER_TEMP/native" && sha256sum --check "ci-utils_${GIT_TAG#v}_SHA256SUMS")
+          .github/scripts/release-images.sh "$GIT_TAG" "$OUTPUT_FILE"
+          printf 'images=%s\n' "$(jq -c . "$OUTPUT_FILE")" >>"$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         env:

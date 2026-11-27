@@ -30,15 +30,13 @@ One version always covers `ci-base`, `ci-go`, `ci-node`, `ci-vite`, `ci-playwrig
 
 ## Release transaction
 
-The workflow:
-
-1. verifies that the selected revision is the current `main` commit;
-2. calculates the next `vX.Y.Z` Git tag from stable Git tags;
-3. resolves and validates every immutable revision tag;
-4. derives the `X.Y.Z` image tag and rejects it if it already identifies another digest;
-5. assigns the image tag to each verified OCI index and verifies the result;
-6. builds the Linux amd64 and arm64 probes from the release commit with the digest-pinned ci-go toolchain and packages them with the maintenance commands, packages the macOS arm64 script client and creates the `vX.Y.Z` Git tag and GitHub Release with all three archives, their SHA-256 file and the seven index digests;
-7. updates `latest` on all seven images to those same index digests in a separate job, after confirming that this is the current published stable release.
+1. Qualify the dispatched commit on all three native runners and verify it is still the current `main` commit.
+2. Calculate the next `vX.Y.Z` Git tag from stable Git tags.
+3. Resolve the seven immutable revision tags. Reject any existing `X.Y.Z` tag that identifies a different digest.
+4. Build both Linux probes with the verified ci-go digest. Package the Linux and macOS archives and verify their checksums.
+5. Assign and verify the seven stable image tags.
+6. Create the `vX.Y.Z` Git tag and GitHub Release with the three archives, their SHA-256 file and the seven index digests.
+7. Confirm this is the current published stable release and update all seven `latest` tags to its recorded digests.
 
 The Git tag is created only after registry promotion succeeds. A stable image tag that already identifies the expected digest is accepted so a partially completed registry promotion can be retried safely.
 
@@ -74,6 +72,8 @@ Image publication builds AMD64 and ARM64 on separate native runners with archite
 See [the usage guide](usage.md#pulling-and-pinning) for registry authentication, digest inspection, and pull examples.
 
 ## Failure and rollback
+
+If native qualification or packaging fails, that attempt writes no stable tags. Retry the same bump after correcting the failure.
 
 If registry promotion stops after assigning only some stable image tags, rerun the same bump. The absent Git tag causes the same version to be calculated, and matching existing registry tags are preserved.
 

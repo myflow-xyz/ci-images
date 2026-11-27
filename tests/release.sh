@@ -94,6 +94,30 @@ digest_for_name() {
 	printf 'sha256:%064d\n' "$suffix"
 }
 
+if [[ ${1-} == run ]]; then
+	compiler=${@: -3:1}
+	source_digest=$(docker buildx imagetools inspect "ghcr.io/myflow-xyz/ci-go:sha-${GITHUB_SHA}" --format '{{.Manifest.Digest}}')
+	[[ $compiler == "ghcr.io/myflow-xyz/ci-go@${source_digest}" &&
+		${@: -2:1} == .github/scripts/build-ci-utils-probes.sh && ${!#} == /out ]]
+	for argument in "$@"; do
+		if [[ $argument == *:/out ]]; then
+			output=${argument%:/out}
+		fi
+	done
+	python3 - "${output:?missing probe output mount}" <<'PY'
+import os
+from pathlib import Path
+import sys
+
+for arch, machine in (("amd64", 62), ("arm64", 183)):
+    if os.environ.get("FAKE_INVALID_PROBE") and arch == "arm64":
+        machine = 62
+    probe = Path(sys.argv[1]) / f"probe-{arch}"
+    probe.write_bytes(b"\x7fELF\x02\x01" + bytes(12) + machine.to_bytes(2, "little"))
+PY
+	exit 0
+fi
+
 if [[ ${1-} == buildx && ${2-} == imagetools &&
 	${3-} == inspect ]]; then
 	reference=${4:?}
@@ -277,9 +301,21 @@ grep -q 'stable Git tag is not supported' "$failure_output" ||
 assert_equal 0 "$(create_count)" 'unprefixed Git tag promotions'
 
 reset_registry
+rejected_revision=2222222222222222222222222222222222222222
+if GITHUB_SHA=$rejected_revision FAKE_INVALID_PROBE=1 \
+	FAKE_INSPECT_MISMATCH_REF="ghcr.io/myflow-xyz/ci-go:sha-${rejected_revision}" \
+	"$release_images" v0.1.0 "$output_file" >"$failure_output" 2>&1; then
+	fail 'release accepted a wrong-architecture native probe'
+fi
+assert_equal 0 "$(create_count)" 'stable tags after native packaging failed'
+grep -q 'expected a Linux arm64 probe' "$failure_output" || fail 'invalid probe diagnostic'
+[[ ! -e $output_file ]] || fail 'release recorded before its assets were ready'
+# The corrected revision can use the same stable version without changing registry state.
 "$release_images" v0.1.0 "$output_file"
 assert_equal 7 "$(create_count)" 'new release promotions'
 assert_release_output
+(cd "${temporary_directory}/native" && sha256sum --check ci-utils_0.1.0_SHA256SUMS)
+assert_equal 3 "$(wc -l <"${temporary_directory}/native/ci-utils_0.1.0_SHA256SUMS" | tr -d ' ')" 'native asset count'
 
 : >"$fake_log"
 "$release_images" v0.1.0 "$output_file"
