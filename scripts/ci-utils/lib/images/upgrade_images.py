@@ -89,6 +89,8 @@ def registry_index_digest(engine, reference):
         engine,
         [
             "buildx",
+            "--builder",
+            "default",
             "imagetools",
             "inspect",
             "--format",

@@ -320,6 +320,21 @@ class UpgradeImagesTests(unittest.TestCase):
 
 
 class ReleaseLookupTests(unittest.TestCase):
+    def test_registry_inspection_uses_the_selected_socket_and_account_config(self):
+        engine = SimpleNamespace(endpoint="unix:///runner/docker.sock", deadline=time.monotonic() + 10)
+        env = {"DOCKER_CONFIG": "/fixture/docker", "BUILDX_BUILDER": "other-context"}
+        with (
+            mock.patch.dict(os.environ, env, clear=True),
+            mock.patch("lib.images.upgrade_images.subprocess.run") as run,
+        ):
+            run.return_value.returncode = 0
+            run.return_value.stdout = f"application/vnd.oci.image.index.v1+json {GO_INDEX}"
+            self.assertEqual(registry_index_digest(engine, GO_LATEST), GO_INDEX)
+        self.assertEqual(run.call_args.args[0][:10], [
+            "docker", "--config", env["DOCKER_CONFIG"], "--host", engine.endpoint,
+            "buildx", "--builder", "default", "imagetools", "inspect",
+        ])
+
     def test_matches_each_index_across_pages_and_ignores_unpublished_releases(self):
         newest_go = PREFIX + "go:0.0.3"
         newest_vite = PREFIX + "vite:0.0.3"

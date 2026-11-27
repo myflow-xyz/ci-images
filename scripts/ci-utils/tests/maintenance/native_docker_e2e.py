@@ -130,10 +130,12 @@ class NativeDocker(unittest.TestCase):
         args = [*shlex.split(refresh), "--config", str(self.config)]
         arch = self.engine.version["Arch"]
         other = "arm64" if arch == "amd64" else "amd64"
+        env = {**os.environ, "DOCKER_CONFIG": str(self.root / "docker")}
+        command([DOCKER, "context", "create", "runner", "--docker", f"host={SOCKET}"], env=env)
+        command([DOCKER, "context", "use", "runner"], env=env)
+        env.update(BUILDX_BUILDER="runner", DOCKER_DEFAULT_PLATFORM=f"linux/{other}")
         with ReleaseServer() as registry:
-            result = events(
-                args, env={**os.environ, "DOCKER_DEFAULT_PLATFORM": f"linux/{other}"}
-            )
+            result = events(args, env=env)
             pulled = next(e for e in result if e["event"] == "pulled")
             self.assertEqual(
                 (pulled["id"], pulled["digest"]), (f"{REPO}:{VERSION}", registry.digest)
