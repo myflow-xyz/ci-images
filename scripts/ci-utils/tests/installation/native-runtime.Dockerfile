@@ -23,5 +23,6 @@ FROM python:3.13-trixie@sha256:f25cbd3f7c73c28bdcab476c93c93a2ec90970a8f5b8a7810
 COPY --from=cli /usr/local/bin/docker /usr/local/bin/docker
 COPY --from=cli /usr/local/libexec/docker/cli-plugins/ /usr/local/libexec/docker/cli-plugins/
 ADD --checksum=sha256:400d835466429a5fe6c77a62775a9173729d61dd43e05dfa893e8cf6cb511783 https://github.com/shellspec/shellspec/archive/refs/tags/0.28.1.tar.gz /tmp/shellspec.tar.gz
-RUN mkdir /opt/shellspec && tar -xzf /tmp/shellspec.tar.gz -C /opt/shellspec --strip-components=1 \
+RUN apt-get update && apt-get install -y --no-install-recommends shellcheck shfmt && rm -rf /var/lib/apt/lists/* \
+    && mkdir /opt/shellspec && tar -xzf /tmp/shellspec.tar.gz -C /opt/shellspec --strip-components=1 \
     && ln -s /opt/shellspec/shellspec /usr/local/bin/shellspec && rm /tmp/shellspec.tar.gz
