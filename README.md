@@ -8,7 +8,6 @@
 debian:trixie-slim@<digest>
 └── ci-base
     ├── ci-go
-    ├── ci-utils
     ├── ci-net
     └── ci-node
         └── ci-vite
@@ -22,14 +21,13 @@ pgvector/pgvector:0.8.7-pg18-trixie@<digest>
 
 - `ghcr.io/myflow-xyz/ci-base`: operating-system utilities, Python 3.15.2 standard-library scripting, Docker CLI with Compose and Buildx, and shared policy tools including OSV-Scanner and Trivy.
 - `ghcr.io/myflow-xyz/ci-go`: Go toolchain, native race-test prerequisites, and reusable Go CI executables.
-- `ghcr.io/myflow-xyz/ci-utils`: runner image refresh, guarded Docker cleanup, and explicit Go and pnpm cache resets. Its runtime inherits `ci-base`.
 - `ghcr.io/myflow-xyz/ci-net`: network diagnostics and isolated network tests, with explicit namespace and capability constraints in its [image contract](docs/images/net.md).
 - `ghcr.io/myflow-xyz/ci-node`: generic Node.js, Markdown, and OpenAPI jobs that do not require a frontend toolchain.
 - `ghcr.io/myflow-xyz/ci-vite`: TypeScript, Vite, Vitest, Oxlint, and Oxfmt quality and build jobs.
 - `ghcr.io/myflow-xyz/ci-playwright`: Vite jobs that also require a version-matched Chromium browser.
 - `ghcr.io/myflow-xyz/ci-postgres`: PostgreSQL 18 service jobs requiring pgvector and PostgreSQL contrib extensions.
 
-The seven job images support GitHub Actions `jobs.<job_id>.container`. `ci-postgres` is an independent service-image lineage and never inherits from a job image.
+The six job images support GitHub Actions `jobs.<job_id>.container`. `ci-postgres` is an independent service-image lineage and never inherits from a job image.
 
 Repository-owned Bash scripts require Bash 5.0 or newer. `ci-base` and its job image descendants provide Bash 5.3.20.
 
@@ -55,47 +53,23 @@ Browse [the documentation index](docs/index.md) for detailed image contracts. Us
 
 ## Upgrade runner images
 
-On the Linux runner, set `CI_UTILS_IMAGE` to a locally cached utility image that includes the version-aware upgrade helper. Use its numeric tag or digest if available. Omit registry credentials for publicly readable images. For private packages, set `GHCR_USER` and a classic `GHCR_TOKEN` with `read:packages` access.
+Install ci-utils once on a Linux amd64, Linux arm64 or Apple Silicon macOS runner. Choose a release with native ci-utils archives. The pinned example uses `0.0.31`. [Installation and prerequisites](scripts/ci-utils/docs/installation/install.md)
 
 ```bash
-CI_UTILS_IMAGE=ghcr.io/myflow-xyz/ci-utils:latest
-docker run --rm --pull=never --network=none "$CI_UTILS_IMAGE" ci-utils-list
-
-printf '%s\n' "${GHCR_TOKEN:-}" |
-  docker run \
-    --rm \
-    --interactive \
-    --pull=never \
-    --mount type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock,readonly \
-    --group-add "$(stat -c %g /var/run/docker.sock)" \
-    --tmpfs /var/tmp:mode=1777 \
-    --env DOCKER_CONFIG=/var/tmp/ghcr \
-    --env "GHCR_USER=${GHCR_USER:-}" \
-    "$CI_UTILS_IMAGE" sh -ec '
-      if [ -n "$GHCR_USER" ]; then
-        docker --host unix:///var/run/docker.sock login ghcr.io \
-          --username "$GHCR_USER" \
-          --password-stdin
-      fi
-      exec ci-upgrade-images
-    '
+(set -eu; v=0.0.31; f=$(mktemp); trap 'rm -f "$f"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' "https://raw.githubusercontent.com/myflow-xyz/ci-images/v$v/scripts/ci-utils/install.sh" -o "$f"; sh "$f" "$v")
 ```
 
-The refresh container needs HTTPS access to `api.github.com` and `ghcr.io` to verify release tags. With only the utility image cached, the command refreshes `ci-utils` itself. Pull each other suite image once to include it in future runs.
-
-The report names the exact version and the default keeps old tags. Copy the reported reference to confirm that it and the local `:latest` resolve to the same image ID.
+For a per-user install, add `~/.local/bin` to your `PATH` if needed. Then run the installed command directly.
 
 ```bash
-docker image inspect --format '{{.Id}}' \
-  ghcr.io/myflow-xyz/ci-utils:0.0.26 \
-  ghcr.io/myflow-xyz/ci-utils:latest
+ci-upgrade-images
 ```
 
-Use the reported version in place of `0.0.26`. See [image upgrade details](docs/images/utils.md#refresh-cached-ci-images) and [scheduled maintenance](docs/maintenance.md#refresh-cached-ci-images).
+This refreshes cached MyFlow images on the local Linux Docker daemon and keeps older tags. Use `--endpoint` if the daemon has a different Unix socket. [Refresh options](scripts/ci-utils/docs/images/ci-upgrade-images.md) · [Command catalog](scripts/ci-utils/README.md)
 
 ## Local image verification
 
-After building a target with `tests/build-local-image.sh <target>`, use `tests/scan-local-image.sh <target>` to scan its local `ci-<target>:test` image before pushing. The helper requires Trivy in the developer environment, restricts the image source to the local Docker daemon, and applies the publish policy: fixed HIGH or CRITICAL operating-system and library vulnerabilities fail the scan. Use `all` to scan all eight local images. Local verification covers the host platform; CI remains responsible for both published architectures.
+After building a target with `tests/build-local-image.sh <target>`, use `tests/scan-local-image.sh <target>` to scan its local `ci-<target>:test` image before pushing. The helper requires Trivy in the developer environment, restricts the image source to the local Docker daemon, and applies the publish policy: fixed HIGH or CRITICAL operating-system and library vulnerabilities fail the scan. Use `all` to scan all seven local images. Local verification covers the host platform; CI remains responsible for both published architectures.
 
 ## Design boundaries
 

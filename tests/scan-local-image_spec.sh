@@ -46,9 +46,9 @@ grep --fixed-strings --line-regexp \
 
 : >"$fake_log"
 "$scan_local_image" all >/dev/null
-[[ $(wc -l <"$fake_log" | tr -d ' ') == 8 ]] ||
+[[ $(wc -l <"$fake_log" | tr -d ' ') == 7 ]] ||
 	fail 'all target scan count'
-for name in base go node vite playwright postgres utils net; do
+for name in base go node vite playwright postgres net; do
 	grep --fixed-strings --line-regexp \
 		"${expected_policy} ci-${name}:test" \
 		"$fake_log" \

@@ -51,18 +51,6 @@ jobs:
           tests/static.sh
           git diff --check
 
-      - name: Verify utility policy and host protocol
-        run: sudo python3 -B -m unittest discover -s tests/utils -p 'test_*.py'
-
-      - name: Verify systemd example syntax
-        run: |
-          unit_directory=$(mktemp -d)
-          trap 'rm -rf "$unit_directory"' EXIT
-          cp scripts/examples/ci-utils/*.service scripts/examples/ci-utils/*.timer "$unit_directory/"
-          sed -i "s|/usr/local/libexec/ci-utils/ci-docker-maintenance|$GITHUB_WORKSPACE/scripts/ci-docker-maintenance|" \
-            "$unit_directory/ci-docker-maintenance@.service"
-          systemd-analyze verify "$unit_directory"/*.service "$unit_directory"/*.timer
-
       - name: Verify documentation
         run: |
           npm ci \
@@ -76,12 +64,7 @@ jobs:
             "$GITHUB_WORKSPACE/images/node/markdownlint"
           images/node/markdownlint/node_modules/.bin/markdownlint-cli2 \
             README.md \
-            "docs/**/*.md"
-
-      - name: Verify manual utility workflow boundaries and image resolution
-        run: |
-          node --test tests/utils-workflow.mjs
-          python3 -B -m unittest discover -s tests/qualification -p 'test_*.py'
+            "docs/**/*.md" scripts/ci-utils/README.md "scripts/ci-utils/docs/**/*.md"
 
       - name: Verify workflows
         env:
@@ -150,6 +133,9 @@ jobs:
               .github/workflows/images.yml \
               .github/workflows/publish-image.yml \
               images \
+              scripts/ci-utils/bin \
+              scripts/ci-utils/install.sh \
+              scripts/ci-utils/lib \
               manifests; then
               publish_changed=true
             fi
@@ -158,9 +144,6 @@ jobs:
               ! git diff --quiet "$diff_range" -- \
                 .github/scripts \
                 .github/workflows \
-                scripts/ci-docker-maintenance \
-                'scripts/ci_docker_*.py' \
-                scripts/examples/ci-utils \
                 tests; then
               smoke_changed=true
             fi
@@ -209,28 +192,10 @@ jobs:
       - name: Verify isolated network behavior and Engine API constraints
         run: python3 tests/net-e2e.py
 
-      - name: Verify utility policy and host protocol fixtures
-        run: |
-          # The test controller sets child identities/capabilities and inspects gate records.
-          docker run --rm --pull=never --network=none --read-only \
-            --user=0 --cap-drop=ALL --security-opt=no-new-privileges \
-            --cap-add=CHOWN --cap-add=DAC_OVERRIDE --cap-add=FSETID \
-            --cap-add=SETUID --cap-add=SETGID --cap-add=KILL --cap-add=SETPCAP \
-            --env TMPDIR=/tmp \
-            --tmpfs /tmp:rw,exec,nosuid,nodev,size=64m,mode=1777 \
-            --volume "$GITHUB_WORKSPACE:/workspace:ro" \
-            --workdir /workspace ci-base:test \
-            python3 -B -m unittest discover -s tests/utils -p 'test_*.py'
-
       - name: Verify non-root Compose fixtures and owned cleanup
         env:
           CI_IMAGES_DOCKER_SOCKET: /var/run/docker.sock
         run: tests/docker-integration.sh
-
-      - name: Verify guarded cleanup on a disposable daemon
-        run: |
-          tests/utils-docker.sh
-          CI_UTILS_TEST_IMAGE_STORE=classic tests/utils-docker.sh
 
       - name: Run image-hosted policy checks
         run: |
@@ -280,20 +245,6 @@ jobs:
     with:
       image: go
       parent_image: ${{ needs.publish-base.outputs.reference }}
-
-  publish-utils:
-    name: Publish utils candidate
-    needs:
-      - publish-base
-      - publish-go
-    permissions:
-      contents: read
-      packages: write
-    uses: ./.github/workflows/publish-image.yml
-    with:
-      image: utils
-      parent_image: ${{ needs.publish-base.outputs.reference }}
-      go_image: ${{ needs.publish-go.outputs.reference }}
 
   publish-net:
     name: Publish net candidate
@@ -366,7 +317,6 @@ jobs:
       - publish-vite
       - publish-playwright
       - publish-postgres
-      - publish-utils
       - publish-net
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -391,7 +341,6 @@ jobs:
           PLAYWRIGHT_RECORD: ${{ needs.publish-playwright.outputs.record }}
           POSTGRES_RECORD: ${{ needs.publish-postgres.outputs.record }}
           VITE_RECORD: ${{ needs.publish-vite.outputs.record }}
-          UTILS_RECORD: ${{ needs.publish-utils.outputs.record }}
           NET_RECORD: ${{ needs.publish-net.outputs.record }}
         run: |
           .github/scripts/collect-published-images.sh \
@@ -402,7 +351,6 @@ jobs:
             "$VITE_RECORD" \
             "$PLAYWRIGHT_RECORD" \
             "$POSTGRES_RECORD" \
-            "$UTILS_RECORD" \
             "$NET_RECORD"
           base_image=$(
             jq --exit-status --raw-output '

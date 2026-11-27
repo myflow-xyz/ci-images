@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+set -eu
+entry=$(readlink -f -- "${BASH_SOURCE[0]}")
+exec python3 -IB "${entry%/bin/*}/lib/installation/run.py" ci-utils-list "$@"

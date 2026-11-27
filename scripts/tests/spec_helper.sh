@@ -10,6 +10,18 @@ spec_helper_precheck() {
 	command -v shfmt >/dev/null 2>&1 ||
 		abort 'shfmt is required'
 
+	set -- ci-utils/install.sh ci-utils/bin/* ci-utils/tests/*/*.sh
+	for source in "$@"; do
+		bash -n "$source" || abort "Bash syntax failed in $source"
+	done
+	shellcheck --severity=style "$@" || abort 'ci-utils ShellCheck failed'
+	shfmt -ln bash -d "$@" || abort 'ci-utils shfmt failed'
+	# The POSIX bootstrap feeds the complete installer to the selected Bash.
+	body=$(sed -n "/^exec bash -s -- /,/^CI_UTILS_INSTALL$/p" ci-utils/install.sh | sed '1d;$d')
+	printf '%s\n' "$body" | bash -n || abort 'installer Bash syntax failed'
+	printf '%s\n' "$body" | shellcheck -s bash - || abort 'installer ShellCheck failed'
+	printf '%s\n' "$body" | shfmt -ln bash -d || abort 'installer shfmt failed'
+
 	bash -n \
 		setup-runner-from-scratch.sh \
 		setup-runner-permissions.sh \

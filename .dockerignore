@@ -1,6 +1,7 @@
 *
 !images/
 !images/**
+**/__pycache__/
 !manifests/
 !manifests/**
 !LICENSE

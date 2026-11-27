@@ -87,13 +87,36 @@ digest_for_name() {
 	node) suffix=3 ;;
 	playwright) suffix=4 ;;
 	postgres) suffix=5 ;;
-	utils) suffix=7 ;;
-	net) suffix=8 ;;
+	net) suffix=7 ;;
 	vite) suffix=6 ;;
 	*) exit 1 ;;
 	esac
 	printf 'sha256:%064d\n' "$suffix"
 }
+
+if [[ ${1-} == run ]]; then
+	compiler=${@: -3:1}
+	source_digest=$(docker buildx imagetools inspect "ghcr.io/myflow-xyz/ci-go:sha-${GITHUB_SHA}" --format '{{.Manifest.Digest}}')
+	[[ $compiler == "ghcr.io/myflow-xyz/ci-go@${source_digest}" &&
+		${@: -2:1} == .github/scripts/build-ci-utils-probes.sh && ${!#} == /out ]]
+	for argument in "$@"; do
+		if [[ $argument == *:/out ]]; then
+			output=${argument%:/out}
+		fi
+	done
+	python3 - "${output:?missing probe output mount}" <<'PY'
+import os
+from pathlib import Path
+import sys
+
+for arch, machine in (("amd64", 62), ("arm64", 183)):
+    if os.environ.get("FAKE_INVALID_PROBE") and arch == "arm64":
+        machine = 62
+    probe = Path(sys.argv[1]) / f"probe-{arch}"
+    probe.write_bytes(b"\x7fELF\x02\x01" + bytes(12) + machine.to_bytes(2, "little"))
+PY
+	exit 0
+fi
 
 if [[ ${1-} == buildx && ${2-} == imagetools &&
 	${3-} == inspect ]]; then
@@ -239,7 +262,7 @@ assert_release_output() {
 		--arg git_tag v0.1.0 \
 		--arg image_tag 0.1.0 \
 		'
-			length == 8 and
+			length == 7 and
 			([.[].name] | sort) == [
 				"base",
 				"go",
@@ -247,7 +270,6 @@ assert_release_output() {
 				"node",
 				"playwright",
 				"postgres",
-				"utils",
 				"vite"
 			] and
 			([
@@ -279,9 +301,21 @@ grep -q 'stable Git tag is not supported' "$failure_output" ||
 assert_equal 0 "$(create_count)" 'unprefixed Git tag promotions'
 
 reset_registry
+rejected_revision=2222222222222222222222222222222222222222
+if GITHUB_SHA=$rejected_revision FAKE_INVALID_PROBE=1 \
+	FAKE_INSPECT_MISMATCH_REF="ghcr.io/myflow-xyz/ci-go:sha-${rejected_revision}" \
+	"$release_images" v0.1.0 "$output_file" >"$failure_output" 2>&1; then
+	fail 'release accepted a wrong-architecture native probe'
+fi
+assert_equal 0 "$(create_count)" 'stable tags after native packaging failed'
+grep -q 'expected a Linux arm64 probe' "$failure_output" || fail 'invalid probe diagnostic'
+[[ ! -e $output_file ]] || fail 'release recorded before its assets were ready'
+# The corrected revision can use the same stable version without changing registry state.
 "$release_images" v0.1.0 "$output_file"
-assert_equal 8 "$(create_count)" 'new release promotions'
+assert_equal 7 "$(create_count)" 'new release promotions'
 assert_release_output
+(cd "${temporary_directory}/native" && sha256sum --check ci-utils_0.1.0_SHA256SUMS)
+assert_equal 3 "$(wc -l <"${temporary_directory}/native/ci-utils_0.1.0_SHA256SUMS" | tr -d ' ')" 'native asset count'
 
 : >"$fake_log"
 "$release_images" v0.1.0 "$output_file"
@@ -291,7 +325,7 @@ assert_release_output
 reset_registry
 FAKE_LATEST_MISMATCH_IMAGE=go \
 	"$release_images" v0.1.0 "$output_file"
-assert_equal 8 "$(create_count)" 'stale latest promotions'
+assert_equal 7 "$(create_count)" 'stale latest promotions'
 assert_release_output
 
 reset_registry
@@ -334,7 +368,7 @@ printf '%s\t%s\n' \
 	"$base_digest" \
 	>"$fake_state"
 "$release_images" v0.1.0 "$output_file"
-assert_equal 7 "$(create_count)" 'partial release retry promotions'
+assert_equal 6 "$(create_count)" 'partial release retry promotions'
 assert_release_output
 
 released_images="${temporary_directory}/released-images-template.json"
@@ -394,7 +428,7 @@ GITHUB_EVENT_NAME=workflow_dispatch \
 	GITHUB_RUN_ATTEMPT=2 \
 	GITHUB_RUN_ID=123 \
 	"$promote_images" "$published_images"
-assert_equal 8 \
+assert_equal 7 \
 	"$(grep -c ':run-123$' "$fake_log")" \
 	'mixed-attempt manual publication aliases'
 if grep -Eq ':(edge|latest|[0-9]+\.[0-9]+\.[0-9]+)$' "$fake_log"; then
@@ -410,7 +444,7 @@ GITHUB_EVENT_NAME=push \
 	GITHUB_RUN_ATTEMPT=1 \
 	GITHUB_RUN_ID=124 \
 	"$promote_images" "$published_images"
-assert_equal 8 \
+assert_equal 7 \
 	"$(grep -c ":sha-${GITHUB_SHA}$" "$fake_log")" \
 	'main publication revision tags'
 if grep -Eq ':(edge|latest|[0-9]+\.[0-9]+\.[0-9]+)$' "$fake_log"; then
@@ -425,7 +459,7 @@ GITHUB_EVENT_NAME=push \
 	GITHUB_REF_TYPE=branch \
 	GITHUB_RUN_ID=128 \
 	"$promote_images" "$published_images"
-assert_equal 8 "$(grep -c ':edge$' "$fake_log")" 'develop publication aliases'
+assert_equal 7 "$(grep -c ':edge$' "$fake_log")" 'develop publication aliases'
 
 reset_registry
 create_published_images 999
@@ -502,12 +536,12 @@ seed_release
 jq -r '.[] | [.image + ":latest", "sha256:" + ("9" * 64)] | @tsv' \
 	"$released_images" >>"$fake_state"
 "$promote_latest" "$released_images"
-assert_equal 8 "$(create_count)" 'latest release promotions'
+assert_equal 7 "$(create_count)" 'latest release promotions'
 assert_latest_matches_release
 
 : >"$fake_log"
 "$promote_latest" "$released_images"
-assert_equal 8 "$(create_count)" 'latest release retry promotions'
+assert_equal 7 "$(create_count)" 'latest release retry promotions'
 assert_latest_matches_release
 
 for fault in older unpublished draft prerelease; do
@@ -582,7 +616,7 @@ if FAKE_CREATE_ERROR_REF=ghcr.io/myflow-xyz/ci-vite:latest \
 fi
 grep -q 'registry unavailable' "$failure_output" ||
 	fail 'partial latest promotion diagnostic'
-assert_equal 7 "$(create_count)" 'partial latest promotions'
+assert_equal 6 "$(create_count)" 'partial latest promotions'
 : >"$fake_log"
 "$promote_latest" "$released_images"
 assert_latest_matches_release

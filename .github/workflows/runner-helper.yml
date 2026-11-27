@@ -7,12 +7,16 @@ on:
       - develop
       - main
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      native_only:
+        type: boolean
 
 permissions:
   contents: read
 
 concurrency:
-  group: runner-helper-${{ github.ref }}
+  group: runner-helper-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
@@ -21,8 +25,58 @@ env:
   SHELLSPEC_VERSION: 0.28.1
 
 jobs:
+  native:
+    name: ci/ci-utils/native (platform=${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Qualify installed archives and guarded maintenance
+        run: scripts/ci-utils/tests/installation/qualify.sh
+
+  macos-client:
+    name: ci/ci-utils/native (platform=darwin/arm64)
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Qualify the macOS runner client
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+          DOCKER_CONFIG: ${{ runner.temp }}/ci-utils-docker
+        run: |
+          test "$(uname -sm)" = 'Darwin arm64'
+          brew install bash docker docker-buildx
+          PATH="$(brew --prefix bash)/bin:$(brew --prefix docker)/bin:$PATH"
+          mkdir -p "$DOCKER_CONFIG/cli-plugins"
+          ln -s "$(brew --prefix docker-buildx)/bin/docker-buildx" "$DOCKER_CONFIG/cli-plugins/docker-buildx"
+          bash --version
+          python3 --version
+          docker buildx version
+          for version in 0.0.31 0.0.32; do
+            python3 .github/scripts/package-ci-utils.py "$version" "$GITHUB_SHA" \
+              "$RUNNER_TEMP" "$RUNNER_TEMP/assets" --platform darwin/arm64
+          done
+          cd scripts/ci-utils
+          python3 -B -m tests.installation.user_install_integration "$RUNNER_TEMP/assets" 0.0.31 0.0.32
+
   contract:
     name: ci/runner-helpers/contract
+    if: ${{ !inputs.native_only }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -63,6 +117,18 @@ jobs:
           tar -xzf "$shellspec_archive" \
             --strip-components=1 \
             --directory "$shellspec_root"
+
+      - name: Verify systemd example syntax
+        run: |
+          unit_directory=$(mktemp -d)
+          trap 'rm -rf "$unit_directory"' EXIT
+          cp scripts/ci-utils/examples/maintenance/*.service scripts/ci-utils/examples/maintenance/*.timer "$unit_directory/"
+          sed -i "s|/usr/local/libexec/ci-utils/ci-docker-maintenance|$GITHUB_WORKSPACE/scripts/ci-utils/bin/ci-docker-maintenance|" \
+            "$unit_directory/ci-docker-maintenance@.service"
+          systemd-analyze verify "$unit_directory"/*.service "$unit_directory"/*.timer
+
+      - name: Verify native workflow contracts
+        run: ruby scripts/ci-utils/tests/installation/workflow_contract.rb
 
       - name: Verify CLI contract
         run: |

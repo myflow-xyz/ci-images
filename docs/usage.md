@@ -11,7 +11,7 @@ Select the narrowest image that satisfies a job. This reduces download size, sec
 - Use `ci-vite` for TypeScript and Vite quality, test, and build jobs.
 - Use `ci-playwright` only when a job launches Chromium.
 - Use `ci-postgres` as a service beside a job image, never as the job image.
-- Use `ci-utils` for shared maintenance tools. Docker cleanup requires the [trusted host adapter](maintenance.md) and complete daemon-user coordination.
+- For runner maintenance, install native ci-utils. Guarded cleanup requires the host adapter and coordination of all daemon users. [Native commands](../scripts/ci-utils/README.md) · [Host adapter](maintenance.md)
 
 ## Workload patterns
 

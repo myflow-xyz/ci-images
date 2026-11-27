@@ -35,7 +35,6 @@ jq --exit-status '
 		"node",
 		"playwright",
 		"postgres",
-		"utils",
 		"vite"
 	] and
 	([.images[].name] | sort) == [
@@ -45,7 +44,6 @@ jq --exit-status '
 		"ghcr.io/myflow-xyz/ci-node",
 		"ghcr.io/myflow-xyz/ci-playwright",
 		"ghcr.io/myflow-xyz/ci-postgres",
-		"ghcr.io/myflow-xyz/ci-utils",
 		"ghcr.io/myflow-xyz/ci-vite"
 	]
 ' "$manifest" >/dev/null
@@ -165,6 +163,19 @@ done < <(
 		@tsv
 	' "$manifest"
 )
+
+# Finish native packaging using the same immutable ci-go digest we will promote.
+go_image=$(jq -er '.image + "@" + .digest' "${temporary_directory}/go.json")
+probes="${temporary_directory}/probes"
+assets="$(dirname "$output_file")/native"
+mkdir "$probes"
+docker run --rm --user "$(id -u):$(id -g)" --workdir /src \
+	--env HOME=/tmp --env GOPATH=/tmp/go --env GOMODCACHE=/tmp/go/pkg/mod \
+	--env GOCACHE=/tmp/go-build --env GOTMPDIR=/tmp \
+	--volume "${repository_root}:/src:ro" --volume "${probes}:/out" \
+	"$go_image" .github/scripts/build-ci-utils-probes.sh /out
+python3 "${repository_root}/.github/scripts/package-ci-utils.py" "$image_tag" "$revision" "$probes" "$assets"
+(cd "$assets" && sha256sum --check "ci-utils_${image_tag}_SHA256SUMS")
 
 for record in "${temporary_directory}"/*.json; do
 	image=$(jq -r '.image' "$record")
