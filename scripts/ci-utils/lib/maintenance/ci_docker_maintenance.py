@@ -309,14 +309,19 @@ def maintain(settings, policy, operation, profile, wait_seconds, selected=None):
                     with tempfile.TemporaryFile(dir=root) as output:
                         # A signal during Popen can arrive after the child exists.
                         started = True
-                        child = subprocess.Popen(
-                            [str(interpreter), "-IB", str(entry), *args], cwd=root,
-                            stdin=subprocess.DEVNULL, stdout=output,
-                            env={"PATH": "/usr/local/bin:/usr/bin:/bin", "TMPDIR": str(root),
-                                 "HOME": str(root), "CI_UTILS_DOCKER_CLI": settings["docker_cli"]},
-                            # The worker retains exclusive activity through coordinator loss.
-                            pass_fds=(lease.descriptor,) if lease else (),
-                        )
+                        try:
+                            child = subprocess.Popen(
+                                [str(interpreter), "-IB", str(entry), *args], cwd=root,
+                                stdin=subprocess.DEVNULL, stdout=output,
+                                env={"PATH": "/usr/local/bin:/usr/bin:/bin", "TMPDIR": str(root),
+                                     "HOME": str(root), "CI_UTILS_DOCKER_CLI": settings["docker_cli"]},
+                                # The worker retains exclusive activity through coordinator loss.
+                                pass_fds=(lease.descriptor,) if lease else (),
+                            )
+                        except OSError:
+                            # Popen reports setup, fork and exec refusals synchronously.
+                            started = False
+                            raise
                         logs, exit_code = native_result(
                             child, output, server, duration(policy["timeouts"]["run"]) + 30,
                         )

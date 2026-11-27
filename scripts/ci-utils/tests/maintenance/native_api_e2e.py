@@ -93,6 +93,35 @@ class NativeAdmission(unittest.TestCase):
         self.assertIsNone(self.invoke("status")[0]["maintenance"])
 
         interpreter.chmod(0o755)
+        self.assert_admits_job_and_apply(env)
+
+    def test_worker_launch_refusal_releases_admission(self):
+        dispatch = Path(shutil.which("ci-docker-maintenance")).resolve().parents[1] / "lib/installation/run.py"
+        refused_devnull = """
+import resource, runpy, subprocess, sys
+popen = subprocess.Popen
+def refuse_launch(*args, **kwargs):
+    previous = resource.getrlimit(resource.RLIMIT_NOFILE)
+    resource.setrlimit(resource.RLIMIT_NOFILE, (0, previous[1]))
+    try:
+        return popen(*args, **kwargs)
+    finally:
+        resource.setrlimit(resource.RLIMIT_NOFILE, previous)
+subprocess.Popen = refuse_launch
+sys.argv = sys.argv[1:]
+runpy.run_path(sys.argv[0], run_name="__main__")
+"""
+        result = subprocess.run(
+            [sys.executable, "-IB", "-c", refused_devnull, dispatch, *self.host, "apply"],
+            capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+        self.assertIn(os.devnull, json.loads(result.stdout.splitlines()[-1])["message"])
+        self.assertTrue(all(method == "GET" for method, _ in self.api.requests))
+        self.assertIsNone(self.invoke("status")[0]["maintenance"])
+        self.assert_admits_job_and_apply()
+
+    def assert_admits_job_and_apply(self, env=None):
         policy = json.loads(self.policy.read_text())
         policy["pressure"] = {"reserve_bytes": 1}
         self.policy.write_text(json.dumps(policy))
