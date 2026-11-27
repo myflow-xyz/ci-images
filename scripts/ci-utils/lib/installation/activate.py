@@ -53,7 +53,8 @@ def activate(prefix, version, arch, digest, user_directory=None):
                 shutil.copytree(bundle, tree)
                 (tree / "lib/archive.sha256").write_text(digest + "\n")
                 tree.rename(release)
-            current_bin = Path(os.path.relpath(private / "current/bin", public))
+            current_bin = Path(os.path.relpath(private.resolve() / "current/bin", public.resolve()))
+            old_bin = Path(os.path.relpath(private / "current/bin", public))
             links = {
                 public / cmd.name: current_bin / cmd.name
                 for cmd in (release / "bin").iterdir()
@@ -66,6 +67,10 @@ def activate(prefix, version, arch, digest, user_directory=None):
                 if link.is_symlink() and os.readlink(link) == str(target):
                     continue
                 if link.parent == public and os.path.lexists(link):
+                    if (link.is_symlink() and not link.exists()
+                            and (private / "current").is_symlink()
+                            and os.readlink(link) == str(old_bin / link.name)):
+                        continue
                     sys.exit(f"ci-utils: public command path already in use: {link}")
             for link, target in [
                 (private / "current", release.relative_to(private)),

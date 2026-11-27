@@ -50,8 +50,15 @@ def qualify(assets, version, upgrade):
             data = override or account / ".local/share"
             if override:
                 env["XDG_DATA_HOME"] = str(override)
+                physical_bin = account / "bin"
+                physical_bin.mkdir()
+                public.parent.mkdir()
+                public.symlink_to(physical_bin, target_is_directory=True)
+                physical_data = root / "storage" / "xdg"
+                physical_data.mkdir(parents=True)
+                override.symlink_to(physical_data, target_is_directory=True)
             private = data / "ci-utils"
-            for tag in (version, version, upgrade):
+            for attempt, tag in enumerate((version, version, upgrade)):
                 message = run("/bin/sh", INSTALL, tag, "--from-dir", assets, env=env)
                 assert {p.name for p in public.iterdir()} == set(commands)
                 for name in commands:
@@ -76,6 +83,12 @@ def qualify(assets, version, upgrade):
                         "bash", "-ec", hint + "\ncommand -v ci-upgrade-images", env=env
                     ).strip() == str(public / "ci-upgrade-images")
                 assert startup.read_text() == "# runner-owned configuration\n"
+                if override and attempt == 0:
+                    # Reinstall over a command link left dangling by an older installer.
+                    command = public / "ci-utils"
+                    command.unlink()
+                    command.symlink_to(os.path.relpath(private / "current/bin/ci-utils", public))
+                    assert not command.exists()
             assert len(list((private / "releases").iterdir())) == 2
             # A failed download verification must leave the active release usable.
             bad = account / "bad"
@@ -94,6 +107,12 @@ def qualify(assets, version, upgrade):
                 env=env,
             )
             assert upgrade in run(public / "ci-utils", "--version", env=env)
+            command = public / "ci-utils-list"
+            command.unlink()
+            command.symlink_to("runner-owned-command")
+            run("/bin/sh", INSTALL, upgrade, "--from-dir", assets, status=1,
+                contains="public command path already in use", env=env)
+            assert os.readlink(command) == "runner-owned-command"
 
         # Run the installed host client against an explicit Linux Engine API.
         routes = daemon_routes()
